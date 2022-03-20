@@ -1,5 +1,6 @@
 import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
+import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -43,6 +44,15 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    Adb.getDevices().then((value) => {
+          if (value == null)
+            {print("No devices found!")}
+          else
+            {
+              for (var device in value) {print("Found device $device")}
+            }
+        });
+
     return MaterialApp.router(
       routerDelegate: RoutemasterDelegate(routesBuilder: (context) => routes),
       routeInformationParser: const RoutemasterParser(),

@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 
 @immutable
 class DeviceCard extends StatelessWidget {
-  const DeviceCard(this.deviceName, this.deviceManufacturer, this.serialName,
-      {Key? key})
-      : super(key: key);
+  const DeviceCard({
+    Key? key,
+    required this.deviceName,
+    required this.deviceManufacturer,
+    required this.serialName,
+  }) : super(key: key);
 
   final String deviceName;
   final String deviceManufacturer;

@@ -1,3 +1,4 @@
+import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/device_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -24,16 +25,7 @@ class DevicesPage extends StatelessWidget {
       body: Center(
           // Center is a layout widget. It takes a single child and positions it
           // in the middle of the parent.
-          child: GridView.extent(
-              childAspectRatio: 16.0 / 8.0,
-              padding: const EdgeInsets.all(4.0),
-              mainAxisSpacing: 4.0,
-              crossAxisSpacing: 4.0,
-              maxCrossAxisExtent: 250,
-              children: const [
-            DeviceCard("Android Phone", "Google", "WBN23B1I3N1KNNEWJ"),
-            DeviceCard("Android Phone", "Google", "WBN23B1I3N1KNNEWJ")
-          ])),
+          child: _loadDevices()),
       floatingActionButton: FloatingActionButton(
         onPressed: () => {},
         tooltip: 'Refresh',
@@ -41,5 +33,49 @@ class DevicesPage extends StatelessWidget {
         child: const Icon(Icons.refresh),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
+  }
+
+  FutureBuilder<List<Device>?> _loadDevices() {
+    return FutureBuilder(
+      future: Future.delayed(const Duration(seconds: 2), Adb.getDevices),
+      builder: (BuildContext context, AsyncSnapshot<List<Device>?> snapshot) {
+        //  TODO: Error handling
+        if (snapshot.hasData && snapshot.data != null) {
+          return _deviceGridView(snapshot.data!);
+        } else {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const <Widget>[
+                SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: CircularProgressIndicator(),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(top: 16),
+                  child: Text('Awaiting result...'),
+                )
+              ],
+            ),
+          );
+        }
+      },
+    );
+  }
+
+  GridView _deviceGridView(List<Device> devices) {
+    return GridView.extent(
+        childAspectRatio: 16.0 / 8.0,
+        padding: const EdgeInsets.all(4.0),
+        mainAxisSpacing: 4.0,
+        crossAxisSpacing: 4.0,
+        maxCrossAxisExtent: 250,
+        children: devices
+            .map((e) => DeviceCard(
+                deviceName: e.deviceName,
+                deviceManufacturer: e.deviceManufacturer,
+                serialName: e.serialName))
+            .toList(growable: false));
   }
 }

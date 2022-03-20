@@ -1,3 +1,4 @@
+import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/cupertino.dart';
@@ -13,7 +14,12 @@ final routes = RouteMap(routes: {
         title: 'hi!',
       )),
 
-  '/devices': (_) => const MaterialPage(child: DevicesPage())
+  '/devices': (_) => const MaterialPage(child: DevicesPage()),
+  '/browser/:device/:path': (info) => MaterialPage(
+          child: DeviceBrowser(
+        serial: info.pathParameters['device']!,
+        initialAddress: info.pathParameters['path']!,
+      ))
 
   // '/feed': (_) => MaterialPage(child: FeedPage()),
   // '/settings': (_) => MaterialPage(child: SettingsPage()),
@@ -204,7 +210,12 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             ElevatedButton(
                 onPressed: () => Routemaster.of(context).push('/devices'),
-                child: const Icon(Icons.devices))
+                child: const Icon(Icons.devices)),
+            ElevatedButton(
+                onPressed: () => Routemaster.of(context).push(
+                      '/browser/device//somePath',
+                    ),
+                child: const Icon(Icons.folder))
           ],
         ),
       ),

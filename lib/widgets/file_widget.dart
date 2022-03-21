@@ -1,6 +1,4 @@
 import 'package:clipboard/clipboard.dart';
-import 'package:desktop_adb_file_browser/utils/adb.dart';
-import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 

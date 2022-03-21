@@ -2,7 +2,6 @@ import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -223,7 +222,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const Icon(Icons.devices)),
             ElevatedButton(
                 onPressed: () => Routemaster.of(context).push(
-                      '/browser/device/sdcard',
+                      '/browser/random_serialid/sdcard',
                     ),
                 child: const Icon(Icons.folder))
           ],

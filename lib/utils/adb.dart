@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart';
 
-import 'package:path/path.dart' as hostPath;
+import 'package:path/path.dart' as host_path;
 
 abstract class Adb {
   static final Context adbPathContext = Context(style: Style.posix);

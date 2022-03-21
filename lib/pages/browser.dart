@@ -20,6 +20,10 @@ class DeviceBrowser extends StatefulWidget {
   State<DeviceBrowser> createState() => _DeviceBrowserState();
 }
 
+// TODO: Add forward
+// TODO: Add mouse button for back/forward
+// TODO: Add shortcuts (sidebar?)
+
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
   late Future<List<String>?> _fileListingFuture;

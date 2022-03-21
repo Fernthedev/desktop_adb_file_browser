@@ -3,6 +3,9 @@ import 'package:desktop_adb_file_browser/widgets/device_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+// TODO: Add wireless connection 
+// TODO: Add button for toggling device into wireless
+
 class DevicesPage extends StatefulWidget {
   const DevicesPage({Key? key}) : super(key: key);
 

@@ -3,10 +3,23 @@ import 'package:desktop_adb_file_browser/widgets/device_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class DevicesPage extends StatelessWidget {
+class DevicesPage extends StatefulWidget {
   const DevicesPage({Key? key}) : super(key: key);
 
   static const String title = "Devices";
+
+  @override
+  State<DevicesPage> createState() => _DevicesPageState();
+}
+
+class _DevicesPageState extends State<DevicesPage> {
+  Future<List<Device>> _deviceListFuture =
+      Future.delayed(const Duration(seconds: 2), Adb.getDevices);
+
+  void _refreshDevices() {
+    _deviceListFuture =
+        Future.delayed(const Duration(seconds: 2), Adb.getDevices);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,14 +33,17 @@ class DevicesPage extends StatelessWidget {
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: const Text(title),
+        title: const Text(DevicesPage.title),
       ),
       body: Center(
           // Center is a layout widget. It takes a single child and positions it
           // in the middle of the parent.
           child: _loadDevices()),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => {},
+        onPressed: () {
+          _refreshDevices();
+          setState(() {});
+        },
         tooltip: 'Refresh',
         // TODO: Animate easeInOut spin
         child: const Icon(Icons.refresh),
@@ -37,10 +53,12 @@ class DevicesPage extends StatelessWidget {
 
   FutureBuilder<List<Device>?> _loadDevices() {
     return FutureBuilder(
-      future: Future.delayed(const Duration(seconds: 2), Adb.getDevices),
+      future: _deviceListFuture,
       builder: (BuildContext context, AsyncSnapshot<List<Device>?> snapshot) {
         //  TODO: Error handling
-        if (snapshot.hasData && snapshot.data != null) {
+        if (snapshot.hasData &&
+            snapshot.data != null &&
+            snapshot.connectionState == ConnectionState.done) {
           return _deviceGridView(snapshot.data!);
         } else {
           return Center(
@@ -73,8 +91,9 @@ class DevicesPage extends StatelessWidget {
         maxCrossAxisExtent: 250,
         children: devices
             .map((e) => DeviceCard(
-                deviceName: e.deviceName,
-                deviceManufacturer: e.deviceManufacturer,
+                deviceName: e.modelName,
+                deviceManufacturer:
+                    e.deviceManufacturer ?? "Unknown Manufacturer",
                 serialName: e.serialName))
             .toList(growable: false));
   }

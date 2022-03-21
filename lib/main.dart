@@ -44,8 +44,8 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    Adb.getDevices().then((value) => {
-          if (value == null)
+    Adb.getDevicesSerial().then((value) => {
+          if (value == null || value.isEmpty)
             {print("No devices found!")}
           else
             {

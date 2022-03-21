@@ -1,6 +1,8 @@
 import 'package:desktop_adb_file_browser/utils/adb.dart';
+import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
 import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
@@ -49,11 +51,11 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     if (updateState) {
       setState(() {
         _fileListingFuture = Adb.getFilesInDirectory(
-            "1WMHH8127B0362", path ?? widget._addressBar.text);
+            widget.serial, path ?? widget._addressBar.text);
       });
     } else {
       _fileListingFuture = Adb.getFilesInDirectory(
-          "1WMHH8127B0362", path ?? widget._addressBar.text);
+          widget.serial, path ?? widget._addressBar.text);
     }
   }
 
@@ -89,9 +91,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
                 ),
                 IconButton(
                   splashRadius: 20,
-                  icon: const Icon(
-                    FluentIcons.arrow_clockwise_28_regular
-                  ),
+                  icon: const Icon(FluentIcons.arrow_clockwise_28_regular),
                   onPressed: () {
                     _refreshFiles();
                   },
@@ -197,27 +197,28 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
           return GridTile(
               child: FileFolderCard(
-            isDirectory: isDir,
-            friendlyFileName: Adb.adbPathContext.basename(file),
-            fullFilePath: file,
-            onClick: isDir ? () => _directoryClick(file) : () {},
-          ));
+                  isDirectory: isDir,
+                  friendlyFileName: Adb.adbPathContext.basename(file),
+                  fullFilePath: file,
+                  onClick: isDir ? () => _directoryClick(file) : () {},
+                  downloadFile: _saveFileToDesktop));
         }).toList(growable: false));
   }
 
   ListView _viewAsList(List<String> files) {
     return ListView.builder(
+      controller: AdjustableScrollController(60),
       itemBuilder: (BuildContext context, int index) {
         var file = files[index];
 
         var isDir = file.endsWith("/");
 
         return FileFolderListTile(
-          isDirectory: isDir,
-          fullFilePath: file,
-          friendlyFileName: Adb.adbPathContext.basename(file),
-          onClick: isDir ? () => _directoryClick(file) : () {},
-        );
+            isDirectory: isDir,
+            fullFilePath: file,
+            friendlyFileName: Adb.adbPathContext.basename(file),
+            onClick: isDir ? () => _directoryClick(file) : () {},
+            downloadFile: _saveFileToDesktop);
       },
       itemCount: files.length,
     );
@@ -225,5 +226,14 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   void _directoryClick(String directory) {
     _refreshFiles(path: directory);
+  }
+
+  Future<void> _saveFileToDesktop(
+      String source, String friendlyFilename) async {
+    final path = await getSavePath(suggestedName: friendlyFilename);
+
+    if (path == null) return;
+
+    await Adb.downloadFile(widget.serial, source, path);
   }
 }

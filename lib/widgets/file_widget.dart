@@ -1,17 +1,52 @@
+import 'package:clipboard/clipboard.dart';
+import 'package:desktop_adb_file_browser/utils/adb.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 
-class FileFolderCard extends StatelessWidget {
-  const FileFolderCard(
-      {Key? key,
-      required this.fileName,
-      required this.isDirectory,
-      required this.onClick})
-      : super(key: key);
+typedef DownloadFileCallback = Future<void> Function(
+    String source, String fileName);
 
-  final String fileName;
+abstract class FileWidgetUI extends StatelessWidget {
+  final String friendlyFileName;
+  final String fullFilePath;
   final bool isDirectory;
   final VoidCallback onClick;
+  final DownloadFileCallback downloadFile;
+
+  const FileWidgetUI(
+      {Key? key,
+      required this.friendlyFileName,
+      required this.fullFilePath,
+      required this.isDirectory,
+      required this.onClick,
+      required this.downloadFile})
+      : super(key: key);
+
+  Future<void> copyPathToClipboard() {
+    return FlutterClipboard.copy(fullFilePath);
+  }
+
+  Future<void> saveToDesktop() {
+    return downloadFile(fullFilePath, friendlyFileName);
+  }
+}
+
+class FileFolderCard extends FileWidgetUI {
+  const FileFolderCard(
+      {Key? key,
+      required String friendlyFileName,
+      required String fullFilePath,
+      required bool isDirectory,
+      required VoidCallback onClick,
+      required DownloadFileCallback downloadFile})
+      : super(
+            key: key,
+            friendlyFileName: friendlyFileName,
+            fullFilePath: fullFilePath,
+            isDirectory: isDirectory,
+            onClick: onClick,
+            downloadFile: downloadFile);
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +63,7 @@ class FileFolderCard extends StatelessWidget {
                 size: 24 * 3.0,
               ),
               subtitle: Text(
-                fileName,
+                friendlyFileName,
                 textAlign: TextAlign.center,
               ),
             ),
@@ -37,8 +72,13 @@ class FileFolderCard extends StatelessWidget {
               children: [
                 isDirectory
                     ? const Icon(null)
-                    : const Icon(Icons.download_rounded),
-                const Icon(Icons.copy),
+                    : IconButton(
+                        icon: const Icon(Icons.download_rounded),
+                        onPressed: saveToDesktop,
+                      ),
+                IconButton(
+                    icon: const Icon(Icons.copy),
+                    onPressed: copyPathToClipboard),
                 const Icon(Icons.delete_forever),
               ],
             )
@@ -53,17 +93,23 @@ class FileFolderCard extends StatelessWidget {
   }
 }
 
-class FileFolderListTile extends StatelessWidget {
+class FileFolderListTile extends FileWidgetUI {
   const FileFolderListTile(
       {Key? key,
-      required this.fileName,
-      required this.isDirectory,
-      required this.onClick})
-      : super(key: key);
+      required String friendlyFileName,
+      required String fullFilePath,
+      required bool isDirectory,
+      required VoidCallback onClick,
+      required DownloadFileCallback downloadFile})
+      : super(
+            key: key,
+            friendlyFileName: friendlyFileName,
+            fullFilePath: fullFilePath,
+            isDirectory: isDirectory,
+            onClick: onClick,
+            downloadFile: downloadFile);
 
-  final String fileName;
-  final bool isDirectory;
-  final VoidCallback onClick;
+  static const double _iconSplashRadius = 20;
 
   @override
   Widget build(BuildContext context) {
@@ -78,13 +124,25 @@ class FileFolderListTile extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          isDirectory ? const Icon(null) : const Icon(Icons.download_rounded),
-          const Icon(Icons.copy),
+          isDirectory
+              ? const Icon(null)
+              : IconButton(
+                  icon: const Icon(Icons.download_rounded),
+                  onPressed: saveToDesktop,
+                  splashRadius: _iconSplashRadius,
+                ),
+          IconButton(
+            // TODO: Add user feedback when this occurs
+            icon: const Icon(Icons.copy),
+            onPressed: copyPathToClipboard,
+            splashRadius: _iconSplashRadius,
+            tooltip: "Copy to clipboard",
+          ),
           const Icon(Icons.delete_forever),
         ],
       ),
       onTap: onClick,
-      title: Text(fileName),
+      title: Text(friendlyFileName),
     );
   }
 }

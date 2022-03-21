@@ -2,11 +2,15 @@ import 'dart:io';
 
 import 'package:path/path.dart';
 
+import 'package:path/path.dart' as hostPath;
+
 abstract class Adb {
   static final Context adbPathContext = Context(style: Style.posix);
 
-  static Future<ProcessResult> runAdbCommand(List<String> args) {
-    return Process.run("adb.exe", args);
+  static Future<ProcessResult> runAdbCommand(
+      String? serial, List<String> args) {
+    return Process.run(
+        "adb.exe", serial != null ? ["-s", serial, ...args] : args);
   }
 
   static String normalizeOutput(String output) =>
@@ -41,10 +45,9 @@ abstract class Adb {
   }
 
   static Future<List<String>?> getFilesInDirectory(
-      String serialName, String path) async {
+      String? serialName, String path) async {
     path = fixPath(path);
-    var result =
-        await runAdbCommand(["-s", serialName, "shell", "ls -p \"$path\""]);
+    var result = await runAdbCommand(serialName, ["shell", "ls -p \"$path\""]);
 
     return parsePaths(normalizeOutput(result.stdout), path, false);
   }
@@ -52,7 +55,7 @@ abstract class Adb {
   static Future<List<String>?> getDevicesSerial() async {
     const requiredString = "List of devices attached\n";
 
-    var result = await runAdbCommand(["devices"]);
+    var result = await runAdbCommand(null, ["devices"]);
 
     var ret = normalizeOutput(result.stdout);
 
@@ -69,9 +72,31 @@ abstract class Adb {
         .toList(growable: false);
   }
 
-  static Future<String> getDeviceName(String serialName) async {
+  static Future<String> getDeviceName(String? serialName) async {
     var result = await runAdbCommand(
-        ["-s", (serialName), "shell", "getprop", "ro.product.model"]);
+        serialName, ["shell", "getprop", "ro.product.model"]);
+
+    return normalizeOutput(result.stdout);
+  }
+
+  static Future<String> downloadFile(
+      String? serialName, String source, String destination) async {
+    var result = await runAdbCommand(null, [
+      "pull",
+      fixPath(source),
+      destination,
+    ]);
+
+    return normalizeOutput(result.stdout);
+  }
+
+  static Future<String> uploadFile(
+      String serialName, String source, String destination) async {
+    var result = await runAdbCommand(serialName, [
+      "push",
+      "\"$source\"",
+      "\"${fixPath(destination)}\"",
+    ]);
 
     return normalizeOutput(result.stdout);
   }

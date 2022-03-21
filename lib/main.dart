@@ -223,7 +223,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: const Icon(Icons.devices)),
             ElevatedButton(
                 onPressed: () => Routemaster.of(context).push(
-                      '/browser/device//somePath',
+                      '/browser/device/sdcard',
                     ),
                 child: const Icon(Icons.folder))
           ],

@@ -1,12 +1,53 @@
 import 'dart:io';
 
-class Adb {
+import 'package:path/path.dart';
+
+abstract class Adb {
+  static final Context adbPathContext = Context(style: Style.posix);
+
   static Future<ProcessResult> runAdbCommand(List<String> args) {
     return Process.run("adb.exe", args);
   }
 
   static String normalizeOutput(String output) =>
       output.replaceAll("\r\n", "\n");
+
+  static String fixPath(String path) {
+    if (!path.startsWith("/")) path = "/" + path;
+    return path.replaceAll('\\', '/');
+  }
+
+  // https://github.com/Lauriethefish/QuestPatcher/blob/37d6ee872bbc44f47b4994e5b95a7d0902797939/QuestPatcher.Core/AndroidDebugBridge.cs#L361
+  static List<String> parsePaths(String str, String path, bool onlyNames) {
+    // Remove unnecessary padding that ADB adds to get purely the paths
+    var rawPaths = str.split("\n");
+    List<String> parsedPaths = [];
+    for (int i = 0; i < rawPaths.length - 1; i++) {
+      var currentPath = rawPaths[i];
+      if (currentPath.substring(0, currentPath.length - 1) ==
+          ':') // Directories within this one that aren't the first index lead to this
+      {
+        break;
+      }
+
+      if (onlyNames) {
+        parsedPaths.add(currentPath);
+      } else {
+        parsedPaths.add(adbPathContext.join(path, currentPath));
+      }
+    }
+
+    return parsedPaths;
+  }
+
+  static Future<List<String>?> getFilesInDirectory(
+      String serialName, String path) async {
+    path = fixPath(path);
+    var result =
+        await runAdbCommand(["-s", serialName, "shell", "ls -p \"$path\""]);
+
+    return parsePaths(normalizeOutput(result.stdout), path, false);
+  }
 
   static Future<List<String>?> getDevicesSerial() async {
     const requiredString = "List of devices attached\n";

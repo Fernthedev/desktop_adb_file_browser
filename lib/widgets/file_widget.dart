@@ -3,17 +3,21 @@ import 'package:flutter/material.dart';
 
 class FileFolderCard extends StatelessWidget {
   const FileFolderCard(
-      {Key? key, required this.fileName, required this.isDirectory})
+      {Key? key,
+      required this.fileName,
+      required this.isDirectory,
+      required this.onClick})
       : super(key: key);
 
   final String fileName;
   final bool isDirectory;
+  final VoidCallback onClick;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: () => {},
+        onTap: onClick,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -51,11 +55,15 @@ class FileFolderCard extends StatelessWidget {
 
 class FileFolderListTile extends StatelessWidget {
   const FileFolderListTile(
-      {Key? key, required this.fileName, required this.isDirectory})
+      {Key? key,
+      required this.fileName,
+      required this.isDirectory,
+      required this.onClick})
       : super(key: key);
 
   final String fileName;
   final bool isDirectory;
+  final VoidCallback onClick;
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +83,7 @@ class FileFolderListTile extends StatelessWidget {
           const Icon(Icons.delete_forever),
         ],
       ),
-      onTap: () {},
+      onTap: onClick,
       title: Text(fileName),
     );
   }

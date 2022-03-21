@@ -87,6 +87,15 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
                     _refreshFiles(path: paths.pop(), pushToHistory: false);
                   },
                 ),
+                IconButton(
+                  splashRadius: 20,
+                  icon: const Icon(
+                    FluentIcons.arrow_clockwise_28_regular
+                  ),
+                  onPressed: () {
+                    _refreshFiles();
+                  },
+                ),
               ],
             ),
             Expanded(
@@ -189,7 +198,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           return GridTile(
               child: FileFolderCard(
             isDirectory: isDir,
-            fileName: Adb.adbPathContext.basename(file),
+            friendlyFileName: Adb.adbPathContext.basename(file),
+            fullFilePath: file,
             onClick: isDir ? () => _directoryClick(file) : () {},
           ));
         }).toList(growable: false));
@@ -204,7 +214,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
         return FileFolderListTile(
           isDirectory: isDir,
-          fileName: Adb.adbPathContext.basename(file),
+          fullFilePath: file,
+          friendlyFileName: Adb.adbPathContext.basename(file),
           onClick: isDir ? () => _directoryClick(file) : () {},
         );
       },

@@ -5,6 +5,7 @@ import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:multi_split_view/multi_split_view.dart';
 import 'package:routemaster/routemaster.dart';
 
 class DeviceBrowser extends StatefulWidget {
@@ -52,14 +53,10 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     /// on the address bar because the address bar passes [path] as null
     if (path != null && oldAddressText == path) return;
 
+    _fileListingFuture =
+        Adb.getFilesInDirectory(widget.serial, path ?? widget._addressBar.text);
     if (updateState) {
-      setState(() {
-        _fileListingFuture = Adb.getFilesInDirectory(
-            widget.serial, path ?? widget._addressBar.text);
-      });
-    } else {
-      _fileListingFuture = Adb.getFilesInDirectory(
-          widget.serial, path ?? widget._addressBar.text);
+      setState(() {});
     }
   }
 
@@ -145,7 +142,19 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           )
         ],
       ),
-      body: Center(child: _fileView()),
+      body: MultiSplitViewTheme(
+        data: MultiSplitViewThemeData(dividerThickness: 5.5),
+        child: MultiSplitView(
+          initialWeights: const [0.15],
+          children: [const ShortcutsListWidget(), Center(child: _fileView())],
+          dividerBuilder:
+              (axis, index, resizable, dragging, highlighted, themeData) =>
+                  Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                      width: 0.5,
+                      color: Colors.black),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _refreshFiles();
@@ -239,5 +248,31 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     if (path == null) return;
 
     await Adb.downloadFile(widget.serial, source, path);
+  }
+}
+
+class ShortcutsListWidget extends StatelessWidget {
+  final double initialWidth;
+  final double? maxWidth;
+  final double? minWidth;
+
+  const ShortcutsListWidget(
+      {Key? key,
+      this.initialWidth = 240,
+      this.maxWidth = 500,
+      this.minWidth = 100})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 240,
+      child: ListView.builder(
+        itemBuilder: ((context, index) => ListTile(
+              title: Text("Hi! $index"),
+            )),
+        itemCount: 4,
+      ),
+    );
   }
 }

@@ -1,9 +1,14 @@
 import 'package:clipboard/clipboard.dart';
+import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 typedef DownloadFileCallback = Future<void> Function(
     String source, String fileName);
+
+typedef RenameFileCallback = Future<void> Function(
+    String source, String newName);
 
 abstract class FileWidgetUI extends StatelessWidget {
   final String friendlyFileName;
@@ -11,6 +16,7 @@ abstract class FileWidgetUI extends StatelessWidget {
   final bool isDirectory;
   final VoidCallback onClick;
   final DownloadFileCallback downloadFile;
+  final RenameFileCallback renameFileCallback;
 
   const FileWidgetUI(
       {Key? key,
@@ -18,7 +24,8 @@ abstract class FileWidgetUI extends StatelessWidget {
       required this.fullFilePath,
       required this.isDirectory,
       required this.onClick,
-      required this.downloadFile})
+      required this.downloadFile,
+      required this.renameFileCallback})
       : super(key: key);
 
   Future<void> copyPathToClipboard() {
@@ -27,6 +34,20 @@ abstract class FileWidgetUI extends StatelessWidget {
 
   Future<void> saveToDesktop() {
     return downloadFile(fullFilePath, friendlyFileName);
+  }
+
+  Future<void> renameFile(String newName) {
+    return renameFileCallback(fullFilePath, newName);
+  }
+
+  String? validateNewName(String? newName) {
+    if (newName == null || newName.isEmpty) {
+      return "New name cannot be empty";
+    }
+
+    if (newName.contains("/")) return "Cannot contain slashes";
+
+    return null;
   }
 }
 
@@ -37,14 +58,16 @@ class FileFolderCard extends FileWidgetUI {
       required String fullFilePath,
       required bool isDirectory,
       required VoidCallback onClick,
-      required DownloadFileCallback downloadFile})
+      required DownloadFileCallback downloadFile,
+      required RenameFileCallback renameFileCallback})
       : super(
             key: key,
             friendlyFileName: friendlyFileName,
             fullFilePath: fullFilePath,
             isDirectory: isDirectory,
             onClick: onClick,
-            downloadFile: downloadFile);
+            downloadFile: downloadFile,
+            renameFileCallback: renameFileCallback);
 
   @override
   Widget build(BuildContext context) {
@@ -92,22 +115,26 @@ class FileFolderCard extends FileWidgetUI {
 }
 
 class FileFolderListTile extends FileWidgetUI {
-  const FileFolderListTile(
+  static const double _iconSplashRadius = 20;
+
+  final FocusNode _focusNode = FocusNode();
+
+  FileFolderListTile(
       {Key? key,
       required String friendlyFileName,
       required String fullFilePath,
       required bool isDirectory,
       required VoidCallback onClick,
-      required DownloadFileCallback downloadFile})
+      required DownloadFileCallback downloadFile,
+      required RenameFileCallback renameFileCallback})
       : super(
             key: key,
             friendlyFileName: friendlyFileName,
             fullFilePath: fullFilePath,
             isDirectory: isDirectory,
             onClick: onClick,
-            downloadFile: downloadFile);
-
-  static const double _iconSplashRadius = 20;
+            downloadFile: downloadFile,
+            renameFileCallback: renameFileCallback);
 
   @override
   Widget build(BuildContext context) {
@@ -136,11 +163,50 @@ class FileFolderListTile extends FileWidgetUI {
             splashRadius: _iconSplashRadius,
             tooltip: "Copy to clipboard",
           ),
+          IconButton(
+              splashRadius: _iconSplashRadius,
+              onPressed: () {
+                _focusNode.requestFocus();
+              },
+              icon: const Icon(Icons.edit)),
           const Icon(Icons.delete_forever),
         ],
       ),
       onTap: onClick,
-      title: Text(friendlyFileName),
+      title: AbsorbPointer(
+        
+        child: TextFormField(
+          maxLines: 1,
+          enableSuggestions: false,
+          maxLengthEnforcement: MaxLengthEnforcement.truncateAfterCompositionEnds,
+          decoration: const InputDecoration(
+            // cool animation border effect
+            // this makes it rectangular when not selected
+            enabledBorder: InputBorder.none,
+            focusedBorder: UnderlineInputBorder(),
+            border: InputBorder.none,
+            disabledBorder: InputBorder.none,
+            errorBorder: InputBorder.none,
+            fillColor: null,
+            filled: false,
+          ),
+          focusNode: _focusNode,
+          initialValue: friendlyFileName,
+          validator: validateNewName,
+          onFieldSubmitted: renameFile,
+        ),
+      ),
+      // Row(
+      //   children: [
+      //     Flexible(
+      //       fit: FlexFit.loose,
+      //       child: SizedBox(
+      //         width: 500,
+      //         child:
+      //       ),
+      //     ),
+      //   ],
+      // ),
     );
   }
 }

@@ -68,61 +68,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         // the App.build method, and use it to set our appbar title.
         title: Row(
           children: [
-            Wrap(
-              children: [
-                IconButton(
-                  splashRadius: 20,
-                  icon: const Icon(
-                    FluentIcons.folder_arrow_up_24_regular,
-                  ),
-                  onPressed: () {
-                    _refreshFiles(
-                        path: Adb.adbPathContext
-                            .dirname(widget._addressBar.text));
-                  },
-                ),
-                IconButton(
-                  splashRadius: 20,
-                  icon: const Icon(
-                    FluentIcons.arrow_left_20_regular,
-                  ),
-                  onPressed: () {
-                    _refreshFiles(path: paths.pop(), pushToHistory: false);
-                  },
-                ),
-                IconButton(
-                  splashRadius: 20,
-                  icon: const Icon(FluentIcons.arrow_clockwise_28_regular),
-                  onPressed: () {
-                    _refreshFiles();
-                  },
-                ),
-              ],
-            ),
-            Expanded(
-              child: TextField(
-                controller: widget._addressBar,
-                autocorrect: false,
-                onSubmitted: (s) {
-                  _refreshFiles();
-                },
-                decoration: const InputDecoration(
-                  // focusedBorder: OutlineInputBorder(
-                  //   borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                  // ),
-
-                  // cool animation border effect
-                  // this makes it rectangular when not selected
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(10.0)),
-                  ),
-                  hintText: 'Search',
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  constraints: BoxConstraints.tightFor(height: 40),
-                ),
-              ),
-            ),
+            _navigationActions(),
+            _addressBar(),
           ],
         ),
         leading: IconButton(
@@ -132,6 +79,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           },
         ),
         actions: [
+          //
           IconButton(
             icon: Icon(list ? Icons.list : Icons.grid_3x3),
             onPressed: () {
@@ -162,6 +110,61 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         tooltip: 'Add new file',
         child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+    );
+  }
+
+  Wrap _navigationActions() {
+    return Wrap(
+      children: [
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(
+            FluentIcons.folder_arrow_up_24_regular,
+          ),
+          onPressed: () {
+            _refreshFiles(
+                path: Adb.adbPathContext.dirname(widget._addressBar.text));
+          },
+        ),
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(
+            FluentIcons.arrow_left_20_regular,
+          ),
+          onPressed: () {
+            _refreshFiles(path: paths.pop(), pushToHistory: false);
+          },
+        ),
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(FluentIcons.arrow_clockwise_28_regular),
+          onPressed: () {
+            _refreshFiles();
+          },
+        ),
+      ],
+    );
+  }
+
+  Expanded _addressBar() {
+    return Expanded(
+      child: TextField(
+        controller: widget._addressBar,
+        autocorrect: false,
+        onSubmitted: (s) {
+          _refreshFiles();
+        },
+        decoration: const InputDecoration(
+          // cool animation border effect
+          // this makes it rectangular when not selected
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10.0)),
+          ),
+          hintText: 'Search',
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          constraints: BoxConstraints.tightFor(height: 40),
+        ),
+      ),
     );
   }
 
@@ -214,7 +217,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
                   friendlyFileName: Adb.adbPathContext.basename(file),
                   fullFilePath: file,
                   onClick: isDir ? () => _directoryClick(file) : () {},
-                  downloadFile: _saveFileToDesktop));
+                  downloadFile: _saveFileToDesktop,
+                  renameFileCallback: _renameFile,));
         }).toList(growable: false));
   }
 
@@ -227,11 +231,13 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         var isDir = file.endsWith("/");
 
         return FileFolderListTile(
-            isDirectory: isDir,
-            fullFilePath: file,
-            friendlyFileName: Adb.adbPathContext.basename(file),
-            onClick: isDir ? () => _directoryClick(file) : () {},
-            downloadFile: _saveFileToDesktop);
+          isDirectory: isDir,
+          fullFilePath: file,
+          friendlyFileName: Adb.adbPathContext.basename(file),
+          onClick: isDir ? () => _directoryClick(file) : () {},
+          downloadFile: _saveFileToDesktop,
+          renameFileCallback: _renameFile,
+        );
       },
       itemCount: files.length,
     );
@@ -248,6 +254,11 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     if (path == null) return;
 
     await Adb.downloadFile(widget.serial, source, path);
+  }
+
+  Future<void> _renameFile(String source, String newName) async {
+    await Adb.moveFile(widget.serial, source,
+        Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
   }
 }
 

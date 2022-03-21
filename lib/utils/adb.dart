@@ -79,6 +79,16 @@ abstract class Adb {
     return normalizeOutput(result.stdout);
   }
 
+  static Future<String> moveFile(
+      String? serialName, String source, String dest) async {
+    source = fixPath(source);
+    dest = fixPath(dest);
+    var result = await runAdbCommand(
+        serialName, ["shell", "mv", source, dest]);
+
+    return normalizeOutput(result.stdout);
+  }
+
   static Future<String> downloadFile(
       String? serialName, String source, String destination) async {
     var result = await runAdbCommand(null, [

@@ -81,8 +81,8 @@ abstract class Adb {
 
   static Future<String> moveFile(
       String? serialName, String source, String dest) async {
-    source = fixPath(source);
-    dest = fixPath(dest);
+    source = fixPath(source).replaceAll(" ", "\\ "); //???
+    dest = fixPath(dest).replaceAll(" ", "\\ ");
     var result = await runAdbCommand(
         serialName, ["shell", "mv", source, dest]);
 

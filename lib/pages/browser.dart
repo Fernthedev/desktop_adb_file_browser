@@ -212,13 +212,14 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           var isDir = file.endsWith("/");
 
           return GridTile(
-              child: FileFolderCard(
-                  isDirectory: isDir,
-                  friendlyFileName: Adb.adbPathContext.basename(file),
-                  fullFilePath: file,
-                  onClick: isDir ? () => _directoryClick(file) : () {},
-                  downloadFile: _saveFileToDesktop,
-                  renameFileCallback: _renameFile,));
+              child: FileWidgetUI(
+            isCard: true,
+            isDirectory: isDir,
+            fullFilePath: file,
+            onClick: isDir ? () => _directoryClick(file) : () {},
+            downloadFile: _saveFileToDesktop,
+            renameFileCallback: _renameFile,
+          ));
         }).toList(growable: false));
   }
 
@@ -230,10 +231,10 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
         var isDir = file.endsWith("/");
 
-        return FileFolderListTile(
+        return FileWidgetUI(
+          isCard: false,
           isDirectory: isDir,
           fullFilePath: file,
-          friendlyFileName: Adb.adbPathContext.basename(file),
           onClick: isDir ? () => _directoryClick(file) : () {},
           downloadFile: _saveFileToDesktop,
           renameFileCallback: _renameFile,

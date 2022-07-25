@@ -29,6 +29,8 @@ class DeviceBrowser extends StatefulWidget {
 // TODO: Add mouse button for back/forward
 // TODO: Add shortcuts (sidebar?)
 // TODO: Make new file have a file name dialog
+// TODO: Add download progress snackbar (similar to upload progress)
+// TODO: Make snackbar progress animation ease exponential because it looks cool
 
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;

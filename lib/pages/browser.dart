@@ -93,7 +93,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       body: MultiSplitViewTheme(
         data: MultiSplitViewThemeData(dividerThickness: 5.5),
         child: MultiSplitView(
-          initialWeights: const [0.15],
+          initialAreas: [Area(weight: 0.15)],
           children: [const ShortcutsListWidget(), Center(child: _fileView())],
           dividerBuilder:
               (axis, index, resizable, dragging, highlighted, themeData) =>

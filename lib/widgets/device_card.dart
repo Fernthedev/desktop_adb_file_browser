@@ -1,3 +1,4 @@
+import 'package:desktop_adb_file_browser/routes.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 
@@ -19,11 +20,12 @@ class DeviceCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => {},
+        onTap: () => Routes.browse(context, serialName),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             Expanded(
+              flex: 2,
               child: ListTile(
                 leading: const Icon(
                   FluentIcons.phone_24_regular,
@@ -32,13 +34,13 @@ class DeviceCard extends StatelessWidget {
                 title: Text(deviceName),
                 subtitle: Text(deviceManufacturer),
               ),
-              flex: 2,
             ),
             Expanded(
               child: Padding(
                   padding: const EdgeInsets.all(5),
-                  child:
-                      TextButton(onPressed: () => {}, child: Text(serialName))),
+                  // TODO: Make this copy to clipboard or something
+                  // maybe device details page?
+                  child: TextButton(onPressed: () {}, child: Text(serialName))),
             )
           ],
         ),

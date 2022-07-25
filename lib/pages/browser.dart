@@ -94,6 +94,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     );
 
     await Future.wait(tasks);
+    _refreshFiles(); // update UI
 
     await Future.delayed(const Duration(seconds: 4));
     snackBar.close();

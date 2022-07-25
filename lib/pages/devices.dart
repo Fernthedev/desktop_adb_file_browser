@@ -86,7 +86,7 @@ class _DevicesPageState extends State<DevicesPage> {
 
   GridView _deviceGridView(List<Device> devices) {
     return GridView.extent(
-        childAspectRatio: 16.0 / 8.0,
+        childAspectRatio: 12.0 / 8.0,
         padding: const EdgeInsets.all(4.0),
         mainAxisSpacing: 4.0,
         crossAxisSpacing: 4.0,

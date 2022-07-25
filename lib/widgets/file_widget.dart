@@ -164,7 +164,6 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
         );
   }
 
-
   //  TODO: Fix submit not working on pressing enter
   // I hate this
   Form _fileNameForm() {
@@ -204,14 +203,18 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: <Widget>[
-            ListTile(
-              title: Icon(
-                _getIcon(),
-                size: 24 * 3.0,
-              ),
-              subtitle: Text(
-                friendlyFileName,
-                textAlign: TextAlign.center,
+            Flexible(
+              flex: 1,
+              fit: FlexFit.loose,
+              child: ListTile(
+                title: Icon(
+                  _getIcon(),
+                  size: 16 * 3.0,
+                ),
+                subtitle: Text(
+                  friendlyFileName,
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
             Wrap(
@@ -226,7 +229,8 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                 IconButton(
                     icon: const Icon(Icons.copy),
                     onPressed: copyPathToClipboard),
-                const Icon(Icons.delete_forever),
+                IconButton(
+                    icon: const Icon(Icons.delete_forever), onPressed: () {}),
               ],
             )
           ],

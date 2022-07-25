@@ -28,6 +28,7 @@ class DeviceBrowser extends StatefulWidget {
 // TODO: Add forward
 // TODO: Add mouse button for back/forward
 // TODO: Add shortcuts (sidebar?)
+// TODO: Make new file have a file name dialog
 
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
@@ -217,6 +218,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   GridView _viewAsGrid(List<String> files) {
     return GridView.extent(
+        controller: AdjustableScrollController(60),
         childAspectRatio: 17.0 / 9.0,
         padding: const EdgeInsets.all(4.0),
         mainAxisSpacing: 4.0,

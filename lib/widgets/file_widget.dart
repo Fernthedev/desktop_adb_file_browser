@@ -287,7 +287,7 @@ class ValidatableTextFieldState extends State<ValidatableTextField> {
         setState(() {});
       },
       onSubmitted: (s) {
-        print("submit");
+        debugPrint("submit");
         widget.onSubmit!(s);
       },
       focusNode: widget.focusNode,

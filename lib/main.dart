@@ -45,10 +45,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     Adb.getDevicesSerial().then((value) => {
           if (value == null || value.isEmpty)
-            {print("No devices found!")}
+            {debugPrint("No devices found!")}
           else
             {
-              for (var device in value) {print("Found device $device")}
+              for (var device in value) {debugPrint("Found device $device")}
             }
         });
 

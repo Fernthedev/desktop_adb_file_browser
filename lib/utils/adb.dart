@@ -5,6 +5,7 @@ import 'package:path/path.dart';
 import 'package:path/path.dart' as host_path;
 
 abstract class Adb {
+  static Context get hostPath => host_path.context;
   static final Context adbPathContext = Context(style: Style.posix);
 
   static Future<ProcessResult> runAdbCommand(
@@ -13,11 +14,22 @@ abstract class Adb {
         "adb.exe", serial != null ? ["-s", serial, ...args] : args);
   }
 
-  static String normalizeOutput(String output) =>
-      output.replaceAll("\r\n", "\n");
+  static String normalizeOutput(String output) {
+    return output.replaceAll("\r\n", "\n");
+  }
+
+  static String? normalizeOutputAndError(String output) {
+    String result = output.replaceAll("\r\n", "\n");
+    if (result.contains("no devices/emulators found") ||
+        (result.contains("device ") && result.contains(" not found"))) {
+      return null;
+    }
+
+    return result;
+  }
 
   static String fixPath(String path) {
-    if (!path.startsWith("/")) path = "/" + path;
+    if (!path.startsWith("/")) path = "/$path";
     return path.replaceAll('\\', '/');
   }
 
@@ -72,19 +84,18 @@ abstract class Adb {
         .toList(growable: false);
   }
 
-  static Future<String> getDeviceName(String? serialName) async {
+  static Future<String?> getDeviceName(String? serialName) async {
     var result = await runAdbCommand(
         serialName, ["shell", "getprop", "ro.product.model"]);
 
-    return normalizeOutput(result.stdout);
+    return normalizeOutputAndError(result.stdout);
   }
 
   static Future<String> moveFile(
       String? serialName, String source, String dest) async {
     source = fixPath(source).replaceAll(" ", "\\ "); //???
     dest = fixPath(dest).replaceAll(" ", "\\ ");
-    var result = await runAdbCommand(
-        serialName, ["shell", "mv", source, dest]);
+    var result = await runAdbCommand(serialName, ["shell", "mv", source, dest]);
 
     return normalizeOutput(result.stdout);
   }
@@ -112,8 +123,13 @@ abstract class Adb {
   }
 
   static Future<Device> getDevice(String serialName) async {
-    return Device(
-        serialName: serialName, modelName: await getDeviceName(serialName));
+    var deviceModelName = await getDeviceName(serialName);
+
+    if (deviceModelName == null) {
+      throw "Device not found";
+    }
+
+    return Device(serialName: serialName, modelName: deviceModelName);
   }
 
   static Future<List<Device>> getDevices() async {

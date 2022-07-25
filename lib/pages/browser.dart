@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
 import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
+import 'package:drag_and_drop_windows/drag_and_drop_windows.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
@@ -28,18 +31,77 @@ class DeviceBrowser extends StatefulWidget {
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
   late Future<List<String>?> _fileListingFuture;
+  late StreamSubscription dragReceiveSubscription;
 
   StackCollection<String> paths = StackCollection();
 
   @override
   void initState() {
     super.initState();
+    dragReceiveSubscription = dropEventStream.listen(_handleFileDragReceive);
     _refreshFiles(updateState: false, pushToHistory: false);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    dragReceiveSubscription.cancel();
+  }
+
+  String get _currentPath => widget._addressBar.text;
+
+  void _handleFileDragReceive(List<String> paths) async {
+    debugPrint("Uploading $paths");
+    List<Future> tasks = [];
+
+    for (String path in paths) {
+      String dest = Adb.adbPathContext.join(
+          Adb.adbPathContext.dirname(_currentPath), // adb file path
+          Adb.hostPath.basename(path) // host file name
+          );
+
+      // C:\Users\foo.txt -> currentPath/foo.txt
+      tasks.add(Adb.uploadFile(widget.serial, path, dest));
+    }
+
+    // this is so scuffed
+    // I do this to automatically update the snack bar progress
+    var tasksDone = 0;
+
+    var stream = Stream<double>.fromFutures(tasks.map((e) async {
+      await e;
+      tasksDone++;
+      return tasksDone / tasks.length;
+    })).asBroadcastStream();
+
+    // Snack bar
+    var snackBar = ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: UploadingFilesWidget(
+          progressIndications: stream,
+          taskAmount: tasks.length,
+        ),
+        duration: const Duration(days: 365), // year old snackbar
+        width: 680.0, // Width of the SnackBar.
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8.0, // Inner padding for SnackBar content.
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+      ),
+    );
+
+    await Future.wait(tasks);
+
+    await Future.delayed(const Duration(seconds: 4));
+    snackBar.close();
   }
 
   void _refreshFiles(
       {String? path, bool pushToHistory = true, bool updateState = true}) {
-    var oldAddressText = widget._addressBar.text;
+    var oldAddressText = _currentPath;
 
     if (path != null) {
       if (pushToHistory) {
@@ -54,7 +116,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     if (path != null && oldAddressText == path) return;
 
     _fileListingFuture =
-        Adb.getFilesInDirectory(widget.serial, path ?? widget._addressBar.text);
+        Adb.getFilesInDirectory(widget.serial, path ?? _currentPath);
     if (updateState) {
       setState(() {});
     }
@@ -260,6 +322,54 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   Future<void> _renameFile(String source, String newName) async {
     await Adb.moveFile(widget.serial, source,
         Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
+  }
+}
+
+class UploadingFilesWidget extends StatefulWidget {
+  const UploadingFilesWidget(
+      {Key? key, required this.taskAmount, required this.progressIndications})
+      : super(key: key);
+
+  final int taskAmount;
+  final Stream<double>
+      progressIndications; // I need to figure out a better thing for this
+  // TODO: ValueListenableBuilder
+
+  @override
+  State<UploadingFilesWidget> createState() => _UploadingFilesWidgetState();
+}
+
+class _UploadingFilesWidgetState extends State<UploadingFilesWidget> {
+  @override
+  Widget build(BuildContext context) {
+    var progressIndications = widget.progressIndications;
+    var taskAmount = widget.taskAmount;
+
+    return StreamBuilder<double>(
+        initialData: 0,
+        stream: progressIndications,
+        builder: (context, progress) {
+          var theme = Theme.of(context);
+
+          return SizedBox(
+            height: 50,
+            child: Column(
+              children: [
+                // Reverse calculation because less data needed to be passed!
+                Text(
+                  "Uploading ${(progress.data ?? 0 * taskAmount).round()}/$taskAmount (${((progress.data ?? 0) * 100).round()}%)",
+                  style: theme.textTheme.labelLarge?.copyWith(
+                      color: theme.snackBarTheme.contentTextStyle?.color),
+                ),
+                const SizedBox(height: 20),
+                LinearProgressIndicator(
+                  value: progress.data,
+                  color: Theme.of(context).colorScheme.secondary,
+                )
+              ],
+            ),
+          );
+        });
   }
 }
 

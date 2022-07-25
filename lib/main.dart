@@ -1,7 +1,6 @@
 import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
 import 'package:desktop_adb_file_browser/routes.dart';
-import 'package:desktop_adb_file_browser/widgets/device_card.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
@@ -187,13 +186,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 onPressed: () => Routes.devices(context),
                 child: const Icon(Icons.devices)),
             ElevatedButton(
-                onPressed: () => {
-                  print(DeviceCard.selectedSerial),
-                  var serial = DeviceCard.selectedSerial,
-                  Routemaster.of(context).push(
-                      '/browser/$DeviceCard.selectedSerial/sdcard',
-                    ) 
-                    },
+                onPressed: () => Routes.browse(context, "randomID"),
                 child: const Icon(Icons.folder))
           ],
         ),

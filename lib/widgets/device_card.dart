@@ -14,7 +14,6 @@ class DeviceCard extends StatelessWidget {
   final String deviceName;
   final String deviceManufacturer;
   final String serialName;
-  static String selectedSerial;
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +38,9 @@ class DeviceCard extends StatelessWidget {
             Expanded(
               child: Padding(
                   padding: const EdgeInsets.all(5),
-                  child:
-                      TextButton(onPressed: () { selectedSerial = serialName; }, child: Text(serialName))),
+                  // TODO: Make this copy to clipboard or something
+                  // maybe device details page?
+                  child: TextButton(onPressed: () {}, child: Text(serialName))),
             )
           ],
         ),

@@ -32,6 +32,9 @@ class DeviceBrowser extends StatefulWidget {
 // TODO: Add download progress snackbar (similar to upload progress)
 // TODO: Make snackbar progress animation ease exponential because it looks
 // TODO: Pressing enter when editing a file does NOT close file rename mode.
+// TODO: Filter search bar by name
+// TODO: File details page
+// TODO: Search?
 
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;

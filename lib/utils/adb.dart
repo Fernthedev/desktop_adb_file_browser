@@ -30,7 +30,13 @@ abstract class Adb {
 
   static String fixPath(String path) {
     if (!path.startsWith("/")) path = "/$path";
-    return path.replaceAll('\\', '/');
+    return path
+        .replaceAll('\\', '/')
+        .replaceAll("'", "\\'")
+        .replaceAll(" ", "\\ ")
+        .replaceAll("(", "\\(")
+        .replaceAll(")", "\\)")
+        .replaceAll(".", "\\.");
   }
 
   // https://github.com/Lauriethefish/QuestPatcher/blob/37d6ee872bbc44f47b4994e5b95a7d0902797939/QuestPatcher.Core/AndroidDebugBridge.cs#L361
@@ -135,6 +141,18 @@ abstract class Adb {
   static Future<List<Device>> getDevices() async {
     return await Future.wait(
         (await getDevicesSerial())!.map((e) async => await getDevice(e)));
+  }
+
+  static Future<DateTime?> getFileModifiedDate(
+      String serialName, String path) async {
+    var out = await runAdbCommand(
+        serialName, ["shell", "stat -c %Y ${fixPath(path)}"]);
+
+    String? result = normalizeOutputAndError(out.stdout);
+
+    if (result == null) return null;
+
+    return DateTime.fromMillisecondsSinceEpoch(int.parse(result) * 1000);
   }
 }
 

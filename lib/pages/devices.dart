@@ -2,7 +2,7 @@ import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/device_card.dart';
 import 'package:flutter/material.dart';
 
-// TODO: Add wireless connection 
+// TODO: Add wireless connection
 // TODO: Add button for toggling device into wireless
 
 class DevicesPage extends StatefulWidget {
@@ -15,12 +15,12 @@ class DevicesPage extends StatefulWidget {
 }
 
 class _DevicesPageState extends State<DevicesPage> {
-  Future<List<Device>> _deviceListFuture =
-      Future.delayed(const Duration(seconds: 2), Adb.getDevices);
+  Future<List<Device>> _deviceListFuture = Adb.getDevices();
+  //Future.delayed(const Duration(seconds: 2), Adb.getDevices);
 
   void _refreshDevices() {
     _deviceListFuture =
-        Future.delayed(const Duration(seconds: 2), Adb.getDevices);
+        Adb.getDevices();
   }
 
   @override

@@ -11,13 +11,17 @@ import 'package:routemaster/routemaster.dart';
 
 final routes = RouteMap(routes: {
   '/': (_) => const MaterialPage(
-          child: MyHomePage(
+      key: ValueKey("main"),
+      child: MyHomePage(
         title: 'hi!',
       )),
 
-  '/devices': (_) => const MaterialPage(child: DevicesPage()),
+  '/devices': (_) =>
+      const MaterialPage(key: ValueKey("devices"), child: DevicesPage()),
+      
   '/browser/:device/:path': (info) => MaterialPage(
-          child: DeviceBrowser(
+      key: const ValueKey("browser"),
+      child: DeviceBrowser(
         serial: info.pathParameters['device']!,
         initialAddress: info.pathParameters['path']!,
       ))

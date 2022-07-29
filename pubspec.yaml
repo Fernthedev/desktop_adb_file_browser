@@ -44,6 +44,7 @@ dependencies:
   path: ^1.8.1
   multi_split_view: ^2.1.0
   drag_and_drop_windows: ^0.0.2
+  filesize: ^2.0.1
 
 dev_dependencies:
   flutter_test:

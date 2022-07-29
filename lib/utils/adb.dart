@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'dart:io';
 
 import 'package:path/path.dart';
@@ -152,6 +153,18 @@ abstract class Adb {
     if (result == null) return null;
 
     return DateTime.fromMillisecondsSinceEpoch(int.parse(result) * 1000);
+  }
+
+    static Future<int?> getFileSize(
+      String serialName, String path) async {
+    var out = await runAdbCommand(
+        serialName, ["shell", "stat -c %s ${fixPath(path)}"]);
+
+    String? result = normalizeOutputAndError(out.stdout);
+
+    if (result == null) return null;
+
+    return int.parse(result);
   }
 }
 

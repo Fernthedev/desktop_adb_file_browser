@@ -40,7 +40,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
   final TextEditingController _filterController = TextEditingController();
   late Future<List<String>?> _fileListingFuture;
-  Map<String, Future<DateTime?>> fileToDateTime = {}; // date time cache
+  Map<String, FileData> fileCache = {}; // date time cache
   late StreamSubscription dragReceiveSubscription;
 
   StackCollection<String> paths = StackCollection();
@@ -80,7 +80,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     if (path != null && oldAddressText == path) return;
 
     if (refetch) {
-      fileToDateTime = {};
+      fileCache = {};
       _fileListingFuture =
           Adb.getFilesInDirectory(widget.serial, path ?? _currentPath);
     }
@@ -284,6 +284,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             downloadFile: _saveFileToDesktop,
             renameFileCallback: _renameFile,
             modifiedTime: Future.value(null),
+            fileSize: Future.value(null),
           ));
         }).toList(growable: false));
   }
@@ -295,14 +296,15 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       controller: AdjustableScrollController(60),
       itemBuilder: (BuildContext context, int index) {
         var file = files[index];
-        var dateTime = fileToDateTime.putIfAbsent(
-            file, () => Adb.getFileModifiedDate(widget.serial, file));
+        var fileData = fileCache.putIfAbsent(
+            file, () => FileData(serialName: widget.serial, file: file));
 
         var isDir = file.endsWith("/");
 
         return FileWidgetUI(
           key: ValueKey(file),
-          modifiedTime: dateTime,
+          modifiedTime: fileData.lastModifiedTime,
+          fileSize: fileData.fileSize,
           isCard: false,
           isDirectory: isDir,
           fullFilePath: file,
@@ -455,4 +457,16 @@ class ShortcutsListWidget extends StatelessWidget {
       ),
     );
   }
+}
+
+class FileData {
+  final String file;
+  final String serialName;
+
+  Future<DateTime?> lastModifiedTime;
+  Future<int?> fileSize;
+
+  FileData({required this.serialName, required this.file})
+      : lastModifiedTime = Adb.getFileModifiedDate(serialName, file),
+        fileSize = Adb.getFileSize(serialName, file);
 }

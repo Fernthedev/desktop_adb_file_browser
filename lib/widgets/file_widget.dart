@@ -1,5 +1,6 @@
 import 'package:clipboard/clipboard.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
+import 'package:filesize/filesize.dart';
 
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
@@ -11,10 +12,12 @@ typedef DownloadFileCallback = Future<void> Function(
 typedef RenameFileCallback = Future<void> Function(
     String source, String newName);
 
+@immutable
 class FileWidgetUI extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
   final Future<DateTime?> modifiedTime;
+  final Future<int?> fileSize;
   final String fullFilePath;
   final bool isDirectory;
   final VoidCallback onClick;
@@ -31,7 +34,8 @@ class FileWidgetUI extends StatefulWidget {
       required this.downloadFile,
       required this.renameFileCallback,
       required this.isCard,
-      required this.modifiedTime})
+      required this.modifiedTime,
+      required this.fileSize})
       : super(key: key);
 
   @override
@@ -122,22 +126,9 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            // date tiem
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: FutureBuilder<DateTime?>(
-                  future: widget.modifiedTime,
-                  builder: ((context, snapshot) => Text(
-                        snapshot.data?.toLocal().toString() ??
-                            snapshot.error?.toString() ??
-                            "...",
-                        style: Theme.of(context).textTheme.subtitle2,
-                      ))),
-            ),
-            Container(
-              width: 2,
-              color: Theme.of(context).colorScheme.inverseSurface,
-            ),
+            _dateTime(),
+            ..._column(child: _fileSizeText()),
+
             // icons
 
             widget.isDirectory
@@ -274,5 +265,44 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
   @override
   Widget build(BuildContext context) {
     return widget.isCard ? _buildCard(context) : _buildListTile(context);
+  }
+
+  List<Widget> _column({required Widget child}) {
+    return [
+      child,
+      Container(
+        width: 2,
+        color: Theme.of(context).colorScheme.inverseSurface,
+      )
+    ];
+  }
+
+  Padding _dateTime() {
+    // date time
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: FutureBuilder<DateTime?>(
+          future: widget.modifiedTime,
+          builder: ((context, snapshot) => Text(
+                snapshot.data?.toLocal().toString() ??
+                    snapshot.error?.toString() ??
+                    "...",
+                style: Theme.of(context).textTheme.subtitle2,
+              ))),
+    );
+  }
+
+  _fileSizeText() {
+    // date time
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: FutureBuilder<int?>(
+          future: widget.fileSize,
+          builder: ((context, snapshot) => Text(
+                snapshot.error?.toString() ??
+                    (snapshot.data != null ? filesize(snapshot.data) : "..."),
+                style: Theme.of(context).textTheme.subtitle2,
+              ))),
+    );
   }
 }

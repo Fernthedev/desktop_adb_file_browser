@@ -264,6 +264,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   GridView _viewAsGrid(List<String> files) {
     return GridView.extent(
+        key: ValueKey(files),
         controller: AdjustableScrollController(60),
         childAspectRatio: 17.0 / 9.0,
         padding: const EdgeInsets.all(4.0),
@@ -275,6 +276,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
           return GridTile(
               child: FileWidgetUI(
+            key: ValueKey(file),
             isCard: true,
             isDirectory: isDir,
             fullFilePath: file,

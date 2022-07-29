@@ -100,11 +100,13 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     });
   }
 
-  void _exitEditMode() {
+  void _exitEditMode({bool save = true}) {
     setState(() {
       editable = false;
       _focusNode.unfocus();
-      _formKey.currentState?.save();
+      if (save) {
+        _formKey.currentState?.save();
+      }
     });
   }
 
@@ -182,7 +184,6 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
         );
   }
 
-  //  TODO: Fix submit not working on pressing enter
   // I hate this
   Form _fileNameForm() {
     return Form(
@@ -190,6 +191,10 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
       child: TextFormField(
         controller: _fileNameController,
         validator: validateNewName,
+        onEditingComplete: () {
+          renameFile();
+          _exitEditMode(save: false);
+        },
         onSaved: (s) => renameFile(),
         focusNode: _focusNode,
         decoration: const InputDecoration(
@@ -264,75 +269,5 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
   @override
   Widget build(BuildContext context) {
     return widget.isCard ? _buildCard(context) : _buildListTile(context);
-  }
-}
-
-// TODO:: Remove or move
-class ValidatableTextField extends StatefulWidget {
-  const ValidatableTextField(
-      {Key? key,
-      required this.initialValue,
-      this.fieldValidator,
-      this.onSubmit,
-      required this.focusNode})
-      : super(key: key);
-
-  final FocusNode focusNode;
-  final String initialValue;
-  final FormFieldValidator<String>? fieldValidator;
-  final ValueChanged<String>? onSubmit;
-
-  @override
-  State<ValidatableTextField> createState() => ValidatableTextFieldState();
-}
-
-class ValidatableTextFieldState extends State<ValidatableTextField> {
-  late final TextEditingController _editingController;
-
-  @override
-  void initState() {
-    super.initState();
-    _editingController = TextEditingController(text: widget.initialValue);
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _editingController.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: _editingController,
-      onChanged: (s) {
-        setState(() {});
-      },
-      onSubmitted: (s) {
-        debugPrint("submit");
-        widget.onSubmit!(s);
-      },
-      focusNode: widget.focusNode,
-      decoration: InputDecoration(
-        errorText: widget.fieldValidator != null
-            ? widget.fieldValidator!(_editingController.text)
-            : null,
-        floatingLabelBehavior: FloatingLabelBehavior.never,
-        focusedErrorBorder: InputBorder.none,
-        enabledBorder: InputBorder.none,
-        focusedBorder: const UnderlineInputBorder(),
-        border: InputBorder.none,
-        disabledBorder: InputBorder.none,
-        errorBorder: InputBorder.none,
-        fillColor: null,
-        filled: false,
-      ),
-      enabled: true,
-      autofocus: false,
-      maxLines: 1,
-      autocorrect: false,
-      enableSuggestions: false,
-      maxLengthEnforcement: MaxLengthEnforcement.truncateAfterCompositionEnds,
-    );
   }
 }

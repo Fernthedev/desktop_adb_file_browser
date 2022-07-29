@@ -56,12 +56,17 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     super.initState();
     fullFilePath = widget.fullFilePath;
     _fileNameController = TextEditingController(text: friendlyFileName);
+    // Exit rename mode when clicked away
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) _exitEditMode(save: true);
+    });
   }
 
   @override
   void dispose() {
     super.dispose();
     _fileNameController.dispose();
+    _focusNode.dispose();
   }
 
   Future<void> copyPathToClipboard() {

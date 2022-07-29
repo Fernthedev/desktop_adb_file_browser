@@ -140,11 +140,16 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
             ),
             // icons
 
-            IconButton(
-              icon: Icon(widget.isDirectory ? Icons.download_rounded : null),
-              onPressed: saveToDesktop,
-              splashRadius: FileWidgetUI._iconSplashRadius,
-            ),
+            widget.isDirectory
+                ? IconButton(
+                    icon: const Icon(Icons.download_rounded),
+                    onPressed: saveToDesktop,
+                    enableFeedback: false,
+                    splashRadius: FileWidgetUI._iconSplashRadius,
+                  )
+                : const SizedBox(
+                    width: 20 + 24, // 20 + iconSize
+                  ),
             IconButton(
               // TODO: Add user feedback when this occurs
               icon: const Icon(Icons.copy),

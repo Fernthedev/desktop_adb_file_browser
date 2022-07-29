@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:routemaster/routemaster.dart';
 
+@immutable
 class DeviceBrowser extends StatefulWidget {
   final String serial;
   final TextEditingController _addressBar;
@@ -38,7 +39,9 @@ class DeviceBrowser extends StatefulWidget {
 
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
+  final TextEditingController _filterController = TextEditingController();
   late Future<List<String>?> _fileListingFuture;
+  Map<String, Future<DateTime?>> fileToDateTime = {}; // date time cache
   late StreamSubscription dragReceiveSubscription;
 
   StackCollection<String> paths = StackCollection();
@@ -59,7 +62,10 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   String get _currentPath => widget._addressBar.text;
 
   void _refreshFiles(
-      {String? path, bool pushToHistory = true, bool updateState = true}) {
+      {String? path,
+      bool pushToHistory = true,
+      bool updateState = true,
+      bool refetch = true}) {
     var oldAddressText = _currentPath;
 
     if (path != null) {
@@ -74,8 +80,11 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     /// on the address bar because the address bar passes [path] as null
     if (path != null && oldAddressText == path) return;
 
-    _fileListingFuture =
-        Adb.getFilesInDirectory(widget.serial, path ?? _currentPath);
+    if (refetch) {
+      fileToDateTime = {};
+      _fileListingFuture =
+          Adb.getFilesInDirectory(widget.serial, path ?? _currentPath);
+    }
     if (updateState) {
       setState(() {});
     }
@@ -88,10 +97,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Row(
-          children: [
-            _navigationActions(),
-            _addressBar(),
-          ],
+          children: [_navigationActions(), _addressBar(), _filterBar()],
         ),
         leading: IconButton(
           icon: const Icon(FluentIcons.folder_24_regular),
@@ -169,11 +175,40 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   Expanded _addressBar() {
     return Expanded(
+      flex: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: TextField(
+          controller: widget._addressBar,
+          autocorrect: false,
+          onSubmitted: (s) {
+            _refreshFiles();
+          },
+          decoration: const InputDecoration(
+            // cool animation border effect
+            // this makes it rectangular when not selected
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.all(Radius.circular(10.0)),
+            ),
+            hintText: 'Path',
+            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            constraints: BoxConstraints.tightFor(height: 40),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Expanded _filterBar() {
+    return Expanded(
       child: TextField(
-        controller: widget._addressBar,
+        controller: _filterController,
         autocorrect: false,
+        onChanged: (s) {
+          _refreshFiles(refetch: false);
+        },
         onSubmitted: (s) {
-          _refreshFiles();
+          _refreshFiles(refetch: false);
         },
         decoration: const InputDecoration(
           // cool animation border effect
@@ -182,42 +217,48 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             borderRadius: BorderRadius.all(Radius.circular(10.0)),
           ),
           hintText: 'Search',
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           constraints: BoxConstraints.tightFor(height: 40),
         ),
       ),
     );
   }
 
+  Iterable<String> _filteredFiles(Iterable<String> files) {
+    var filter = _filterController.text.toLowerCase();
+    return files.where((element) => element.toLowerCase().contains(filter));
+  }
+
   FutureBuilder<List<String>?> _fileView() {
     return FutureBuilder(
       future: _fileListingFuture,
+      key: ValueKey(_fileListingFuture),
       builder: (BuildContext context, AsyncSnapshot<List<String>?> snapshot) {
         //  TODO: Error handling
         if (snapshot.hasData &&
             snapshot.data != null &&
             snapshot.connectionState == ConnectionState.done) {
-          return list
-              ? _viewAsList(snapshot.data!)
-              : _viewAsGrid(snapshot.data!);
-        } else {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const <Widget>[
-                SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: CircularProgressIndicator(),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(top: 16),
-                  child: Text('Awaiting result...'),
-                )
-              ],
-            ),
-          );
+          var filteredList =
+              _filteredFiles(snapshot.data!).toList(growable: false);
+          return list ? _viewAsList(filteredList) : _viewAsGrid(filteredList);
         }
+
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const <Widget>[
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: CircularProgressIndicator(),
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: Text('Awaiting result...'),
+              )
+            ],
+          ),
+        );
       },
     );
   }
@@ -248,17 +289,19 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   ListView _viewAsList(List<String> files) {
     return ListView.builder(
-      key: UniqueKey(),
+      key: ValueKey(files),
       addAutomaticKeepAlives: true,
       controller: AdjustableScrollController(60),
       itemBuilder: (BuildContext context, int index) {
         var file = files[index];
+        var dateTime = fileToDateTime.putIfAbsent(
+            file, () => Adb.getFileModifiedDate(widget.serial, file));
 
         var isDir = file.endsWith("/");
 
         return FileWidgetUI(
           key: ValueKey(file),
-          modifiedTime: Adb.getFileModifiedDate(widget.serial, file),
+          modifiedTime: dateTime,
           isCard: false,
           isDirectory: isDir,
           fullFilePath: file,

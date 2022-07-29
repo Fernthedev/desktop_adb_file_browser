@@ -30,8 +30,8 @@ class DeviceBrowser extends StatefulWidget {
 // TODO: Add shortcuts (sidebar?)
 // TODO: Make new file have a file name dialog
 // TODO: Add download progress snackbar (similar to upload progress)
-// TODO: Make snackbar progress animation ease exponential because it looks 
-// TODO: Pressing enter when editing a file does NOT close file rename mode. 
+// TODO: Make snackbar progress animation ease exponential because it looks
+// TODO: Pressing enter when editing a file does NOT close file rename mode.
 
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
@@ -238,12 +238,15 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             onClick: isDir ? () => _directoryClick(file) : () {},
             downloadFile: _saveFileToDesktop,
             renameFileCallback: _renameFile,
+            modifiedTime: Future.value(null),
           ));
         }).toList(growable: false));
   }
 
   ListView _viewAsList(List<String> files) {
     return ListView.builder(
+      key: UniqueKey(),
+      addAutomaticKeepAlives: true,
       controller: AdjustableScrollController(60),
       itemBuilder: (BuildContext context, int index) {
         var file = files[index];
@@ -251,6 +254,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         var isDir = file.endsWith("/");
 
         return FileWidgetUI(
+          key: ValueKey(file),
+          modifiedTime: Adb.getFileModifiedDate(widget.serial, file),
           isCard: false,
           isDirectory: isDir,
           fullFilePath: file,

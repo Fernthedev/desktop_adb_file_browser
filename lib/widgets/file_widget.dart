@@ -14,6 +14,7 @@ typedef RenameFileCallback = Future<void> Function(
 class FileWidgetUI extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
+  final Future<DateTime?> modifiedTime;
   final String fullFilePath;
   final bool isDirectory;
   final VoidCallback onClick;
@@ -29,7 +30,8 @@ class FileWidgetUI extends StatefulWidget {
       required this.onClick,
       required this.downloadFile,
       required this.renameFileCallback,
-      required this.isCard})
+      required this.isCard,
+      required this.modifiedTime})
       : super(key: key);
 
   @override
@@ -118,13 +120,29 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            widget.isDirectory
-                ? const Icon(null)
-                : IconButton(
-                    icon: const Icon(Icons.download_rounded),
-                    onPressed: saveToDesktop,
-                    splashRadius: FileWidgetUI._iconSplashRadius,
-                  ),
+            // date tiem
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: FutureBuilder<DateTime?>(
+                  future: widget.modifiedTime,
+                  builder: ((context, snapshot) => Text(
+                        snapshot.data?.toLocal().toString() ??
+                            snapshot.error?.toString() ??
+                            "...",
+                        style: Theme.of(context).textTheme.subtitle2,
+                      ))),
+            ),
+            Container(
+              width: 2,
+              color: Theme.of(context).colorScheme.inverseSurface,
+            ),
+            // icons
+
+            IconButton(
+              icon: Icon(widget.isDirectory ? Icons.download_rounded : null),
+              onPressed: saveToDesktop,
+              splashRadius: FileWidgetUI._iconSplashRadius,
+            ),
             IconButton(
               // TODO: Add user feedback when this occurs
               icon: const Icon(Icons.copy),

@@ -96,7 +96,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         leading: IconButton(
           icon: const Icon(FluentIcons.folder_24_regular),
           onPressed: () {
-            Routemaster.of(context).pop();
+            Routemaster.of(context).history.back();
           },
         ),
         actions: [

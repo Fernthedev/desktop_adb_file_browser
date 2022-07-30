@@ -45,10 +45,12 @@ dependencies:
   multi_split_view: ^2.1.0
   drag_and_drop_windows: ^0.0.2
   filesize: ^2.0.1
+  win32: ^2.7.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  pigeon: ^3.2.6
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

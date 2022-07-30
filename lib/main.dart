@@ -1,5 +1,7 @@
 import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
+import 'package:desktop_adb_file_browser/pigeon.dart';
+import 'package:desktop_adb_file_browser/pigeon_impl.dart';
 import 'package:desktop_adb_file_browser/routes.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
@@ -18,7 +20,7 @@ final routes = RouteMap(routes: {
 
   '/devices': (_) =>
       const MaterialPage(key: ValueKey("devices"), child: DevicesPage()),
-      
+
   '/browser/:device/:path': (info) => MaterialPage(
       key: const ValueKey("browser"),
       child: DeviceBrowser(
@@ -33,6 +35,8 @@ final routes = RouteMap(routes: {
   // ),
 });
 
+late Native2FlutterImpl native2flutter;
+
 void main() {
   LicenseRegistry.addLicense(() async* {
     final license = await rootBundle.loadString('google_fonts/OFL.txt');
@@ -40,6 +44,8 @@ void main() {
   });
 
   runApp(const MyApp());
+  debugPrint("Pigeon");
+  native2flutter = Native2FlutterImpl();
 }
 
 class MyApp extends StatelessWidget {

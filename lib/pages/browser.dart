@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:collection';
 
+import 'package:desktop_adb_file_browser/main.dart';
+import 'package:desktop_adb_file_browser/pigeon_impl.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
+import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
 import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
@@ -42,14 +46,21 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   late Future<List<String>?> _fileListingFuture;
   Map<String, FileData> fileCache = {}; // date time cache
   late StreamSubscription dragReceiveSubscription;
+  late ListenableHolder<void> onForwardClick;
+  late ListenableHolder<void> onBackClick;
+
   final ScrollController _scrollController = AdjustableScrollController(60);
 
-  StackCollection<String> paths = StackCollection();
+  final StackCollection<String> _paths = StackCollection();
+  final StackCollection<String> _forwardPaths = StackCollection();
 
   @override
   void initState() {
     super.initState();
     dragReceiveSubscription = dropEventStream.listen(_uploadFiles);
+    onForwardClick =
+        native2flutter.mouseForwardClick.addListener((_) => forward());
+    onBackClick = native2flutter.mouseBackClick.addListener((_) => back());
     _refreshFiles(updateState: false, pushToHistory: false);
   }
 
@@ -57,22 +68,49 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   void dispose() {
     super.dispose();
     dragReceiveSubscription.cancel();
+    onForwardClick.dispose();
+    onBackClick.dispose();
   }
 
   String get _currentPath => widget._addressBar.text;
 
+  void back() {
+    if (_paths.isEmpty) return;
+
+    debugPrint("Pushed forward $_currentPath");
+    _forwardPaths.push(_currentPath);
+    _refreshFiles(
+        path: _paths.pop(), pushToHistory: false, clearForwardHistory: false);
+  }
+
+  void forward() {
+    debugPrint("Forward path ${_forwardPaths.isNotEmpty}");
+    if (_forwardPaths.isEmpty) return;
+
+    _refreshFiles(
+        path: _forwardPaths.pop(),
+        pushToHistory: true,
+        clearForwardHistory: false);
+  }
+
   void _refreshFiles(
       {String? path,
       bool pushToHistory = true,
+      bool clearForwardHistory = true,
       bool updateState = true,
       bool refetch = true}) {
     var oldAddressText = _currentPath;
 
     if (path != null) {
       if (pushToHistory) {
-        paths.push(_currentPath);
+        _paths.push(_currentPath);
       }
       widget._addressBar.text = path;
+    }
+
+    if (clearForwardHistory) {
+      _forwardPaths.clear();
+      debugPrint("clear forward");
     }
 
     /// Don't refresh unnecessarily
@@ -159,7 +197,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             FluentIcons.arrow_left_20_regular,
           ),
           onPressed: () {
-            _refreshFiles(path: paths.pop(), pushToHistory: false);
+            back();
           },
         ),
         IconButton(

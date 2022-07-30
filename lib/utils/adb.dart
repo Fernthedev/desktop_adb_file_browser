@@ -155,8 +155,7 @@ abstract class Adb {
     return DateTime.fromMillisecondsSinceEpoch(int.parse(result) * 1000);
   }
 
-    static Future<int?> getFileSize(
-      String serialName, String path) async {
+  static Future<int?> getFileSize(String serialName, String path) async {
     var out = await runAdbCommand(
         serialName, ["shell", "stat -c %s ${fixPath(path)}"]);
 
@@ -165,6 +164,22 @@ abstract class Adb {
     if (result == null) return null;
 
     return int.parse(result);
+  }
+
+  static Future<void> createDirectory(String serialName, String path) async {
+    await runAdbCommand(serialName, ["shell", "mkdir -p ${fixPath(path)}"]);
+  }
+
+  static Future<void> createFile(String serialName, String path) async {
+    await runAdbCommand(serialName, ["shell", "touch ${fixPath(path)}"]);
+  }
+
+   static Future<void> removeFile(String serialName, String path) async {
+    await runAdbCommand(serialName, ["shell", "rm ${fixPath(path)}"]);
+  }
+
+  static Future<void> removeDirectory(String serialName, String path) async {
+    await runAdbCommand(serialName, ["shell", "rm -r ${fixPath(path)}"]);
   }
 }
 

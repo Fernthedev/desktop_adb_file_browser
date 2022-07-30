@@ -11,6 +11,7 @@ typedef DownloadFileCallback = Future<void> Function(
 
 typedef RenameFileCallback = Future<void> Function(
     String source, String newName);
+typedef DeleteCallback = Future<void> Function(String source, bool file);
 
 @immutable
 class FileWidgetUI extends StatefulWidget {
@@ -21,6 +22,7 @@ class FileWidgetUI extends StatefulWidget {
   final String fullFilePath;
   final bool isDirectory;
   final VoidCallback onClick;
+  final DeleteCallback onDelete;
   final DownloadFileCallback downloadFile;
   final RenameFileCallback renameFileCallback;
 
@@ -35,7 +37,8 @@ class FileWidgetUI extends StatefulWidget {
       required this.renameFileCallback,
       required this.isCard,
       required this.modifiedTime,
-      required this.fileSize})
+      required this.fileSize,
+      required this.onDelete})
       : super(key: key);
 
   @override
@@ -56,7 +59,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     super.initState();
     fullFilePath = widget.fullFilePath;
     _fileNameController = TextEditingController(text: friendlyFileName);
-    // Exit rename mode when clicked away
+    // Exit rename mode when clicked away/unfocused
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus) _exitEditMode(save: true);
     });
@@ -69,15 +72,19 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     _focusNode.dispose();
   }
 
-  Future<void> copyPathToClipboard() {
+  Future<void> _deleteSelf() {
+    return widget.onDelete(widget.fullFilePath, !widget.isDirectory);
+  }
+
+  Future<void> _copyPathToClipboard() {
     return FlutterClipboard.copy(widget.fullFilePath);
   }
 
-  Future<void> saveToDesktop() {
+  Future<void> _saveToDesktop() {
     return widget.downloadFile(widget.fullFilePath, friendlyFileName);
   }
 
-  Future<void> renameFile() {
+  Future<void> _renameFile() {
     var newName = _fileNameController.text;
     var future = widget.renameFileCallback(fullFilePath, newName);
 
@@ -92,7 +99,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     return future;
   }
 
-  String? validateNewName(String? newName) {
+  String? _validateNewName(String? newName) {
     if (newName == null || newName.isEmpty) {
       return "New name cannot be empty";
     }
@@ -142,14 +149,14 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                   )
                 : IconButton(
                     icon: const Icon(Icons.download_rounded),
-                    onPressed: saveToDesktop,
+                    onPressed: _saveToDesktop,
                     enableFeedback: false,
                     splashRadius: FileWidgetUI._iconSplashRadius,
                   ),
             IconButton(
               // TODO: Add user feedback when this occurs
               icon: const Icon(Icons.copy),
-              onPressed: copyPathToClipboard,
+              onPressed: _copyPathToClipboard,
               splashRadius: FileWidgetUI._iconSplashRadius,
               tooltip: "Copy to clipboard",
             ),
@@ -157,7 +164,12 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                 splashRadius: FileWidgetUI._iconSplashRadius,
                 onPressed: !editable ? _enterEditMode : _exitEditMode,
                 icon: Icon(editable ? Icons.check : Icons.edit)),
-            const Icon(Icons.delete_forever),
+            IconButton(
+              icon: const Icon(Icons.delete_forever),
+              onPressed: _deleteSelf,
+              splashRadius: FileWidgetUI._iconSplashRadius,
+              tooltip: "Delete",
+            ),
           ],
         ),
         onLongPress: _enterEditMode,
@@ -191,12 +203,12 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
       key: _formKey,
       child: TextFormField(
         controller: _fileNameController,
-        validator: validateNewName,
+        validator: _validateNewName,
         onEditingComplete: () {
-          renameFile();
+          _renameFile();
           _exitEditMode(save: false);
         },
-        onSaved: (s) => renameFile(),
+        onSaved: (s) => _renameFile(),
         focusNode: _focusNode,
         decoration: const InputDecoration(
           floatingLabelBehavior: FloatingLabelBehavior.never,
@@ -248,13 +260,17 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                     ? const Icon(null)
                     : IconButton(
                         icon: const Icon(Icons.download_rounded),
-                        onPressed: saveToDesktop,
+                        onPressed: _saveToDesktop,
                       ),
                 IconButton(
                     icon: const Icon(Icons.copy),
-                    onPressed: copyPathToClipboard),
+                    onPressed: _copyPathToClipboard),
                 IconButton(
-                    icon: const Icon(Icons.delete_forever), onPressed: () {}),
+                  icon: const Icon(Icons.delete_forever),
+                  onPressed: _deleteSelf,
+                  splashRadius: FileWidgetUI._iconSplashRadius,
+                  tooltip: "Delete",
+                ),
               ],
             )
           ],
@@ -297,7 +313,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     );
   }
 
-  _fileSizeText() {
+  Padding _fileSizeText() {
     // date time
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8.0),

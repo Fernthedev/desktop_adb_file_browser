@@ -42,6 +42,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   late Future<List<String>?> _fileListingFuture;
   Map<String, FileData> fileCache = {}; // date time cache
   late StreamSubscription dragReceiveSubscription;
+  final ScrollController _scrollController = AdjustableScrollController(60);
 
   StackCollection<String> paths = StackCollection();
 
@@ -131,7 +132,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          _refreshFiles();
+          _showNewFileDialog();
         },
         tooltip: 'Add new file',
         child: const Icon(Icons.add),
@@ -265,7 +266,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   GridView _viewAsGrid(List<String> files) {
     return GridView.extent(
         key: ValueKey(files),
-        controller: AdjustableScrollController(60),
+        controller: _scrollController,
         childAspectRatio: 17.0 / 9.0,
         padding: const EdgeInsets.all(4.0),
         mainAxisSpacing: 4.0,
@@ -285,6 +286,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             renameFileCallback: _renameFile,
             modifiedTime: Future.value(null),
             fileSize: Future.value(null),
+            onDelete: _removeFileDialog,
           ));
         }).toList(growable: false));
   }
@@ -293,7 +295,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     return ListView.builder(
       key: ValueKey(files),
       addAutomaticKeepAlives: true,
-      controller: AdjustableScrollController(60),
+      controller: _scrollController,
       itemBuilder: (BuildContext context, int index) {
         var file = files[index];
         var fileData = fileCache.putIfAbsent(
@@ -311,6 +313,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           onClick: isDir ? () => _directoryClick(file) : () {},
           downloadFile: _saveFileToDesktop,
           renameFileCallback: _renameFile,
+          onDelete: _removeFileDialog,
         );
       },
       itemCount: files.length,
@@ -384,6 +387,92 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     await Adb.moveFile(widget.serial, source,
         Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
   }
+
+  Future<void> _removeFileDialog(String path, bool file) async {
+    await showDialog<void>(
+        context: context,
+        builder: ((context) => AlertDialog(
+              title: const Text("Confirm?"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                      "Are you sure you want to delete this file/folder?"),
+                  Text(path)
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text('Ok'),
+                  onPressed: () {
+                    if (file) {
+                      Adb.removeFile(widget.serial, path);
+                    } else {
+                      Adb.removeDirectory(widget.serial, path);
+                    }
+                    _refreshFiles(refetch: true);
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            )));
+  }
+
+  Future<void> _showNewFileDialog() async {
+    final TextEditingController fileNameController = TextEditingController();
+    final ValueNotifier<FileCreation> fileCreation =
+        ValueNotifier(FileCreation.file);
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Create new file'),
+        content: NewFileDialog(
+          fileNameController: fileNameController,
+          fileCreation: fileCreation,
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: const Text('Ok'),
+            onPressed: () {
+              var path = Adb.adbPathContext
+                  .join(_currentPath, fileNameController.text);
+
+              switch (fileCreation.value) {
+                case FileCreation.file:
+                  Adb.createFile(widget.serial, path);
+
+                  break;
+                case FileCreation.folder:
+                  Adb.createDirectory(widget.serial, path);
+                  break;
+              }
+
+              _refreshFiles(refetch: true);
+
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      ),
+    );
+
+    fileNameController.dispose();
+    fileCreation.dispose();
+  }
 }
 
 class UploadingFilesWidget extends StatefulWidget {
@@ -392,9 +481,7 @@ class UploadingFilesWidget extends StatefulWidget {
       : super(key: key);
 
   final int taskAmount;
-  final ValueListenable<double>
-      progressIndications; // I need to figure out a better thing for this
-  // TODO: ValueListenableBuilder
+  final ValueListenable<double> progressIndications;
 
   @override
   State<UploadingFilesWidget> createState() => _UploadingFilesWidgetState();
@@ -469,4 +556,57 @@ class FileData {
   FileData({required this.serialName, required this.file})
       : lastModifiedTime = Adb.getFileModifiedDate(serialName, file),
         fileSize = Adb.getFileSize(serialName, file);
+}
+
+enum FileCreation { file, folder }
+
+class NewFileDialog extends StatefulWidget {
+  const NewFileDialog(
+      {Key? key, required this.fileNameController, required this.fileCreation})
+      : super(key: key);
+
+  final TextEditingController fileNameController;
+  final ValueNotifier<FileCreation> fileCreation;
+
+  @override
+  State<NewFileDialog> createState() => _NewFileDialogState();
+}
+
+class _NewFileDialogState extends State<NewFileDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextFormField(
+          controller: widget.fileNameController,
+          autocorrect: false,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: "New file"),
+        ),
+        Row(
+          children: [
+            _fileRadio(FileCreation.file),
+            _fileRadio(FileCreation.folder)
+          ],
+        )
+      ],
+    );
+  }
+
+  Row _fileRadio(FileCreation f) {
+    return Row(
+      children: [
+        Text(f.name),
+        Radio<FileCreation>(
+            value: f,
+            groupValue: widget.fileCreation.value,
+            onChanged: ((value) {
+              setState(() {
+                widget.fileCreation.value = value ?? FileCreation.file;
+              });
+            })),
+      ],
+    );
+  }
 }

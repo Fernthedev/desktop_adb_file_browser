@@ -46,6 +46,8 @@ dependencies:
   drag_and_drop_windows: ^0.0.2
   filesize: ^2.0.1
   win32: ^2.7.0
+  dio: ^4.0.6
+  archive: ^3.3.1
 
 dev_dependencies:
   flutter_test:

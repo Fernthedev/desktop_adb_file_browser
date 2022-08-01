@@ -1,5 +1,12 @@
 {
     "editor.formatOnPaste": true,
     "editor.formatOnSave": true,
-    "cmake.sourceDirectory": "${workspaceFolder}/windows"
+    "cmake.sourceDirectory": "${workspaceFolder}/windows",
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "files.associations": {
+        "*.dat": "json",
+        "variant": "cpp",
+        "vector": "cpp",
+        "memory": "cpp"
+    }
 }

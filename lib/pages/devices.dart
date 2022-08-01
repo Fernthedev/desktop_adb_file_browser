@@ -1,6 +1,7 @@
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/device_card.dart';
 import 'package:flutter/material.dart';
+import 'package:routemaster/routemaster.dart';
 
 // TODO: Add wireless connection
 // TODO: Add button for toggling device into wireless
@@ -36,6 +37,7 @@ class _DevicesPageState extends State<DevicesPage> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: const Text(DevicesPage.title),
+        automaticallyImplyLeading: Routemaster.of(context).history.canGoBack,
       ),
       body: Center(
           // Center is a layout widget. It takes a single child and positions it

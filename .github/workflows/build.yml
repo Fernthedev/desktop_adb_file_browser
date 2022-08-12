@@ -12,26 +12,26 @@ jobs:
 
     strategy:
       matrix:
-        target: [macos-arm64, macos-x86, windows-x86, linux-x86]
+        target: [macos-arm64, macos-x64, windows-x64, linux-x64]
         include:
         - target: macos-arm64
           os: macos
           arch: arm64
           runner: macOS-latest
 
-        - target: macos-x86
+        - target: macos-x64
           os: macos
-          arch: x86
+          arch: x64
           runner: macOS-latest
 
-        - target: windows-x86
+        - target: windows-x64
           os: windows
-          arch: x86
+          arch: x64
           runner: windows-latest
 
-        - target: linux-x86
+        - target: linux-x64
           os: linux
-          arch: x86
+          arch: x64
           runner: ubuntu-latest
 
 

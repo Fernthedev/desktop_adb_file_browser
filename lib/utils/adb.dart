@@ -85,7 +85,14 @@ abstract class Adb {
       }
     }
 
-    return Process.run(_adbCurrentPath!, newArgs);
+    var process = await Process.run(_adbCurrentPath!, newArgs);
+    if (process.stderr != null && process.stderr.toString().isNotEmpty) {
+      throw process.stderr.toString();
+    }
+
+    if (process.exitCode != 0) throw "Process exit code was not 0!";
+
+    return process;
   }
 
   static String normalizeOutput(String output) {
@@ -102,16 +109,22 @@ abstract class Adb {
     return result;
   }
 
-  static String fixPath(String path) {
+  static String fixPath(String path, {bool addQuotes = true}) {
     if (!path.startsWith("/")) path = "/$path";
-    return path
-        .replaceAll('\\', '/')
-        .replaceAll("'", "\\'")
-        .replaceAll(" ", "\\ ")
-        .replaceAll("(", "\\(")
-        .replaceAll(")", "\\)")
-        .replaceAll("&", "\\&")
-        .replaceAll("|", "\\|");
+
+    if (!addQuotes) {
+      return path;
+    }
+    return "\"$path\"";
+
+    // return path
+    //     .replaceAll('\\', '/')
+    //     .replaceAll("'", "\\'")
+    //     .replaceAll(" ", "\\ ")
+    //     .replaceAll("(", "\\(")
+    //     .replaceAll(")", "\\)")
+    //     .replaceAll("&", "\\&")
+    //     .replaceAll("|", "\\|");
   }
 
   // https://github.com/Lauriethefish/QuestPatcher/blob/37d6ee872bbc44f47b4994e5b95a7d0902797939/QuestPatcher.Core/AndroidDebugBridge.cs#L361
@@ -139,10 +152,9 @@ abstract class Adb {
 
   static Future<List<String>?> getFilesInDirectory(
       String? serialName, String path) async {
-    path = fixPath(path);
-    var result = await runAdbCommand(serialName, ["shell", "ls -p \"$path\""]);
+    var result = await runAdbCommand(serialName, ["shell", "ls -p ${fixPath(path)}"]);
 
-    return parsePaths(normalizeOutput(result.stdout), path, false);
+    return parsePaths(normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false);
   }
 
   static Future<List<String>?> getDevicesSerial() async {
@@ -174,8 +186,8 @@ abstract class Adb {
 
   static Future<String> moveFile(
       String? serialName, String source, String dest) async {
-    source = fixPath(source).replaceAll(" ", "\\ "); //???
-    dest = fixPath(dest).replaceAll(" ", "\\ ");
+    source = fixPath(source);
+    dest = fixPath(dest);
     var result = await runAdbCommand(serialName, ["shell", "mv", source, dest]);
 
     return normalizeOutput(result.stdout);
@@ -197,7 +209,7 @@ abstract class Adb {
     var result = await runAdbCommand(serialName, [
       "push",
       "\"$source\"",
-      "\"${fixPath(destination)}\"",
+      fixPath(destination),
     ]);
 
     return normalizeOutput(result.stdout);

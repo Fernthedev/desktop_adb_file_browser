@@ -31,7 +31,7 @@ class DeviceBrowser extends StatefulWidget {
 
   DeviceBrowser(
       {Key? key, required String initialAddress, required this.serial})
-      : _addressBar = TextEditingController(text: Adb.fixPath(initialAddress)),
+      : _addressBar = TextEditingController(text: Adb.fixPath(initialAddress, addQuotes: false)),
         super(key: key);
 
   @override

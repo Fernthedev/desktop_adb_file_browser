@@ -55,13 +55,13 @@ jobs:
     - run: flutter build ${{matrix.os}}
       
     - name: Create MSIX installer
-      if: ${{matrix.os}} == "windows"
+      if: contains(matrix.runner, 'windows')
       run: flutter pub run msix:create
       
       # TODO: Linux and Mac artifacts
 
     - name: Upload Windows artifacts (archive)
-      if: ${{matrix.os}} == "windows"
+      if: contains(matrix.runner, 'windows')
       uses: actions/upload-artifact@v2
       with:
         name: ${{ runner.target }}
@@ -70,7 +70,7 @@ jobs:
         if-no-files-found: error
 
     - name: Upload Windows MSIX installer
-      if: ${{matrix.os}} == "windows"
+      if: contains(matrix.runner, 'windows')
       uses: actions/upload-artifact@v2
       with:
         name: ${{ runner.target }}

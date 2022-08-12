@@ -21,6 +21,13 @@ import 'package:routemaster/routemaster.dart';
 class DeviceBrowser extends StatefulWidget {
   final String serial;
   final TextEditingController _addressBar;
+  final TextEditingController _filterController = TextEditingController();
+  
+  final ScrollController _scrollController = AdjustableScrollController(60);
+
+  final StackCollection<String> _paths = StackCollection();
+  final StackCollection<String> _forwardPaths = StackCollection();
+
 
   DeviceBrowser(
       {Key? key, required String initialAddress, required this.serial})
@@ -44,16 +51,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   late Future<List<String>?> _fileListingFuture;
   Map<String, FileData> fileCache = {}; // date time cache
 
-  final TextEditingController _filterController = TextEditingController();
-
-  late StreamSubscription dragReceiveSubscription;
   late ListenableHolder<void> onForwardClick;
   late ListenableHolder<void> onBackClick;
-
-  final ScrollController _scrollController = AdjustableScrollController(60);
-
-  final StackCollection<String> _paths = StackCollection();
-  final StackCollection<String> _forwardPaths = StackCollection();
 
   @override
   void initState() {
@@ -67,7 +66,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   @override
   void dispose() {
     super.dispose();
-    dragReceiveSubscription.cancel();
     onForwardClick.dispose();
     onBackClick.dispose();
   }
@@ -75,20 +73,20 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   String get _currentPath => widget._addressBar.text;
 
   void back() {
-    if (_paths.isEmpty) return;
+    if (widget._paths.isEmpty) return;
     debugPrint("Pushed back $_currentPath");
 
-    _forwardPaths.push(_currentPath);
+    widget._forwardPaths.push(_currentPath);
     _refreshFiles(
-        path: _paths.pop(), pushToHistory: false, clearForwardHistory: false);
+        path: widget._paths.pop(), pushToHistory: false, clearForwardHistory: false);
   }
 
   void forward() {
-    if (_forwardPaths.isEmpty) return;
-    debugPrint("Pushed forward ${_forwardPaths.isNotEmpty}");
+    if (widget._forwardPaths.isEmpty) return;
+    debugPrint("Pushed forward ${widget._forwardPaths.isNotEmpty}");
 
     _refreshFiles(
-        path: _forwardPaths.pop(),
+        path: widget._forwardPaths.pop(),
         pushToHistory: true,
         clearForwardHistory: false);
   }
@@ -103,13 +101,13 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
     if (path != null) {
       if (pushToHistory) {
-        _paths.push(_currentPath);
+        widget._paths.push(_currentPath);
       }
       widget._addressBar.text = path;
     }
 
     if (clearForwardHistory) {
-      _forwardPaths.clear();
+      widget._forwardPaths.clear();
       debugPrint("clear forward");
     }
 
@@ -265,7 +263,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   Expanded _filterBar() {
     return Expanded(
       child: TextField(
-        controller: _filterController,
+        controller: widget._filterController,
         autocorrect: false,
         onChanged: (s) {
           _refreshFiles(refetch: false);
@@ -309,7 +307,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   }
 
   Iterable<String> _filteredFiles(Iterable<String> files) {
-    var filter = _filterController.text.toLowerCase();
+    var filter = widget._filterController.text.toLowerCase();
     return files.where((element) => element.toLowerCase().contains(filter));
   }
 
@@ -371,7 +369,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   GridView _viewAsGrid(List<String> files) {
     return GridView.extent(
         key: ValueKey(files),
-        controller: _scrollController,
+        controller: widget._scrollController,
         childAspectRatio: 17.0 / 9.0,
         padding: const EdgeInsets.all(4.0),
         mainAxisSpacing: 4.0,
@@ -400,7 +398,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     return ListView.builder(
       key: ValueKey(files),
       addAutomaticKeepAlives: true,
-      controller: _scrollController,
+      controller: widget._scrollController,
       itemBuilder: (BuildContext context, int index) {
         var file = files[index];
         var fileData = fileCache.putIfAbsent(

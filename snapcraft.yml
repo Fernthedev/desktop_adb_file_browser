@@ -1,0 +1,28 @@
+name: desktop_adb_file_browser
+version: 0.1.0
+summary: Desktop ADB File Browser
+description: Sidequest file browser sux
+
+confinement: strict
+base: core18
+grade: stable
+
+slots:
+  dbus-super-cool-app: # adjust accordingly to your app name
+    interface: dbus
+    bus: session
+    name: org.bar.super_cool_app # adjust accordingly to your app name and
+    
+apps:
+  desktop_adb_file_browser:
+    command: desktop_adb_file_browser
+    extensions: [flutter-master] # Where "master" defines which Flutter channel to use for the build
+    plugs:
+    - network
+    slots:
+      - dbus-desktop_adb_file_browser
+parts:
+  desktop_adb_file_browser:
+    source: .
+    plugin: flutter
+    flutter-target: lib/main.dart # The main entry-point file of the application

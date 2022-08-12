@@ -35,7 +35,7 @@ class _ADBCheckState extends State<ADBCheck> {
           builder: (context) => const ADBDownloadDialog(), context: context);
     }
     if (!mounted) return;
-    Routemaster.of(context).replace("/browser/x/x/");
+    Routemaster.of(context).replace("/devices");
   }
 
   @override

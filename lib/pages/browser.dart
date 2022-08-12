@@ -31,15 +31,12 @@ class DeviceBrowser extends StatefulWidget {
   State<DeviceBrowser> createState() => _DeviceBrowserState();
 }
 
-// TODO: Add forward
-// TODO: Add mouse button for back/forward
+// TODO: Gestures
 // TODO: Add shortcuts (sidebar?)
-// TODO: Make new file have a file name dialog
+  // TODO: A text field which on save adds an entry to the shortcut list
 // TODO: Add download progress snackbar (similar to upload progress)
 // TODO: Make snackbar progress animation ease exponential because it looks
-// TODO: Pressing enter when editing a file does NOT close file rename mode.
 // TODO: File details page
-// TODO: Search?
 
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;

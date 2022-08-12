@@ -9,6 +9,7 @@ import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
 import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
@@ -137,7 +138,12 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
         title: Row(
-          children: [_navigationActions(), _addressBar(), _filterBar()],
+          children: [
+            _navigationActions(),
+            _addressBar(),
+            _filterBar(),
+            _fileActions()
+          ],
         ),
         leading: IconButton(
           icon: const Icon(FluentIcons.folder_24_regular),
@@ -282,6 +288,27 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           constraints: BoxConstraints.tightFor(height: 40),
         ),
       ),
+    );
+  }
+
+  Wrap _fileActions() {
+    return Wrap(
+      children: [
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(
+            FluentIcons.folder_add_20_regular,
+          ),
+          onPressed: () {
+            FilePicker.platform.pickFiles(allowMultiple: true).then((value) {
+              if (value?.paths == null || value!.paths.isEmpty) return;
+              _uploadFiles(value.paths
+                  .where((element) => element != null)
+                  .map((e) => e!));
+            });
+          },
+        ),
+      ],
     );
   }
 

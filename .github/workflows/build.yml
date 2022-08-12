@@ -1,0 +1,79 @@
+name: Rust CI
+
+on:
+  push:
+  #  branches: [ master ]
+  pull_request:
+  #  branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ${{matrix.runner}}
+
+    strategy:
+      matrix:
+        target: [macos-arm64, macos-x86, windows-x86, linux-x86]
+        include:
+        - target: macos-arm64
+          os: macos
+          arch: arm64
+          runner: macOS-latest
+
+        - target: macos-x86
+          os: macos
+          arch: x86
+          runner: macOS-latest
+
+        - target: windows-x86
+          os: windows
+          arch: x86
+          runner: windows-latest
+
+        - target: linux-x86
+          os: linux
+          arch: x86
+          runner: ubuntu-latest
+
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Linux deps
+      if: ${{matrix.os == "linux"}}
+      run: |
+        sudo apt-get update -y
+        sudo apt-get install -y ninja-build libgtk-3-dev
+
+    - uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        cache: true
+        cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:' # optional, change this to force refresh cache
+        cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:' # optional, change this to specify the cache path
+        architecture: ${{matrix.arch}} # optional, x64 or arm64
+    - run: flutter --version
+    - run: flutter pub get
+    - run: flutter build ${{matrix.os}}
+      
+    - name: Create MSIX installer
+      if: ${{matrix.os == "windows"}}
+      run: flutter pub run msix:create
+      
+      # TODO: Linux and Mac artifacts
+
+    - name: Upload Windows artifacts (archive)
+      if: ${{matrix.os == "windows"}}
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ runner.target }}
+        path: |
+          ./build/windows/runner/Release/*
+        if-no-files-found: error
+
+    - name: Upload Windows MSIX installer
+      if: ${{matrix.os == "windows"}}
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ runner.target }}
+        path: |
+          ./build/windows/runner/Release/*.msix
+        if-no-files-found: error

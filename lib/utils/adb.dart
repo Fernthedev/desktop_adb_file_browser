@@ -109,7 +109,9 @@ abstract class Adb {
         .replaceAll("'", "\\'")
         .replaceAll(" ", "\\ ")
         .replaceAll("(", "\\(")
-        .replaceAll(")", "\\)");
+        .replaceAll(")", "\\)")
+        .replaceAll("&", "\\&")
+        .replaceAll("|", "\\|");
   }
 
   // https://github.com/Lauriethefish/QuestPatcher/blob/37d6ee872bbc44f47b4994e5b95a7d0902797939/QuestPatcher.Core/AndroidDebugBridge.cs#L361

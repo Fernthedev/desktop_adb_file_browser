@@ -64,15 +64,15 @@ jobs:
       if: contains(matrix.runner, 'windows')
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ runner.target }}
-        path: ./build/windows/runner/Release/
+        name: ${{ matrix.target }}
+        path: ./build/windows/runner/Release/*
         if-no-files-found: error
 
     - name: Upload Windows MSIX installer
       if: contains(matrix.runner, 'windows')
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ runner.target }}
+        name: ${{ matrix.target }}
         path: |
           ./build/windows/runner/Release/*.msix
         if-no-files-found: error

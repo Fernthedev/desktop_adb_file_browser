@@ -3,7 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  drag_and_drop_windows
+  desktop_drop
   file_selector_windows
 )
 

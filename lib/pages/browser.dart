@@ -8,7 +8,7 @@ import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
 import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
-import 'package:drag_and_drop_windows/drag_and_drop_windows.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
@@ -42,9 +42,12 @@ class DeviceBrowser extends StatefulWidget {
 
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
-  final TextEditingController _filterController = TextEditingController();
+  bool _dragging = false;
   late Future<List<String>?> _fileListingFuture;
   Map<String, FileData> fileCache = {}; // date time cache
+
+  final TextEditingController _filterController = TextEditingController();
+
   late StreamSubscription dragReceiveSubscription;
   late ListenableHolder<void> onForwardClick;
   late ListenableHolder<void> onBackClick;
@@ -57,7 +60,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   @override
   void initState() {
     super.initState();
-    dragReceiveSubscription = dropEventStream.listen(_uploadFiles);
     onForwardClick =
         native2flutter.mouseForwardClick.addListener((_) => forward());
     onBackClick = native2flutter.mouseBackClick.addListener((_) => back());
@@ -159,7 +161,28 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         data: MultiSplitViewThemeData(dividerThickness: 5.5),
         child: MultiSplitView(
           initialAreas: [Area(weight: 0.15)],
-          children: [const ShortcutsListWidget(), Center(child: _fileView())],
+          children: [
+            const ShortcutsListWidget(),
+            Center(
+                child: DropTarget(
+                    onDragDone: (detail) =>
+                        _uploadFiles(detail.files.map((e) => e.path)),
+                    onDragEntered: (detail) {
+                      setState(() {
+                        _dragging = true;
+                      });
+                    },
+                    onDragExited: (detail) {
+                      setState(() {
+                        _dragging = false;
+                      });
+                    },
+                    child: Container(
+                        color: _dragging
+                            ? Theme.of(context).primaryColor.withOpacity(0.4)
+                            : null,
+                        child: _fileView())))
+          ],
           dividerBuilder:
               (axis, index, resizable, dragging, highlighted, themeData) =>
                   Container(
@@ -371,7 +394,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     await Adb.downloadFile(widget.serial, source, path);
   }
 
-  void _uploadFiles(List<String> paths) async {
+  void _uploadFiles(Iterable<String> paths) async {
     debugPrint("Uploading $paths");
     List<Future> tasks = [];
 

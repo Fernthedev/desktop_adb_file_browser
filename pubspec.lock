@@ -127,6 +127,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.1.1"
+  desktop_drop:
+    dependency: "direct main"
+    description:
+      name: desktop_drop
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "0.3.3"
   dio:
     dependency: "direct main"
     description:
@@ -134,13 +141,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.0.6"
-  drag_and_drop_windows:
-    dependency: "direct main"
-    description:
-      name: drag_and_drop_windows
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.0.2"
   fake_async:
     dependency: transitive
     description:

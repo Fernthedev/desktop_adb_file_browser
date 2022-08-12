@@ -72,7 +72,7 @@ jobs:
       if: contains(matrix.runner, 'windows')
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ matrix.target }}
+        name: ${{ matrix.target }} msix installer
         path: |
           ./build/windows/runner/Release/*.msix
         if-no-files-found: error

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:desktop_adb_file_browser/main.dart';
-import 'package:desktop_adb_file_browser/pigeon_impl.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
@@ -14,6 +13,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:routemaster/routemaster.dart';
 
@@ -33,11 +33,11 @@ class DeviceBrowser extends StatefulWidget {
 
 // TODO: Gestures
 // TODO: Add shortcuts (sidebar?)
-  // TODO: A text field which on save adds an entry to the shortcut list
+// TODO: A text field which on save adds an entry to the shortcut list
 // TODO: Add download progress snackbar (similar to upload progress)
 // TODO: Make snackbar progress animation ease exponential because it looks
 // TODO: File details page
-
+// TODO: Modularize widget into smaller widgets
 class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
   bool _dragging = false;
@@ -76,16 +76,16 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   void back() {
     if (_paths.isEmpty) return;
+    debugPrint("Pushed back $_currentPath");
 
-    debugPrint("Pushed forward $_currentPath");
     _forwardPaths.push(_currentPath);
     _refreshFiles(
         path: _paths.pop(), pushToHistory: false, clearForwardHistory: false);
   }
 
   void forward() {
-    debugPrint("Forward path ${_forwardPaths.isNotEmpty}");
     if (_forwardPaths.isEmpty) return;
+    debugPrint("Pushed forward ${_forwardPaths.isNotEmpty}");
 
     _refreshFiles(
         path: _forwardPaths.pop(),
@@ -160,38 +160,37 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           )
         ],
       ),
-      body: MultiSplitViewTheme(
-        data: MultiSplitViewThemeData(dividerThickness: 5.5),
-        child: MultiSplitView(
-          initialAreas: [Area(weight: 0.15)],
-          children: [
-            const ShortcutsListWidget(),
-            Center(
-                child: DropTarget(
-                    onDragDone: (detail) =>
-                        _uploadFiles(detail.files.map((e) => e.path)),
-                    onDragEntered: (detail) {
-                      setState(() {
-                        _dragging = true;
-                      });
-                    },
-                    onDragExited: (detail) {
-                      setState(() {
-                        _dragging = false;
-                      });
-                    },
-                    child: Container(
-                        color: _dragging
-                            ? Theme.of(context).primaryColor.withOpacity(0.4)
-                            : null,
-                        child: _fileView())))
-          ],
-          dividerBuilder:
-              (axis, index, resizable, dragging, highlighted, themeData) =>
-                  Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                      width: 0.5,
-                      color: Colors.black),
+      body: Focus(
+        autofocus: true,
+        onKey: (node, event) {
+          if (event.isAltPressed && !event.repeat) {
+            if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
+              back();
+              return KeyEventResult.handled;
+            }
+            if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
+              forward();
+              return KeyEventResult.handled;
+            }
+          }
+
+          return KeyEventResult.ignored;
+        },
+        child: MultiSplitViewTheme(
+          data: MultiSplitViewThemeData(dividerThickness: 5.5),
+          child: MultiSplitView(
+            initialAreas: [Area(weight: 0.15)],
+            children: [
+              const ShortcutsListWidget(),
+              Center(child: _fileListContainer(context))
+            ],
+            dividerBuilder:
+                (axis, index, resizable, dragging, highlighted, themeData) =>
+                    Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                        width: 0.5,
+                        color: Colors.black),
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -345,6 +344,27 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           ),
         );
       },
+    );
+  }
+
+  DropTarget _fileListContainer(BuildContext context) {
+    return DropTarget(
+      onDragDone: (detail) => _uploadFiles(detail.files.map((e) => e.path)),
+      onDragEntered: (detail) {
+        setState(() {
+          _dragging = true;
+        });
+      },
+      onDragExited: (detail) {
+        setState(() {
+          _dragging = false;
+        });
+      },
+      child: Container(
+        color:
+            _dragging ? Theme.of(context).primaryColor.withOpacity(0.4) : null,
+        child: _fileView(),
+      ),
     );
   }
 

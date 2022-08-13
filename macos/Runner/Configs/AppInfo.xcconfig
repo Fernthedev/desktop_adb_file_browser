@@ -8,7 +8,7 @@
 PRODUCT_NAME = desktop_adb_file_browser
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.desktopAdbFileBrowser
+PRODUCT_BUNDLE_IDENTIFIER = com.github.fernthedev.desktopAdbFileBrowser
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2022 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2022 Fernthedev. All rights reserved.

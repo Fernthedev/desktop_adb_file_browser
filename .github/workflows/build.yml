@@ -60,6 +60,12 @@ jobs:
       if: contains(matrix.runner, 'windows')
       run: flutter pub run msix:create
 
+    - name: Create MacOS App bundle
+      if: contains(matrix.runner, 'macos')
+      run: |
+        cd ./build/macos/Build/Products/Release/
+        ditto -c -k --sequesterRsrc --keepParent ./desktop_adb_file_browser.app result.zip || true
+
     # - name: Create Snap installer
     #   if: contains(matrix.runner, 'ubuntu')
     #   run: snapcraft
@@ -109,5 +115,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.target }}
-        path: ./build/macos/Build/Products/Release/desktop*.app
+        path: ./build/macos/Build/Products/Release/result.zip
         if-no-files-found: error

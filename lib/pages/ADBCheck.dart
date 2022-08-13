@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
 
 class ADBCheck extends StatefulWidget {
-  const ADBCheck({Key? key}) : super(key: key);
+  const ADBCheck({Key? key, required this.redirectPage}) : super(key: key);
+
+  final String redirectPage;
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -35,7 +37,7 @@ class _ADBCheckState extends State<ADBCheck> {
           builder: (context) => const ADBDownloadDialog(), context: context);
     }
     if (!mounted) return;
-    Routemaster.of(context).replace("/devices");
+    Routemaster.of(context).replace(widget.redirectPage);
   }
 
   @override

@@ -13,7 +13,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:routemaster/routemaster.dart';
 
 final routes = RouteMap(routes: {
-  '/': (_) => const MaterialPage(key: ValueKey("adbcheck"), child: ADBCheck()),
+  '/': (_) => const MaterialPage(key: ValueKey("adbcheck"), child: ADBCheck(redirectPage: '/devices',)),
 
   '/devices': (_) =>
       const MaterialPage(key: ValueKey("devices"), child: DevicesPage()),

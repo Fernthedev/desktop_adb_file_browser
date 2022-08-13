@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
+import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
@@ -16,22 +16,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:routemaster/routemaster.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @immutable
 class DeviceBrowser extends StatefulWidget {
   final String serial;
   final TextEditingController _addressBar;
   final TextEditingController _filterController = TextEditingController();
-  
+
   final ScrollController _scrollController = AdjustableScrollController(60);
 
   final StackCollection<String> _paths = StackCollection();
   final StackCollection<String> _forwardPaths = StackCollection();
 
-
   DeviceBrowser(
       {Key? key, required String initialAddress, required this.serial})
-      : _addressBar = TextEditingController(text: Adb.fixPath(initialAddress, addQuotes: false)),
+      : _addressBar = TextEditingController(
+            text: Adb.fixPath(initialAddress, addQuotes: false)),
         super(key: key);
 
   @override
@@ -49,6 +50,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
   bool _dragging = false;
   late Future<List<String>?> _fileListingFuture;
+  late Future<SharedPreferences> preferences;
   Map<String, FileData> fileCache = {}; // date time cache
 
   late ListenableHolder<void> onForwardClick;
@@ -78,7 +80,9 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
     widget._forwardPaths.push(_currentPath);
     _refreshFiles(
-        path: widget._paths.pop(), pushToHistory: false, clearForwardHistory: false);
+        path: widget._paths.pop(),
+        pushToHistory: false,
+        clearForwardHistory: false);
   }
 
   void forward() {
@@ -179,7 +183,10 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           child: MultiSplitView(
             initialAreas: [Area(weight: 0.15)],
             children: [
-              const ShortcutsListWidget(),
+              ShortcutsListWidget(
+                currentPath: _currentPath,
+                onTap: _navigateToDirectory,
+              ),
               Center(child: _fileListContainer(context))
             ],
             dividerBuilder:
@@ -384,7 +391,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             isCard: true,
             isDirectory: isDir,
             fullFilePath: file,
-            onClick: isDir ? () => _directoryClick(file) : () {},
+            onClick: isDir ? () => _navigateToDirectory(file) : () {},
             downloadFile: _saveFileToDesktop,
             renameFileCallback: _renameFile,
             modifiedTime: Future.value(null),
@@ -413,7 +420,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           isCard: false,
           isDirectory: isDir,
           fullFilePath: file,
-          onClick: isDir ? () => _directoryClick(file) : () {},
+          onClick: isDir ? () => _navigateToDirectory(file) : () {},
           downloadFile: _saveFileToDesktop,
           renameFileCallback: _renameFile,
           onDelete: _removeFileDialog,
@@ -423,7 +430,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     );
   }
 
-  void _directoryClick(String directory) {
+  void _navigateToDirectory(String directory) {
     _refreshFiles(path: directory);
   }
 
@@ -623,27 +630,114 @@ class _UploadingFilesWidgetState extends State<UploadingFilesWidget> {
   }
 }
 
-class ShortcutsListWidget extends StatelessWidget {
+typedef ShortcutTapFunction = void Function(String path);
+
+class ShortcutsListWidget extends StatefulWidget {
   final double initialWidth;
   final double? maxWidth;
   final double? minWidth;
+
+  final ShortcutTapFunction? onTap;
+  final String currentPath;
 
   const ShortcutsListWidget(
       {Key? key,
       this.initialWidth = 240,
       this.maxWidth = 500,
-      this.minWidth = 100})
+      this.minWidth = 100,
+      required this.onTap,
+      required this.currentPath})
       : super(key: key);
 
   @override
+  State<ShortcutsListWidget> createState() => _ShortcutsListWidgetState();
+}
+
+class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
+  late Future<Map<String, String>> _future;
+  late SharedPreferences _preferences;
+
+  @override
+  void initState() {
+    super.initState();
+    _future = SharedPreferences.getInstance().then((value) {
+      _preferences = value;
+      return value.getShortcutsMap();
+    });
+  }
+
+  void _resetFuture() {
+    _future = _preferences.getShortcutsMap();
+  }
+
+  void _updateMap(Map<String, String> map) {
+    _preferences.setShortcutsMap(map).then((_) {
+      setState(() {
+        _resetFuture();
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 240,
-      child: ListView.builder(
-        itemBuilder: ((context, index) => ListTile(
-              title: Text("Hi! $index"),
-            )),
-        itemCount: 4,
+    return FutureBuilder<Map<String, String>>(
+      future: _future,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Text("Got error ${snapshot.error.toString()}");
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting ||
+            !snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(),
+          );
+        }
+
+        var map = snapshot.data!;
+
+        return Column(
+          children: [
+            ListView.builder(
+              shrinkWrap: true,
+              
+                itemBuilder: (context, index) =>
+                    _shortcutTile(context, index, map),
+                itemCount: map.length),
+            Flexible(
+              fit: FlexFit.loose,
+              child: TextField(
+                  key: ValueKey(widget.currentPath),
+                  onSubmitted: (value) {
+                    map[value] = widget.currentPath;
+                    _updateMap(map);
+                  }),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  ListTile _shortcutTile(
+      BuildContext context, int index, Map<String, String> map) {
+    final name = map.keys.toList(growable: false)[index];
+    final path = map[name]!;
+
+    return ListTile(
+      title: Text(name),
+      subtitle: Text(path),
+      onTap: () {
+        if (widget.onTap != null) widget.onTap!(path);
+      },
+      trailing: IconButton(
+        iconSize: 20,
+        splashRadius: 24,
+        icon: const Icon(FluentIcons.delete_20_filled),
+        onPressed: () {
+          map.remove(name);
+          _updateMap(map);
+        },
       ),
     );
   }

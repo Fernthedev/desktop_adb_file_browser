@@ -109,5 +109,5 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.target }}
-        path: ./build/macos/Build/Products/Release/desktop_adb_file_browser.app
+        path: ./build/macos/Build/Products/Release/desktop*.app
         if-no-files-found: error

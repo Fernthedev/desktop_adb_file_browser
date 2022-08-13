@@ -24,19 +24,14 @@ abstract class Adb {
   static String? _adbCurrentPath;
 
   static Future<Directory> _getDownloadPath() async {
-    Directory downloadPath;
     try {
-      downloadPath = Directory(
-          hostPath.join((await getLibraryDirectory()).path, _adbTempFolder));
+      return Directory(hostPath.join(
+          (await getApplicationSupportDirectory()).path, _adbTempFolder));
     } on MissingPlatformDirectoryException catch (_) {
-      downloadPath = Directory(
-          hostPath.join(await PlatformUtils.configPath(_adbTempFolder)));
-    } on UnimplementedError catch (_) {
-      downloadPath = Directory(
-          hostPath.join(await PlatformUtils.configPath(_adbTempFolder)));
-    }
+    } on UnimplementedError catch (_) {}
 
-    return downloadPath;
+    return Directory(
+        hostPath.join(await PlatformUtils.configPath(_adbTempFolder)));
   }
 
   static Future<File> _getADBPath() async {
@@ -70,6 +65,7 @@ abstract class Adb {
     final archive = ZipDecoder().decodeBuffer(InputStream(stream));
 
     extractArchiveToDisk(archive, downloadPath.path);
+    _adbCurrentPath = (await _getADBPath()).path;
   }
 
   static Future<ProcessResult> runAdbCommand(
@@ -81,6 +77,7 @@ abstract class Adb {
       if (await downloadPath.exists()) {
         _adbCurrentPath = (await _getADBPath()).path;
       } else {
+        // Use adb in path
         _adbCurrentPath = "adb";
       }
     }
@@ -152,9 +149,11 @@ abstract class Adb {
 
   static Future<List<String>?> getFilesInDirectory(
       String? serialName, String path) async {
-    var result = await runAdbCommand(serialName, ["shell", "ls -p ${fixPath(path)}"]);
+    var result =
+        await runAdbCommand(serialName, ["shell", "ls -p ${fixPath(path)}"]);
 
-    return parsePaths(normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false);
+    return parsePaths(
+        normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false);
   }
 
   static Future<List<String>?> getDevicesSerial() async {

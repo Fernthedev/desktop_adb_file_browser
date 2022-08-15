@@ -66,6 +66,7 @@ abstract class Adb {
 
     extractArchiveToDisk(archive, downloadPath.path);
     _adbCurrentPath = (await _getADBPath()).path;
+    await Process.run("chmod", ["+x", _adbCurrentPath!]);
   }
 
   static Future<ProcessResult> runAdbCommand(
@@ -87,7 +88,7 @@ abstract class Adb {
       throw process.stderr.toString();
     }
 
-    if (process.exitCode != 0) throw "Process exit code was not 0!";
+    // if (process.exitCode != 0) throw "Process exit code was not 0!";
 
     return process;
   }

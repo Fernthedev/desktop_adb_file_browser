@@ -103,6 +103,10 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       bool refetch = true}) {
     var oldAddressText = _currentPath;
 
+    path = path == null
+        ? null
+        : Adb.adbPathContext.canonicalize(Adb.fixPath(path, addQuotes: false));
+
     if (path != null) {
       if (pushToHistory) {
         widget._paths.push(_currentPath);
@@ -216,7 +220,9 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         },
         tooltip: 'Add new file',
         child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
+      bottomNavigationBar:
+          locationsRow(), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 
@@ -439,6 +445,35 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         );
       },
       itemCount: files.length,
+    );
+  }
+
+  Widget locationsRow() {
+    var locations =
+        _currentPath.split("/");
+
+    if (locations.isNotEmpty && locations.first.isEmpty) {
+      locations.removeAt(0);
+    }
+
+    for (int i = 1; i < locations.length; i++) {
+      locations[i] = Adb.adbPathContext.join(locations[i - 1], locations[i]);
+    }
+
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Row(
+          key: ValueKey(_currentPath),
+          children: locations
+              .map((e) => [
+                    const Text("/"),
+                    TextButton(
+                        onPressed: () => _navigateToDirectory(e),
+                        child: Text(Adb.adbPathContext.basename(e)))
+                  ])
+              .expand<Widget>((element) => element)
+              .toList(growable: false)),
     );
   }
 

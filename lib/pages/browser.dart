@@ -541,11 +541,9 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
                     }
 
                     task.then((_) {
-                    Navigator.of(context).pop();
-                                        _refreshFiles(refetch: true);
+                      Navigator.of(context).pop();
+                      _refreshFiles(refetch: true);
                     });
-
-
                   },
                 ),
               ],
@@ -579,19 +577,23 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
               var path = Adb.adbPathContext
                   .join(_currentPath, fileNameController.text);
 
+              Future task;
+
               switch (fileCreation.value) {
                 case FileCreation.file:
-                  Adb.createFile(widget.serial, path);
+                  task = Adb.createFile(widget.serial, path);
 
                   break;
                 case FileCreation.folder:
-                  Adb.createDirectory(widget.serial, path);
+                  task = Adb.createDirectory(widget.serial, path);
                   break;
               }
 
-              _refreshFiles(refetch: true);
+              task.then((_) {
+                _refreshFiles(refetch: true);
 
-              Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              });
             },
           ),
         ],

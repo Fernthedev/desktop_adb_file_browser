@@ -84,7 +84,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     return widget.downloadFile(widget.fullFilePath, friendlyFileName);
   }
 
-  Future<void> _renameFile() {
+  Future<void> _renameFile() async {
     var newName = _fileNameController.text;
     var future = widget.renameFileCallback(fullFilePath, newName);
 
@@ -95,8 +95,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
             .join(Adb.adbPathContext.dirname(fullFilePath), newName);
       });
     }
-
-    return future;
+    await future;
   }
 
   String? _validateNewName(String? newName) {
@@ -208,7 +207,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
           _renameFile();
           _exitEditMode(save: false);
         },
-        onSaved: (s) => _renameFile(),
+        // onSaved: (s) => _renameFile(),
         focusNode: _focusNode,
         decoration: const InputDecoration(
           floatingLabelBehavior: FloatingLabelBehavior.never,

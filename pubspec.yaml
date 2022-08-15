@@ -74,6 +74,7 @@ msix_config:
   # logo_path: C:\path\to\logo.png
   publisher: CN=Fernthedev, O=Msix Testing... # required
   sign_msix: false
+  install_certificate: false
   # app_installer: #<-- app installer configuration
   #   publish_folder_path: E:\SSDUse\ProgrammingProjects\FlutterProjects\desktop_adb_file_browser\publish
   #   hours_between_update_checks: 0

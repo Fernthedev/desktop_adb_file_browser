@@ -163,16 +163,30 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         ],
       ),
       body: Focus(
+        key: const ValueKey("Focus"),
         autofocus: true,
+        canRequestFocus: true,
+        descendantsAreFocusable: true,
+        skipTraversal: true,
         onKey: (node, event) {
-          if (event.isAltPressed && !event.repeat) {
-            if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
-              back();
-              return KeyEventResult.handled;
-            }
-            if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
-              forward();
-              return KeyEventResult.handled;
+   
+
+          if (!event.repeat) {
+            // TODO: Figure out how to allow lower focus take control
+            // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
+            //   back();
+            //   return KeyEventResult.handled;
+            // }
+
+            if (event.isAltPressed) {
+              if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
+                back();
+                return KeyEventResult.handled;
+              }
+              if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
+                forward();
+                return KeyEventResult.handled;
+              }
             }
           }
 
@@ -699,8 +713,7 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
         return Column(
           children: [
             ListView.builder(
-              shrinkWrap: true,
-              
+                shrinkWrap: true,
                 itemBuilder: (context, index) =>
                     _shortcutTile(context, index, map),
                 itemCount: map.length),

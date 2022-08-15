@@ -461,19 +461,24 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     }
 
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Row(
-          key: ValueKey(_currentPath),
-          children: locations
-              .map((e) => [
-                    const Text("/"),
-                    TextButton(
-                        onPressed: () => _navigateToDirectory(e),
-                        child: Text(Adb.adbPathContext.basename(e)))
-                  ])
-              .expand<Widget>((element) => element)
-              .toList(growable: false)),
+    return SizedBox(
+      height: Theme.of(context).buttonTheme.height - 20,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: ListView(
+            shrinkWrap: true,
+            key: ValueKey(_currentPath),
+            scrollDirection: Axis.horizontal,
+            children: locations
+                .map((e) => [
+                      const Text("/"),
+                      TextButton(
+                          onPressed: () => _navigateToDirectory(e),
+                          child: Text(Adb.adbPathContext.basename(e)))
+                    ])
+                .expand<Widget>((element) => element)
+                .toList(growable: false)),
+      ),
     );
   }
 

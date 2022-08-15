@@ -151,7 +151,7 @@ abstract class Adb {
   static Future<List<String>?> getFilesInDirectory(
       String? serialName, String path) async {
     var result =
-        await runAdbCommand(serialName, ["shell", "ls -p ${fixPath(path)}"]);
+        await runAdbCommand(serialName, ["shell", "ls -p -a ${fixPath(path)}"]);
 
     return parsePaths(
         normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false);

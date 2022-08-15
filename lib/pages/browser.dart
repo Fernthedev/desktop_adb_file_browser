@@ -169,8 +169,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         descendantsAreFocusable: true,
         skipTraversal: true,
         onKey: (node, event) {
-   
-
           if (!event.repeat) {
             // TODO: Figure out how to allow lower focus take control
             // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
@@ -463,7 +461,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
     for (String path in paths) {
       String dest = Adb.adbPathContext.join(
-          Adb.adbPathContext.dirname(_currentPath), // adb file path
+          _currentPath, // adb file path
           Adb.hostPath.basename(path) // host file name
           );
 

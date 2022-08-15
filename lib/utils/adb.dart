@@ -208,8 +208,8 @@ abstract class Adb {
       String serialName, String source, String destination) async {
     var result = await runAdbCommand(serialName, [
       "push",
-      "\"$source\"",
-      fixPath(destination),
+      source,
+      fixPath(destination, addQuotes: false),
     ]);
 
     return normalizeOutput(result.stdout);

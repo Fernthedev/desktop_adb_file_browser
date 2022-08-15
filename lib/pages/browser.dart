@@ -533,13 +533,19 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
                 TextButton(
                   child: const Text('Ok'),
                   onPressed: () {
+                    Future task;
                     if (file) {
-                      Adb.removeFile(widget.serial, path);
+                      task = Adb.removeFile(widget.serial, path);
                     } else {
-                      Adb.removeDirectory(widget.serial, path);
+                      task = Adb.removeDirectory(widget.serial, path);
                     }
-                    _refreshFiles(refetch: true);
+
+                    task.then((_) {
                     Navigator.of(context).pop();
+                                        _refreshFiles(refetch: true);
+                    });
+
+
                   },
                 ),
               ],

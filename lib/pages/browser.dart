@@ -222,7 +222,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar:
-          locationsRow(), // This trailing comma makes auto-formatting nicer for build methods.
+          _locationsRow(), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 
@@ -448,7 +448,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     );
   }
 
-  Widget locationsRow() {
+  Widget _locationsRow() {
     var locations =
         _currentPath.split("/");
 
@@ -753,20 +753,21 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
 
         return Column(
           children: [
-            ListView.builder(
-                shrinkWrap: true,
-                itemBuilder: (context, index) =>
-                    _shortcutTile(context, index, map),
-                itemCount: map.length),
-            Flexible(
-              fit: FlexFit.loose,
-              child: TextField(
-                  key: ValueKey(widget.currentPath),
-                  onSubmitted: (value) {
-                    map[value] = widget.currentPath;
-                    _updateMap(map);
-                  }),
+            Expanded(
+              flex: 2,
+              child: ListView.builder(
+                controller: AdjustableScrollController(),
+                  // shrinkWrap: true,
+                  itemBuilder: (context, index) =>
+                      _shortcutTile(context, index, map),
+                  itemCount: map.length),
             ),
+            TextField(
+                key: ValueKey(widget.currentPath),
+                onSubmitted: (value) {
+                  map[value] = widget.currentPath;
+                  _updateMap(map);
+                }),
           ],
         );
       },

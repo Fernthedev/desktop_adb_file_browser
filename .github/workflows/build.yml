@@ -115,7 +115,7 @@ jobs:
         name: ${{ matrix.target }} Inno installer
         path: |
           ./build/windows/runner/Release/windows_installer*
-          ${{GITHUB_WORKSPACE}}/windows_installer*
+          ./windows_installer*
         if-no-files-found: error
 
       # Linux

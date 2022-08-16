@@ -71,11 +71,13 @@ jobs:
       if: contains(matrix.runner, 'windows')
       run: '../is.exe /VERYSILENT /NORESTART /ALLUSERS'
       
+    - name: Create ISS
+      if: contains(matrix.runner, 'windows')
+      run: dart ./lib/inno_setup.dart
+
     - name: Compile Installer
       if: contains(matrix.runner, 'windows')
-      run: |
-        dart ./lib/inno_setup.dart
-        '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /f innosetup.iss'
+      run: '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /f innosetup.iss'
 
     - name: Create MacOS App bundle
       if: contains(matrix.runner, 'macos')
@@ -114,8 +116,7 @@ jobs:
       with:
         name: ${{ matrix.target }} Inno installer
         path: |
-          ./build/windows/runner/Release/windows_installer*
-          ./windows_installer*
+          ./build/windows/runner/Release/windows_installer.exe
         if-no-files-found: error
 
       # Linux

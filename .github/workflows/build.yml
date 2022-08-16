@@ -74,8 +74,8 @@ jobs:
     - name: Compile Installer
       if: contains(matrix.runner, 'windows')
       run: |
-        '&' "dart ./lib/inno_setup.dart"
-        '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /f innosetup.iss'
+        dart ./lib/inno_setup.dart"
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /f innosetup.iss
 
     - name: Create MacOS App bundle
       if: contains(matrix.runner, 'macos')

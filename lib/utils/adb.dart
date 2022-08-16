@@ -186,8 +186,8 @@ abstract class Adb {
 
   static Future<String> moveFile(
       String? serialName, String source, String dest) async {
-    source = fixPath(source);
-    dest = fixPath(dest);
+    source = fixPath(source, addQuotes: false);
+    dest = fixPath(dest, addQuotes: false);
     var result = await runAdbCommand(serialName, ["shell", "mv", source, dest]);
 
     return normalizeOutput(result.stdout);
@@ -197,7 +197,7 @@ abstract class Adb {
       String? serialName, String source, String destination) async {
     var result = await runAdbCommand(null, [
       "pull",
-      fixPath(source),
+      fixPath(source, addQuotes: false),
       destination,
     ]);
 

@@ -62,6 +62,9 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
   msix: ^3.6.2
+  # TODO: use pub
+  innosetup:
+    git: https://github.com/aswinmurali-io/flutter_innosetup.git
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

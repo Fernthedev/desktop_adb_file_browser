@@ -296,6 +296,15 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.2.0"
+  innosetup:
+    dependency: "direct dev"
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: bb0029ea0ee33e91ff4097c6fe86492d2897a9aa
+      url: "https://github.com/aswinmurali-io/flutter_innosetup.git"
+    source: git
+    version: "0.1.1"
   intl:
     dependency: transitive
     description:
@@ -581,6 +590,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.1.2"
+  version:
+    dependency: transitive
+    description:
+      name: version
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.0.2"
   watcher:
     dependency: transitive
     description:

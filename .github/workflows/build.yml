@@ -56,9 +56,25 @@ jobs:
     - run: flutter pub get
     - run: flutter build ${{matrix.os}}
       
-    - name: Create MSIX installer
+    # - name: Create MSIX installer
+    #   if: contains(matrix.runner, 'windows')
+    #   run: flutter pub run msix:create
+
+    - name: Download Inno Setup
+      uses: suisei-cn/actions-download-file@v1
       if: contains(matrix.runner, 'windows')
-      run: flutter pub run msix:create
+      with:
+        url: https://jrsoftware.org/download.php/is.exe
+        target: ../
+
+    - name: Install Inno Setup
+      if: contains(matrix.runner, 'windows')
+      run: '../is.exe /VERYSILENT /NORESTART /ALLUSERS'
+    - name: Compile Installer
+      if: contains(matrix.runner, 'windows')
+      run: |
+        dart ./lib/inno_setup.dart
+        '& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /f innosetup.iss'
 
     - name: Create MacOS App bundle
       if: contains(matrix.runner, 'macos')
@@ -83,13 +99,21 @@ jobs:
         path: ./build/windows/runner/Release/*
         if-no-files-found: error
 
-    - name: Upload Windows MSIX installer
+    # - name: Upload Windows MSIX installer
+    #   if: contains(matrix.runner, 'windows')
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: ${{ matrix.target }} msix installer
+    #     path: |
+    #       ./build/windows/runner/Release/*.msix
+    #     if-no-files-found: error
+    - name: Upload Windows Inno installer
       if: contains(matrix.runner, 'windows')
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.target }} msix installer
         path: |
-          ./build/windows/runner/Release/*.msix
+          ./build/windows/runner/Release/windows_installer*
         if-no-files-found: error
 
       # Linux

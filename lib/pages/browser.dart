@@ -347,6 +347,12 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             snapshot.connectionState == ConnectionState.done) {
           var filteredList =
               _filteredFiles(snapshot.data!).toList(growable: false);
+              
+          filteredList = filteredList
+              .where((value) => value.endsWith("/"))
+              .followedBy(
+                  filteredList.where((value) => !value.endsWith("/")))
+              .toList(growable: false);
           return list ? _viewAsList(filteredList) : _viewAsGrid(filteredList);
         }
 
@@ -449,8 +455,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   }
 
   Widget _locationsRow() {
-    var locations =
-        _currentPath.split("/");
+    var locations = _currentPath.split("/");
 
     if (locations.isNotEmpty && locations.first.isEmpty) {
       locations.removeAt(0);
@@ -459,7 +464,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     for (int i = 1; i < locations.length; i++) {
       locations[i] = Adb.adbPathContext.join(locations[i - 1], locations[i]);
     }
-
 
     return SizedBox(
       height: Theme.of(context).buttonTheme.height - 20,
@@ -761,7 +765,7 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
             Expanded(
               flex: 2,
               child: ListView.builder(
-                controller: AdjustableScrollController(),
+                  controller: AdjustableScrollController(),
                   // shrinkWrap: true,
                   itemBuilder: (context, index) =>
                       _shortcutTile(context, index, map),

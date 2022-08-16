@@ -111,7 +111,7 @@ jobs:
       if: contains(matrix.runner, 'windows')
       uses: actions/upload-artifact@v3
       with:
-        name: ${{ matrix.target }} msix installer
+        name: ${{ matrix.target }} Inno installer
         path: |
           ./build/windows/runner/Release/windows_installer*
         if-no-files-found: error

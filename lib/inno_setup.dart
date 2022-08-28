@@ -22,7 +22,7 @@ void main() async {
     ),
     name: const InnoSetupName('windows_installer'),
     location: InnoSetupInstallerDirectory(
-      Directory('build/windows/runner/Release'),
+      Directory('build/windows/runner'),
     ),
     icon: InnoSetupIcon(
       File('assets/icon.ico'),

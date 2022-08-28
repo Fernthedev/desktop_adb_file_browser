@@ -116,7 +116,7 @@ jobs:
       with:
         name: ${{ matrix.target }} Inno installer
         path: |
-          ./build/windows/runner/Release/windows_installer.exe
+          ./build/windows/runner/windows_installer.exe
         if-no-files-found: error
 
       # Linux

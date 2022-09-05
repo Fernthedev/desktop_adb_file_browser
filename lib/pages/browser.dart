@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:math';
 
 import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
@@ -16,9 +18,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:multi_split_view/multi_split_view.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuple/tuple.dart';
+import 'package:watcher/watcher.dart';
 
 @immutable
 class DeviceBrowser extends StatefulWidget {
@@ -234,33 +239,32 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   Column _leftPanel() {
     return Column(
-                children: [
-                  Expanded(
-                    child: TabBarView(
-                      children: [
-                        ShortcutsListWidget(
-                          currentPath: _currentPath,
-                          onTap: _navigateToDirectory,
-                        ),
-                        FileWatcherList(
-                            serial: widget.serial, onUpdate: onWatchAdd)
-                      ],
-                    ),
-                  ),
-                  const TabBar(tabs: [
-                    Tab(
-                        icon: Icon(
-                      FluentIcons.bookmark_20_filled,
-                      size: 20,
-                    )),
-                    Tab(
-                        icon: Icon(
-                      FluentIcons.glasses_20_filled,
-                      size: 20,
-                    ))
-                  ]),
-                ],
-              );
+      children: [
+        Expanded(
+          child: TabBarView(
+            children: [
+              ShortcutsListWidget(
+                currentPath: _currentPath,
+                onTap: _navigateToDirectory,
+              ),
+              FileWatcherList(serial: widget.serial, onUpdate: onWatchAdd)
+            ],
+          ),
+        ),
+        const TabBar(tabs: [
+          Tab(
+              icon: Icon(
+            FluentIcons.bookmark_20_filled,
+            size: 20,
+          )),
+          Tab(
+              icon: Icon(
+            FluentIcons.glasses_20_filled,
+            size: 20,
+          ))
+        ]),
+      ],
+    );
   }
 
   Wrap _navigationActions() {
@@ -457,6 +461,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             fileSize: Future.value(null),
             onDelete: _removeFileDialog,
             onWatch: _watchFile,
+            openTempFile: _openTempFile,
           ));
         }).toList(growable: false));
   }
@@ -485,6 +490,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           renameFileCallback: _renameFile,
           onDelete: _removeFileDialog,
           onWatch: _watchFile,
+          openTempFile: _openTempFile,
         );
       },
       itemCount: files.length,
@@ -692,6 +698,27 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
     fileNameController.dispose();
     fileCreation.dispose();
+  }
+
+  Future<void> _openTempFile(String questPath, String fileName) async {
+    var temp = await getTemporaryDirectory();
+    var randomName = "${Random().nextInt(10000)}$fileName";
+
+    var dest = Adb.hostPath.join(temp.path, randomName);
+    await Adb.downloadFile(widget.serial, questPath, dest);
+
+    StreamSubscription? subscription;
+    subscription = Watcher(dest).events.listen((event) async {
+      if (event.type == ChangeType.REMOVE || !(await File(dest).exists())) {
+        await subscription!.cancel();
+      }
+
+      if (event.type == ChangeType.MODIFY) {
+        await Adb.uploadFile(widget.serial, dest, questPath);
+      }
+    });
+
+    OpenFile.open(dest);
   }
 }
 

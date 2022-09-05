@@ -29,6 +29,7 @@ class FileWidgetUI extends StatefulWidget {
   final DeleteCallback onDelete;
   final DownloadFileCallback downloadFile;
   final RenameFileCallback renameFileCallback;
+  final DownloadFileCallback openTempFile;
 
   final bool isCard;
 
@@ -43,7 +44,8 @@ class FileWidgetUI extends StatefulWidget {
       required this.modifiedTime,
       required this.fileSize,
       required this.onDelete,
-      required this.onWatch})
+      required this.onWatch,
+      required this.openTempFile})
       : super(key: key);
 
   @override
@@ -105,6 +107,10 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
       });
     }
     await future;
+  }
+
+  Future<void> _openTempFile() async {
+    return widget.openTempFile(widget.fullFilePath, friendlyFileName);
   }
 
   String? _validateNewName(String? newName) {
@@ -171,6 +177,16 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                     splashRadius: FileWidgetUI._iconSplashRadius,
                     tooltip: "Watch",
                   ),
+            widget.isDirectory
+                ? const SizedBox(
+                    width: 16 + 24, // 16 + iconSize
+                  )
+                : IconButton(
+                    icon: const Icon(FluentIcons.open_24_filled, size: 24),
+                    onPressed: _openTempFile,
+                    splashRadius: FileWidgetUI._iconSplashRadius,
+                    tooltip: "Open (temp)",
+                  ),
             IconButton(
               // TODO: Add user feedback when this occurs
               icon: const Icon(Icons.copy),
@@ -193,8 +209,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
         ),
         onLongPress: _enterEditMode,
         onTap: widget.onClick,
-        title: editable ? _fileNameForm() : Text(friendlyFileName)
-        );
+        title: editable ? _fileNameForm() : Text(friendlyFileName));
   }
 
   // I hate this

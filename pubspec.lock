@@ -50,20 +50,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.2.1"
-  cli_dialog:
-    dependency: transitive
-    description:
-      name: cli_dialog
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.5.0"
-  cli_util:
-    dependency: transitive
-    description:
-      name: cli_util
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.3.5"
   clipboard:
     dependency: "direct main"
     description:
@@ -113,13 +99,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.0.5"
-  dart_console:
-    dependency: transitive
-    description:
-      name: dart_console
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "1.1.2"
   desktop_drop:
     dependency: "direct main"
     description:
@@ -147,7 +126,7 @@ packages:
       name: ffi
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.0.1"
+    version: "1.2.1"
   file:
     dependency: transitive
     description:
@@ -247,13 +226,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-  get_it:
-    dependency: transitive
-    description:
-      name: get_it
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "7.2.0"
   glob:
     dependency: transitive
     description:
@@ -282,13 +254,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "4.0.1"
-  image:
-    dependency: transitive
-    description:
-      name: image
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.2.0"
   innosetup:
     dependency: "direct dev"
     description:
@@ -298,13 +263,6 @@ packages:
       url: "https://github.com/aswinmurali-io/flutter_innosetup.git"
     source: git
     version: "0.1.2"
-  intl:
-    dependency: transitive
-    description:
-      name: intl
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "0.17.0"
   js:
     dependency: transitive
     description:
@@ -340,13 +298,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "1.8.0"
-  msix:
-    dependency: "direct dev"
-    description:
-      name: msix
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "3.6.3"
   multi_split_view:
     dependency: "direct main"
     description:
@@ -354,6 +305,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "2.1.0"
+  open_file:
+    dependency: "direct main"
+    description:
+      name: open_file
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "3.2.1"
   package_config:
     dependency: transitive
     description:
@@ -416,14 +374,7 @@ packages:
       name: path_provider_windows
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.3"
-  petitparser:
-    dependency: transitive
-    description:
-      name: petitparser
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "5.0.0"
+    version: "2.0.7"
   pigeon:
     dependency: "direct dev"
     description:
@@ -617,7 +568,7 @@ packages:
       name: win32
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.7.0"
+    version: "2.6.1"
   xdg_directories:
     dependency: transitive
     description:
@@ -625,13 +576,6 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "0.2.0+2"
-  xml:
-    dependency: transitive
-    description:
-      name: xml
-      url: "https://pub.dartlang.org"
-    source: hosted
-    version: "6.1.0"
   yaml:
     dependency: transitive
     description:

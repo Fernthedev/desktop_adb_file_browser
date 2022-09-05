@@ -29,7 +29,7 @@ final routes = RouteMap(routes: {
         serial: info.pathParameters['device']!,
         initialAddress: info.pathParameters['path']!,
       )),
-  'log/:device': (info) => MaterialPage(
+  '/log/:device': (info) => MaterialPage(
       key: const ValueKey("log"),
       child: LogPage(
         serial: info.pathParameters['device']!,

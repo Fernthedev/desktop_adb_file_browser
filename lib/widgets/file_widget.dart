@@ -22,6 +22,7 @@ class FileWidgetUI extends StatefulWidget {
   final String fullFilePath;
   final bool isDirectory;
   final VoidCallback onClick;
+  final DownloadFileCallback onWatch;
   final DeleteCallback onDelete;
   final DownloadFileCallback downloadFile;
   final RenameFileCallback renameFileCallback;
@@ -38,7 +39,8 @@ class FileWidgetUI extends StatefulWidget {
       required this.isCard,
       required this.modifiedTime,
       required this.fileSize,
-      required this.onDelete})
+      required this.onDelete,
+      required this.onWatch})
       : super(key: key);
 
   @override
@@ -82,6 +84,10 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
 
   Future<void> _saveToDesktop() {
     return widget.downloadFile(widget.fullFilePath, friendlyFileName);
+  }
+
+  Future<void> _watchFile() async {
+    return widget.onWatch(widget.fullFilePath, friendlyFileName);
   }
 
   Future<void> _renameFile() async {
@@ -158,6 +164,13 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
               onPressed: _copyPathToClipboard,
               splashRadius: FileWidgetUI._iconSplashRadius,
               tooltip: "Copy to clipboard",
+            ),
+            IconButton(
+              // TODO: Add user feedback when this occurs
+              icon: const Icon(FluentIcons.glasses_20_filled, size: 20,),
+              onPressed: _watchFile,
+              splashRadius: FileWidgetUI._iconSplashRadius,
+              tooltip: "Watch",
             ),
             IconButton(
                 splashRadius: FileWidgetUI._iconSplashRadius,

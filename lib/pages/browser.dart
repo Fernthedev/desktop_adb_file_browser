@@ -7,6 +7,8 @@ import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
+import 'package:desktop_adb_file_browser/widgets/shortcuts.dart';
+import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
@@ -17,6 +19,7 @@ import 'package:flutter/services.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tuple/tuple.dart';
 
 @immutable
 class DeviceBrowser extends StatefulWidget {
@@ -55,6 +58,9 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   late ListenableHolder<void> onForwardClick;
   late ListenableHolder<void> onBackClick;
+
+  final EventListenable<Tuple2<HostPath, QuestPath>> onWatchAdd =
+      EventListenable();
 
   @override
   void initState() {
@@ -199,10 +205,32 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           child: MultiSplitView(
             initialAreas: [Area(weight: 0.15)],
             children: [
-              ShortcutsListWidget(
-                currentPath: _currentPath,
-                onTap: _navigateToDirectory,
-              ),
+              DefaultTabController(
+                  length: 2,
+                  child: Column(
+                    children: [
+                      TabBarView(children: [
+                        ShortcutsListWidget(
+                          currentPath: _currentPath,
+                          onTap: _navigateToDirectory,
+                        ),
+                        FileWatcherList(
+                            serial: widget.serial, onUpdate: onWatchAdd)
+                      ]),
+                      const TabBar(tabs: [
+                        Tab(
+                            icon: Icon(
+                          FluentIcons.glasses_20_filled,
+                          size: 20,
+                        )),
+                        Tab(
+                            icon: Icon(
+                          FluentIcons.bookmark_20_filled,
+                          size: 20,
+                        ))
+                      ]),
+                    ],
+                  )),
               Center(child: _fileListContainer(context))
             ],
             dividerBuilder:
@@ -347,11 +375,10 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             snapshot.connectionState == ConnectionState.done) {
           var filteredList =
               _filteredFiles(snapshot.data!).toList(growable: false);
-              
+
           filteredList = filteredList
               .where((value) => value.endsWith("/"))
-              .followedBy(
-                  filteredList.where((value) => !value.endsWith("/")))
+              .followedBy(filteredList.where((value) => !value.endsWith("/")))
               .toList(growable: false);
           return list ? _viewAsList(filteredList) : _viewAsGrid(filteredList);
         }
@@ -401,6 +428,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     return GridView.extent(
         key: ValueKey(files),
         controller: widget._scrollController,
+        shrinkWrap: true,
         childAspectRatio: 17.0 / 9.0,
         padding: const EdgeInsets.all(4.0),
         mainAxisSpacing: 4.0,
@@ -421,6 +449,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             modifiedTime: Future.value(null),
             fileSize: Future.value(null),
             onDelete: _removeFileDialog,
+            onWatch: _watchFile,
           ));
         }).toList(growable: false));
   }
@@ -448,6 +477,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           downloadFile: _saveFileToDesktop,
           renameFileCallback: _renameFile,
           onDelete: _removeFileDialog,
+          onWatch: _watchFile,
         );
       },
       itemCount: files.length,
@@ -492,11 +522,20 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   Future<void> _saveFileToDesktop(
       String source, String friendlyFilename) async {
-    final path = await getSavePath(suggestedName: friendlyFilename);
+    final savePath = await getSavePath(suggestedName: friendlyFilename);
 
-    if (path == null) return;
+    if (savePath == null) return;
 
-    await Adb.downloadFile(widget.serial, source, path);
+    await Adb.downloadFile(widget.serial, source, savePath);
+  }
+
+  Future<void> _watchFile(String source, String friendlyFilename) async {
+    final savePath = await getSavePath(suggestedName: friendlyFilename);
+
+    if (savePath == null) return;
+
+    await Adb.downloadFile(widget.serial, source, savePath);
+    onWatchAdd.invoke(Tuple2(savePath, source));
   }
 
   void _uploadFiles(Iterable<String> paths) async {
@@ -691,119 +730,6 @@ class _UploadingFilesWidgetState extends State<UploadingFilesWidget> {
             ),
           );
         });
-  }
-}
-
-typedef ShortcutTapFunction = void Function(String path);
-
-class ShortcutsListWidget extends StatefulWidget {
-  final double initialWidth;
-  final double? maxWidth;
-  final double? minWidth;
-
-  final ShortcutTapFunction? onTap;
-  final String currentPath;
-
-  const ShortcutsListWidget(
-      {Key? key,
-      this.initialWidth = 240,
-      this.maxWidth = 500,
-      this.minWidth = 100,
-      required this.onTap,
-      required this.currentPath})
-      : super(key: key);
-
-  @override
-  State<ShortcutsListWidget> createState() => _ShortcutsListWidgetState();
-}
-
-class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
-  late Future<Map<String, String>> _future;
-  late SharedPreferences _preferences;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = SharedPreferences.getInstance().then((value) {
-      _preferences = value;
-      return value.getShortcutsMap();
-    });
-  }
-
-  void _resetFuture() {
-    _future = _preferences.getShortcutsMap();
-  }
-
-  void _updateMap(Map<String, String> map) {
-    _preferences.setShortcutsMap(map).then((_) {
-      setState(() {
-        _resetFuture();
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, String>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Text("Got error ${snapshot.error.toString()}");
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting ||
-            !snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-
-        var map = snapshot.data!;
-
-        return Column(
-          children: [
-            Expanded(
-              flex: 2,
-              child: ListView.builder(
-                  controller: AdjustableScrollController(),
-                  // shrinkWrap: true,
-                  itemBuilder: (context, index) =>
-                      _shortcutTile(context, index, map),
-                  itemCount: map.length),
-            ),
-            TextField(
-                key: ValueKey(widget.currentPath),
-                onSubmitted: (value) {
-                  map[value] = widget.currentPath;
-                  _updateMap(map);
-                }),
-          ],
-        );
-      },
-    );
-  }
-
-  ListTile _shortcutTile(
-      BuildContext context, int index, Map<String, String> map) {
-    final name = map.keys.toList(growable: false)[index];
-    final path = map[name]!;
-
-    return ListTile(
-      title: Text(name),
-      subtitle: Text(path),
-      onTap: () {
-        if (widget.onTap != null) widget.onTap!(path);
-      },
-      trailing: IconButton(
-        iconSize: 20,
-        splashRadius: 24,
-        icon: const Icon(FluentIcons.delete_20_filled),
-        onPressed: () {
-          map.remove(name);
-          _updateMap(map);
-        },
-      ),
-    );
   }
 }
 

@@ -44,11 +44,13 @@ dependencies:
   path: ^1.8.1
   multi_split_view: ^2.1.0
   filesize: ^2.0.1
-  win32: ^2.7.0
+  win32: ^2.0.0
   dio: ^4.0.6
   archive: ^3.3.1
   desktop_drop: ^0.3.3
-  file_picker: ^5.0.1
+  watcher: ^1.0.1
+  tuple: ^2.0.0
+  open_file: ^3.2.1
 
 dev_dependencies:
   flutter_test:
@@ -61,7 +63,7 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^2.0.0
-  msix: ^3.6.2
+  # msix: ^3.6.2
   # TODO: use pub
   innosetup:
     git: https://github.com/aswinmurali-io/flutter_innosetup.git

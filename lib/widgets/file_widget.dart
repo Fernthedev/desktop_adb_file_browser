@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:clipboard/clipboard.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:filesize/filesize.dart';
@@ -5,6 +7,7 @@ import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 typedef DownloadFileCallback = Future<void> Function(
     String source, String fileName);
@@ -22,9 +25,11 @@ class FileWidgetUI extends StatefulWidget {
   final String fullFilePath;
   final bool isDirectory;
   final VoidCallback onClick;
+  final DownloadFileCallback onWatch;
   final DeleteCallback onDelete;
   final DownloadFileCallback downloadFile;
   final RenameFileCallback renameFileCallback;
+  final DownloadFileCallback openTempFile;
 
   final bool isCard;
 
@@ -38,7 +43,9 @@ class FileWidgetUI extends StatefulWidget {
       required this.isCard,
       required this.modifiedTime,
       required this.fileSize,
-      required this.onDelete})
+      required this.onDelete,
+      required this.onWatch,
+      required this.openTempFile})
       : super(key: key);
 
   @override
@@ -84,6 +91,10 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     return widget.downloadFile(widget.fullFilePath, friendlyFileName);
   }
 
+  Future<void> _watchFile() async {
+    return widget.onWatch(widget.fullFilePath, friendlyFileName);
+  }
+
   Future<void> _renameFile() async {
     var newName = _fileNameController.text;
     var future = widget.renameFileCallback(fullFilePath, newName);
@@ -96,6 +107,10 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
       });
     }
     await future;
+  }
+
+  Future<void> _openTempFile() async {
+    return widget.openTempFile(widget.fullFilePath, friendlyFileName);
   }
 
   String? _validateNewName(String? newName) {
@@ -128,10 +143,10 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
   Widget _buildListTile(BuildContext context) {
     return ListTile(
         leading: Icon(
-          widget.isDirectory
-              ? Icons.folder
-              : FluentIcons.document_48_regular, // document
-        ),
+            widget.isDirectory
+                ? Icons.folder
+                : FluentIcons.document_24_regular, // document
+            size: 24),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           mainAxisSize: MainAxisSize.min,
@@ -144,13 +159,33 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
 
             widget.isDirectory
                 ? const SizedBox(
-                    width: 20 + 24, // 20 + iconSize
+                    width: 16 + 24, // 16 + iconSize
                   )
                 : IconButton(
-                    icon: const Icon(Icons.download_rounded),
+                    icon: const Icon(Icons.download_rounded, size: 24),
                     onPressed: _saveToDesktop,
                     enableFeedback: false,
                     splashRadius: FileWidgetUI._iconSplashRadius,
+                  ),
+            widget.isDirectory
+                ? const SizedBox(
+                    width: 16 + 24, // 16 + iconSize
+                  )
+                : IconButton(
+                    icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
+                    onPressed: _watchFile,
+                    splashRadius: FileWidgetUI._iconSplashRadius,
+                    tooltip: "Watch",
+                  ),
+            widget.isDirectory
+                ? const SizedBox(
+                    width: 16 + 24, // 16 + iconSize
+                  )
+                : IconButton(
+                    icon: const Icon(FluentIcons.open_24_filled, size: 24),
+                    onPressed: _openTempFile,
+                    splashRadius: FileWidgetUI._iconSplashRadius,
+                    tooltip: "Open (temp)",
                   ),
             IconButton(
               // TODO: Add user feedback when this occurs
@@ -159,6 +194,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
               splashRadius: FileWidgetUI._iconSplashRadius,
               tooltip: "Copy to clipboard",
             ),
+
             IconButton(
                 splashRadius: FileWidgetUI._iconSplashRadius,
                 onPressed: !editable ? _enterEditMode : _exitEditMode,
@@ -173,27 +209,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
         ),
         onLongPress: _enterEditMode,
         onTap: widget.onClick,
-        title: editable ? _fileNameForm() : Text(friendlyFileName)
-        // title: editable
-        //     ? ValidatableTextField(
-        //         focusNode: _focusNode,
-        //         initialValue: friendlyFileName,
-        //         onSubmit: renameFile,
-        //         fieldValidator: validateNewName,
-        //       )
-        //     : Text(friendlyFileName),
-        // Row(
-        //   children: [
-        //     Flexible(
-        //       fit: FlexFit.loose,
-        //       child: SizedBox(
-        //         width: 500,
-        //         child:
-        //       ),
-        //     ),
-        //   ],
-        // ),
-        );
+        title: editable ? _fileNameForm() : Text(friendlyFileName));
   }
 
   // I hate this
@@ -261,6 +277,25 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                         icon: const Icon(Icons.download_rounded),
                         onPressed: _saveToDesktop,
                       ),
+                widget.isDirectory
+                    ? const Icon(
+                        null, // 16 + iconSize
+                      )
+                    : IconButton(
+                        icon:
+                            const Icon(FluentIcons.glasses_24_filled, size: 24),
+                        onPressed: _watchFile,
+                        splashRadius: FileWidgetUI._iconSplashRadius,
+                        tooltip: "Watch",
+                      ),
+                widget.isDirectory
+                    ? const Icon(null)
+                    : IconButton(
+                        icon: const Icon(FluentIcons.open_24_filled, size: 24),
+                        onPressed: _openTempFile,
+                        splashRadius: FileWidgetUI._iconSplashRadius,
+                        tooltip: "Open (temp)",
+                      ),
                 IconButton(
                     icon: const Icon(Icons.copy),
                     onPressed: _copyPathToClipboard),
@@ -303,12 +338,25 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: FutureBuilder<DateTime?>(
           future: widget.modifiedTime,
-          builder: ((context, snapshot) => Text(
-                snapshot.data?.toLocal().toString() ??
-                    snapshot.error?.toString() ??
-                    "...",
-                style: Theme.of(context).textTheme.subtitle2,
-              ))),
+          builder: ((context, snapshot) {
+            String text = snapshot.error?.toString() ?? "...";
+
+            var date = snapshot.data?.toLocal();
+            if (date != null) {
+              var year = date.year;
+              var day = date.day.toString().padLeft(2, '0');
+              var month = date.month.toString().padLeft(2, '0');
+              var hour = max(date.hour % 12, 1).toString().padLeft(2, '0');
+              var minute = date.minute.toString().padLeft(2, '0');
+              var second = date.second.toString().padLeft(2, '0');
+              text = "$year-$month-$day $hour:$minute:$second";
+            }
+
+            return Text(
+              text,
+              style: Theme.of(context).textTheme.subtitle2,
+            );
+          })),
     );
   }
 
@@ -322,6 +370,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                 snapshot.error?.toString() ??
                     (snapshot.data != null ? filesize(snapshot.data) : "..."),
                 style: Theme.of(context).textTheme.subtitle2,
+                textAlign: TextAlign.left,
               ))),
     );
   }

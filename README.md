@@ -1,4 +1,4 @@
-# desktop_adb_file_browser
+# desktop_adb_file_browser (AFB)
 
 A new Flutter project.
 

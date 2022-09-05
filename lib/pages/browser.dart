@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:math';
 
 import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
@@ -7,16 +9,21 @@ import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
+import 'package:desktop_adb_file_browser/widgets/shortcuts.dart';
+import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:multi_split_view/multi_split_view.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tuple/tuple.dart';
+import 'package:watcher/watcher.dart';
 
 @immutable
 class DeviceBrowser extends StatefulWidget {
@@ -55,6 +62,9 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   late ListenableHolder<void> onForwardClick;
   late ListenableHolder<void> onBackClick;
+
+  final EventListenable<Tuple2<HostPath, QuestPath>> onWatchAdd =
+      EventListenable();
 
   @override
   void initState() {
@@ -136,93 +146,124 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Row(
-          children: [
-            _navigationActions(),
-            _addressBar(),
-            _filterBar(),
-            _fileActions()
+    return DefaultTabController(
+      initialIndex: 0,
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Row(
+            children: [
+              _navigationActions(),
+              _addressBar(),
+              _filterBar(),
+              _fileActions()
+            ],
+          ),
+          leading: IconButton(
+            icon: const Icon(FluentIcons.folder_24_regular),
+            onPressed: () {
+              Routemaster.of(context).history.back();
+            },
+          ),
+          actions: [
+            //
+            IconButton(
+              icon: Icon(list ? Icons.list : Icons.grid_3x3),
+              onPressed: () {
+                setState(() {
+                  list = !list;
+                });
+              },
+            )
           ],
         ),
-        leading: IconButton(
-          icon: const Icon(FluentIcons.folder_24_regular),
-          onPressed: () {
-            Routemaster.of(context).history.back();
-          },
-        ),
-        actions: [
-          //
-          IconButton(
-            icon: Icon(list ? Icons.list : Icons.grid_3x3),
-            onPressed: () {
-              setState(() {
-                list = !list;
-              });
-            },
-          )
-        ],
-      ),
-      body: Focus(
-        key: const ValueKey("Focus"),
-        autofocus: true,
-        canRequestFocus: true,
-        descendantsAreFocusable: true,
-        skipTraversal: true,
-        onKey: (node, event) {
-          if (!event.repeat) {
-            // TODO: Figure out how to allow lower focus take control
-            // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
-            //   back();
-            //   return KeyEventResult.handled;
-            // }
+        body: Focus(
+          key: const ValueKey("Focus"),
+          autofocus: true,
+          canRequestFocus: true,
+          descendantsAreFocusable: true,
+          skipTraversal: true,
+          onKey: (node, event) {
+            if (!event.repeat) {
+              // TODO: Figure out how to allow lower focus take control
+              // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
+              //   back();
+              //   return KeyEventResult.handled;
+              // }
 
-            if (event.isAltPressed) {
-              if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
-                back();
-                return KeyEventResult.handled;
-              }
-              if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
-                forward();
-                return KeyEventResult.handled;
+              if (event.isAltPressed) {
+                if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
+                  back();
+                  return KeyEventResult.handled;
+                }
+                if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
+                  forward();
+                  return KeyEventResult.handled;
+                }
               }
             }
-          }
 
-          return KeyEventResult.ignored;
-        },
-        child: MultiSplitViewTheme(
-          data: MultiSplitViewThemeData(dividerThickness: 5.5),
-          child: MultiSplitView(
-            initialAreas: [Area(weight: 0.15)],
+            return KeyEventResult.ignored;
+          },
+          child: MultiSplitViewTheme(
+            data: MultiSplitViewThemeData(dividerThickness: 5.5),
+            child: MultiSplitView(
+              initialAreas: [Area(weight: 0.15)],
+              children: [
+                _leftPanel(),
+                Center(child: _fileListContainer(context))
+              ],
+              dividerBuilder:
+                  (axis, index, resizable, dragging, highlighted, themeData) =>
+                      Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                          width: 0.5,
+                          color: Colors.black),
+            ),
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            _showNewFileDialog();
+          },
+          tooltip: 'Add new file',
+          child: const Icon(Icons.add),
+        ),
+        bottomNavigationBar:
+            _locationsRow(), // This trailing comma makes auto-formatting nicer for build methods.
+      ),
+    );
+  }
+
+  Column _leftPanel() {
+    return Column(
+      children: [
+        Expanded(
+          child: TabBarView(
             children: [
               ShortcutsListWidget(
                 currentPath: _currentPath,
                 onTap: _navigateToDirectory,
               ),
-              Center(child: _fileListContainer(context))
+              FileWatcherList(serial: widget.serial, onUpdate: onWatchAdd)
             ],
-            dividerBuilder:
-                (axis, index, resizable, dragging, highlighted, themeData) =>
-                    Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                        width: 0.5,
-                        color: Colors.black),
           ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showNewFileDialog();
-        },
-        tooltip: 'Add new file',
-        child: const Icon(Icons.add),
-      ),
-      bottomNavigationBar:
-          _locationsRow(), // This trailing comma makes auto-formatting nicer for build methods.
+        const TabBar(tabs: [
+          Tab(
+              icon: Icon(
+            FluentIcons.bookmark_20_filled,
+            size: 20,
+          )),
+          Tab(
+              icon: Icon(
+            FluentIcons.glasses_20_filled,
+            size: 20,
+          ))
+        ]),
+      ],
     );
   }
 
@@ -319,11 +360,9 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             FluentIcons.folder_add_20_regular,
           ),
           onPressed: () {
-            FilePicker.platform.pickFiles(allowMultiple: true).then((value) {
-              if (value?.paths == null || value!.paths.isEmpty) return;
-              _uploadFiles(value.paths
-                  .where((element) => element != null)
-                  .map((e) => e!));
+            openFiles().then((value) {
+              if (value.isEmpty) return;
+              _uploadFiles(value.map((e) => e.path));
             });
           },
         ),
@@ -347,11 +386,10 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             snapshot.connectionState == ConnectionState.done) {
           var filteredList =
               _filteredFiles(snapshot.data!).toList(growable: false);
-              
+
           filteredList = filteredList
               .where((value) => value.endsWith("/"))
-              .followedBy(
-                  filteredList.where((value) => !value.endsWith("/")))
+              .followedBy(filteredList.where((value) => !value.endsWith("/")))
               .toList(growable: false);
           return list ? _viewAsList(filteredList) : _viewAsGrid(filteredList);
         }
@@ -401,6 +439,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     return GridView.extent(
         key: ValueKey(files),
         controller: widget._scrollController,
+        shrinkWrap: true,
         childAspectRatio: 17.0 / 9.0,
         padding: const EdgeInsets.all(4.0),
         mainAxisSpacing: 4.0,
@@ -421,6 +460,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             modifiedTime: Future.value(null),
             fileSize: Future.value(null),
             onDelete: _removeFileDialog,
+            onWatch: _watchFile,
+            openTempFile: _openTempFile,
           ));
         }).toList(growable: false));
   }
@@ -448,6 +489,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           downloadFile: _saveFileToDesktop,
           renameFileCallback: _renameFile,
           onDelete: _removeFileDialog,
+          onWatch: _watchFile,
+          openTempFile: _openTempFile,
         );
       },
       itemCount: files.length,
@@ -492,11 +535,20 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   Future<void> _saveFileToDesktop(
       String source, String friendlyFilename) async {
-    final path = await getSavePath(suggestedName: friendlyFilename);
+    final savePath = await getSavePath(suggestedName: friendlyFilename);
 
-    if (path == null) return;
+    if (savePath == null) return;
 
-    await Adb.downloadFile(widget.serial, source, path);
+    await Adb.downloadFile(widget.serial, source, savePath);
+  }
+
+  Future<void> _watchFile(String source, String friendlyFilename) async {
+    final savePath = await getSavePath(suggestedName: friendlyFilename);
+
+    if (savePath == null) return;
+
+    await Adb.downloadFile(widget.serial, source, savePath);
+    onWatchAdd.invoke(Tuple2(savePath, source));
   }
 
   void _uploadFiles(Iterable<String> paths) async {
@@ -647,6 +699,27 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     fileNameController.dispose();
     fileCreation.dispose();
   }
+
+  Future<void> _openTempFile(String questPath, String fileName) async {
+    var temp = await getTemporaryDirectory();
+    var randomName = "${Random().nextInt(10000)}$fileName";
+
+    var dest = Adb.hostPath.join(temp.path, randomName);
+    await Adb.downloadFile(widget.serial, questPath, dest);
+
+    StreamSubscription? subscription;
+    subscription = Watcher(dest).events.listen((event) async {
+      if (event.type == ChangeType.REMOVE || !(await File(dest).exists())) {
+        await subscription!.cancel();
+      }
+
+      if (event.type == ChangeType.MODIFY) {
+        await Adb.uploadFile(widget.serial, dest, questPath);
+      }
+    });
+
+    OpenFile.open(dest);
+  }
 }
 
 class UploadingFilesWidget extends StatefulWidget {
@@ -691,119 +764,6 @@ class _UploadingFilesWidgetState extends State<UploadingFilesWidget> {
             ),
           );
         });
-  }
-}
-
-typedef ShortcutTapFunction = void Function(String path);
-
-class ShortcutsListWidget extends StatefulWidget {
-  final double initialWidth;
-  final double? maxWidth;
-  final double? minWidth;
-
-  final ShortcutTapFunction? onTap;
-  final String currentPath;
-
-  const ShortcutsListWidget(
-      {Key? key,
-      this.initialWidth = 240,
-      this.maxWidth = 500,
-      this.minWidth = 100,
-      required this.onTap,
-      required this.currentPath})
-      : super(key: key);
-
-  @override
-  State<ShortcutsListWidget> createState() => _ShortcutsListWidgetState();
-}
-
-class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
-  late Future<Map<String, String>> _future;
-  late SharedPreferences _preferences;
-
-  @override
-  void initState() {
-    super.initState();
-    _future = SharedPreferences.getInstance().then((value) {
-      _preferences = value;
-      return value.getShortcutsMap();
-    });
-  }
-
-  void _resetFuture() {
-    _future = _preferences.getShortcutsMap();
-  }
-
-  void _updateMap(Map<String, String> map) {
-    _preferences.setShortcutsMap(map).then((_) {
-      setState(() {
-        _resetFuture();
-      });
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<Map<String, String>>(
-      future: _future,
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Text("Got error ${snapshot.error.toString()}");
-        }
-
-        if (snapshot.connectionState == ConnectionState.waiting ||
-            !snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-
-        var map = snapshot.data!;
-
-        return Column(
-          children: [
-            Expanded(
-              flex: 2,
-              child: ListView.builder(
-                  controller: AdjustableScrollController(),
-                  // shrinkWrap: true,
-                  itemBuilder: (context, index) =>
-                      _shortcutTile(context, index, map),
-                  itemCount: map.length),
-            ),
-            TextField(
-                key: ValueKey(widget.currentPath),
-                onSubmitted: (value) {
-                  map[value] = widget.currentPath;
-                  _updateMap(map);
-                }),
-          ],
-        );
-      },
-    );
-  }
-
-  ListTile _shortcutTile(
-      BuildContext context, int index, Map<String, String> map) {
-    final name = map.keys.toList(growable: false)[index];
-    final path = map[name]!;
-
-    return ListTile(
-      title: Text(name),
-      subtitle: Text(path),
-      onTap: () {
-        if (widget.onTap != null) widget.onTap!(path);
-      },
-      trailing: IconButton(
-        iconSize: 20,
-        splashRadius: 24,
-        icon: const Icon(FluentIcons.delete_20_filled),
-        onPressed: () {
-          map.remove(name);
-          _updateMap(map);
-        },
-      ),
-    );
   }
 }
 

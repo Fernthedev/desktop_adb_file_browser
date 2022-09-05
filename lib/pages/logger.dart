@@ -30,12 +30,15 @@ class LogPage extends StatelessWidget {
           },
         ),
         actions: [
-          IconButton(
-              onPressed: _saveLog,
-              icon: const Icon(
-                FluentIcons.save_28_regular,
-                size: 28,
-              ))
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: IconButton(
+                onPressed: _saveLog,
+                icon: const Icon(
+                  FluentIcons.save_28_regular,
+                  size: 28,
+                )),
+          )
         ],
       ),
       body: Padding(
@@ -111,7 +114,7 @@ class LogPage extends StatelessWidget {
     writer.writeAll(logs, Adb.hostPath.separator);
     await writer.flush();
     await writer.close();
-  
+
     // TODO: user feedback when finished
   }
 }

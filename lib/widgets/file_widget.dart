@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:clipboard/clipboard.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:filesize/filesize.dart';
@@ -167,8 +169,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
               tooltip: "Copy to clipboard",
             ),
             IconButton(
-              // TODO: Add user feedback when this occurs
-              icon: const Icon(FluentIcons.glasses_20_filled, size: 20,),
+              icon: const Icon(FluentIcons.glasses_20_filled, size: 20),
               onPressed: _watchFile,
               splashRadius: FileWidgetUI._iconSplashRadius,
               tooltip: "Watch",
@@ -317,12 +318,25 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
       padding: const EdgeInsets.symmetric(horizontal: 8.0),
       child: FutureBuilder<DateTime?>(
           future: widget.modifiedTime,
-          builder: ((context, snapshot) => Text(
-                snapshot.data?.toLocal().toString() ??
-                    snapshot.error?.toString() ??
-                    "...",
+          builder: ((context, snapshot) {
+            String text = snapshot.error?.toString() ?? "...";
+            
+            var date = snapshot.data?.toLocal();
+            if (date != null) {
+              var year = date.year;
+              var day = date.day.toString().padLeft(2, '0');
+              var month = date.month.toString().padLeft(2, '0');
+              var hour = max(date.hour % 12, 1).toString().padLeft(2, '0');
+              var minute = date.minute.toString().padLeft(2, '0');
+              var second = date.second.toString().padLeft(2, '0');
+              text = "$year-$month-$day $hour:$minute:$second";
+            }
+
+            return Text(
+                text,
                 style: Theme.of(context).textTheme.subtitle2,
-              ))),
+              );
+          })),
     );
   }
 
@@ -336,6 +350,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                 snapshot.error?.toString() ??
                     (snapshot.data != null ? filesize(snapshot.data) : "..."),
                 style: Theme.of(context).textTheme.subtitle2,
+                textAlign: TextAlign.left,
               ))),
     );
   }

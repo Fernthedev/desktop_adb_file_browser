@@ -7,6 +7,7 @@ import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 
 typedef DownloadFileCallback = Future<void> Function(
     String source, String fileName);
@@ -193,25 +194,6 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
         onLongPress: _enterEditMode,
         onTap: widget.onClick,
         title: editable ? _fileNameForm() : Text(friendlyFileName)
-        // title: editable
-        //     ? ValidatableTextField(
-        //         focusNode: _focusNode,
-        //         initialValue: friendlyFileName,
-        //         onSubmit: renameFile,
-        //         fieldValidator: validateNewName,
-        //       )
-        //     : Text(friendlyFileName),
-        // Row(
-        //   children: [
-        //     Flexible(
-        //       fit: FlexFit.loose,
-        //       child: SizedBox(
-        //         width: 500,
-        //         child:
-        //       ),
-        //     ),
-        //   ],
-        // ),
         );
   }
 

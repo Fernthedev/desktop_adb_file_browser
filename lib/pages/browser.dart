@@ -10,7 +10,6 @@ import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
 import 'package:desktop_adb_file_browser/widgets/shortcuts.dart';
 import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/foundation.dart';
@@ -347,11 +346,9 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             FluentIcons.folder_add_20_regular,
           ),
           onPressed: () {
-            FilePicker.platform.pickFiles(allowMultiple: true).then((value) {
-              if (value?.paths == null || value!.paths.isEmpty) return;
-              _uploadFiles(value.paths
-                  .where((element) => element != null)
-                  .map((e) => e!));
+            openFiles().then((value) {
+              if (value.isEmpty) return;
+              _uploadFiles(value.map((e) => e.path));
             });
           },
         ),

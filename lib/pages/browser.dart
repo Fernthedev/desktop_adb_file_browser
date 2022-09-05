@@ -207,34 +207,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             child: MultiSplitView(
               initialAreas: [Area(weight: 0.15)],
               children: [
-                Column(
-                  children: [
-                    Expanded(
-                      child: TabBarView(
-                        children: [
-                          ShortcutsListWidget(
-                            currentPath: _currentPath,
-                            onTap: _navigateToDirectory,
-                          ),
-                          FileWatcherList(
-                              serial: widget.serial, onUpdate: onWatchAdd)
-                        ],
-                      ),
-                    ),
-                    const TabBar(tabs: [
-                      Tab(
-                          icon: Icon(
-                        FluentIcons.bookmark_20_filled,
-                        size: 20,
-                      )),
-                      Tab(
-                          icon: Icon(
-                        FluentIcons.glasses_20_filled,
-                        size: 20,
-                      ))
-                    ]),
-                  ],
-                ),
+                _leftPanel(),
                 Center(child: _fileListContainer(context))
               ],
               dividerBuilder:
@@ -257,6 +230,37 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             _locationsRow(), // This trailing comma makes auto-formatting nicer for build methods.
       ),
     );
+  }
+
+  Column _leftPanel() {
+    return Column(
+                children: [
+                  Expanded(
+                    child: TabBarView(
+                      children: [
+                        ShortcutsListWidget(
+                          currentPath: _currentPath,
+                          onTap: _navigateToDirectory,
+                        ),
+                        FileWatcherList(
+                            serial: widget.serial, onUpdate: onWatchAdd)
+                      ],
+                    ),
+                  ),
+                  const TabBar(tabs: [
+                    Tab(
+                        icon: Icon(
+                      FluentIcons.bookmark_20_filled,
+                      size: 20,
+                    )),
+                    Tab(
+                        icon: Icon(
+                      FluentIcons.glasses_20_filled,
+                      size: 20,
+                    ))
+                  ]),
+                ],
+              );
   }
 
   Wrap _navigationActions() {

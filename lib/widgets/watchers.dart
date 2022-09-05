@@ -44,6 +44,10 @@ class _FileWatcherListState extends State<FileWatcherList> {
       map[item.item1] = item.item2;
       await _preferences.setWatchersMap(map);
       await update();
+
+      // Update UI
+      if (!mounted) return;
+      setState(() {});
     });
   }
 
@@ -68,6 +72,7 @@ class _FileWatcherListState extends State<FileWatcherList> {
     }
 
     if (event.type == ChangeType.MODIFY) {
+      debugPrint("Uploading changes");
       Adb.uploadFile(widget.serial, src, dest);
     }
   }

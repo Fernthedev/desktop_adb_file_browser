@@ -29,19 +29,17 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
     super.initState();
     _future = SharedPreferences.getInstance().then((value) {
       _preferences = value;
-      return value.getShortcutsMap();
+      return _resetFuture();
     });
   }
 
-  void _resetFuture() {
-    _future = _preferences.getShortcutsMap();
+  Future<Map<String, String>> _resetFuture() {
+    return _future = _preferences.getShortcutsMap();
   }
 
   void _updateMap(Map<String, String> map) {
     _preferences.setShortcutsMap(map).then((_) {
-      setState(() {
-        _resetFuture();
-      });
+      setState(() {});
     });
   }
 

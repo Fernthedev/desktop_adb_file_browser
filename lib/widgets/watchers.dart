@@ -42,12 +42,7 @@ class _FileWatcherListState extends State<FileWatcherList> {
     _listenableHolder = widget.onUpdate.addListener((item) async {
       var map = await _future;
       map[item.item1] = item.item2;
-      await _preferences.setWatchersMap(map);
-      await update();
-
-      // Update UI
-      if (!mounted) return;
-      setState(() {});
+      await _updateMap(map);
     });
   }
 
@@ -85,6 +80,11 @@ class _FileWatcherListState extends State<FileWatcherList> {
     return _future;
   }
 
+  Future<void> _updateMap(Map<String, String> map) async {
+    await _preferences.setWatchersMap(map);
+    setState(() {});
+  }
+
   Future<void> update() async {
     var newMap = await _future;
     for (var watcher
@@ -104,13 +104,6 @@ class _FileWatcherListState extends State<FileWatcherList> {
     newFiles.removeWhere((key, value) => newMap.containsKey(key));
 
     _watchers.addAll(newFiles);
-  }
-
-  void _updateMap(Map<String, String> map) async {
-    await _preferences.setWatchersMap(map);
-    setState(() {
-      _resetFuture();
-    });
   }
 
   @override

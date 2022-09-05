@@ -136,7 +136,8 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
         leading: Icon(
           widget.isDirectory
               ? Icons.folder
-              : FluentIcons.document_48_regular, // document
+              : FluentIcons.document_24_regular, // document
+              size: 24
         ),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -150,7 +151,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
 
             widget.isDirectory
                 ? const SizedBox(
-                    width: 20 + 24, // 20 + iconSize
+                    width: 20 + 20, // 20 + iconSize
                   )
                 : IconButton(
                     icon: const Icon(Icons.download_rounded),

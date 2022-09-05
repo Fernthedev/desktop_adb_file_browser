@@ -128,12 +128,14 @@ class _FileWatcherListState extends State<FileWatcherList> {
 
         return Column(
           children: [
-            ListView.builder(
-                controller: AdjustableScrollController(),
-                // shrinkWrap: true,
-                itemBuilder: (context, index) =>
-                    _watcherTile(context, index, map),
-                itemCount: map.length),
+            Flexible(
+              child: ListView.builder(
+                  controller: AdjustableScrollController(),
+                  // shrinkWrap: true,
+                  itemBuilder: (context, index) =>
+                      _watcherTile(context, index, map),
+                  itemCount: map.length),
+            ),
           ],
         );
       },

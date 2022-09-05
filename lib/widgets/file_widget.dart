@@ -136,11 +136,10 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
   Widget _buildListTile(BuildContext context) {
     return ListTile(
         leading: Icon(
-          widget.isDirectory
-              ? Icons.folder
-              : FluentIcons.document_24_regular, // document
-              size: 24
-        ),
+            widget.isDirectory
+                ? Icons.folder
+                : FluentIcons.document_24_regular, // document
+            size: 24),
         trailing: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           mainAxisSize: MainAxisSize.min,
@@ -153,13 +152,23 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
 
             widget.isDirectory
                 ? const SizedBox(
-                    width: 20 + 20, // 20 + iconSize
+                    width: 16 + 24, // 16 + iconSize
                   )
                 : IconButton(
-                    icon: const Icon(Icons.download_rounded),
+                    icon: const Icon(Icons.download_rounded, size: 24),
                     onPressed: _saveToDesktop,
                     enableFeedback: false,
                     splashRadius: FileWidgetUI._iconSplashRadius,
+                  ),
+            widget.isDirectory
+                ? const SizedBox(
+                    width: 16 + 24, // 16 + iconSize
+                  )
+                : IconButton(
+                    icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
+                    onPressed: _watchFile,
+                    splashRadius: FileWidgetUI._iconSplashRadius,
+                    tooltip: "Watch",
                   ),
             IconButton(
               // TODO: Add user feedback when this occurs
@@ -168,12 +177,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
               splashRadius: FileWidgetUI._iconSplashRadius,
               tooltip: "Copy to clipboard",
             ),
-            IconButton(
-              icon: const Icon(FluentIcons.glasses_20_filled, size: 20),
-              onPressed: _watchFile,
-              splashRadius: FileWidgetUI._iconSplashRadius,
-              tooltip: "Watch",
-            ),
+
             IconButton(
                 splashRadius: FileWidgetUI._iconSplashRadius,
                 onPressed: !editable ? _enterEditMode : _exitEditMode,
@@ -320,7 +324,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
           future: widget.modifiedTime,
           builder: ((context, snapshot) {
             String text = snapshot.error?.toString() ?? "...";
-            
+
             var date = snapshot.data?.toLocal();
             if (date != null) {
               var year = date.year;
@@ -333,9 +337,9 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
             }
 
             return Text(
-                text,
-                style: Theme.of(context).textTheme.subtitle2,
-              );
+              text,
+              style: Theme.of(context).textTheme.subtitle2,
+            );
           })),
     );
   }

@@ -141,115 +141,121 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Row(
-          children: [
-            _navigationActions(),
-            _addressBar(),
-            _filterBar(),
-            _fileActions()
+    return DefaultTabController(
+      initialIndex: 0,
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Row(
+            children: [
+              _navigationActions(),
+              _addressBar(),
+              _filterBar(),
+              _fileActions()
+            ],
+          ),
+          leading: IconButton(
+            icon: const Icon(FluentIcons.folder_24_regular),
+            onPressed: () {
+              Routemaster.of(context).history.back();
+            },
+          ),
+          actions: [
+            //
+            IconButton(
+              icon: Icon(list ? Icons.list : Icons.grid_3x3),
+              onPressed: () {
+                setState(() {
+                  list = !list;
+                });
+              },
+            )
           ],
         ),
-        leading: IconButton(
-          icon: const Icon(FluentIcons.folder_24_regular),
-          onPressed: () {
-            Routemaster.of(context).history.back();
-          },
-        ),
-        actions: [
-          //
-          IconButton(
-            icon: Icon(list ? Icons.list : Icons.grid_3x3),
-            onPressed: () {
-              setState(() {
-                list = !list;
-              });
-            },
-          )
-        ],
-      ),
-      body: Focus(
-        key: const ValueKey("Focus"),
-        autofocus: true,
-        canRequestFocus: true,
-        descendantsAreFocusable: true,
-        skipTraversal: true,
-        onKey: (node, event) {
-          if (!event.repeat) {
-            // TODO: Figure out how to allow lower focus take control
-            // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
-            //   back();
-            //   return KeyEventResult.handled;
-            // }
+        body: Focus(
+          key: const ValueKey("Focus"),
+          autofocus: true,
+          canRequestFocus: true,
+          descendantsAreFocusable: true,
+          skipTraversal: true,
+          onKey: (node, event) {
+            if (!event.repeat) {
+              // TODO: Figure out how to allow lower focus take control
+              // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
+              //   back();
+              //   return KeyEventResult.handled;
+              // }
 
-            if (event.isAltPressed) {
-              if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
-                back();
-                return KeyEventResult.handled;
-              }
-              if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
-                forward();
-                return KeyEventResult.handled;
+              if (event.isAltPressed) {
+                if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
+                  back();
+                  return KeyEventResult.handled;
+                }
+                if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
+                  forward();
+                  return KeyEventResult.handled;
+                }
               }
             }
-          }
 
-          return KeyEventResult.ignored;
-        },
-        child: MultiSplitViewTheme(
-          data: MultiSplitViewThemeData(dividerThickness: 5.5),
-          child: MultiSplitView(
-            initialAreas: [Area(weight: 0.15)],
-            children: [
-              DefaultTabController(
-                  length: 2,
-                  child: Column(
-                    children: [
-                      TabBarView(children: [
-                        ShortcutsListWidget(
-                          currentPath: _currentPath,
-                          onTap: _navigateToDirectory,
-                        ),
-                        FileWatcherList(
-                            serial: widget.serial, onUpdate: onWatchAdd)
-                      ]),
-                      const TabBar(tabs: [
-                        Tab(
-                            icon: Icon(
-                          FluentIcons.glasses_20_filled,
-                          size: 20,
-                        )),
-                        Tab(
-                            icon: Icon(
-                          FluentIcons.bookmark_20_filled,
-                          size: 20,
-                        ))
-                      ]),
-                    ],
-                  )),
-              Center(child: _fileListContainer(context))
-            ],
-            dividerBuilder:
-                (axis, index, resizable, dragging, highlighted, themeData) =>
-                    Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                        width: 0.5,
-                        color: Colors.black),
+            return KeyEventResult.ignored;
+          },
+          child: MultiSplitViewTheme(
+            data: MultiSplitViewThemeData(dividerThickness: 5.5),
+            child: MultiSplitView(
+              initialAreas: [Area(weight: 0.15)],
+              children: [
+                Column(
+                  children: [
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          ShortcutsListWidget(
+                            currentPath: _currentPath,
+                            onTap: _navigateToDirectory,
+                          ),
+                          FileWatcherList(
+                              serial: widget.serial, onUpdate: onWatchAdd)
+                        ],
+                      ),
+                    ),
+                    const TabBar(tabs: [
+                      Tab(
+                          icon: Icon(
+                        FluentIcons.bookmark_20_filled,
+                        size: 20,
+                      )),
+                      Tab(
+                          icon: Icon(
+                        FluentIcons.glasses_20_filled,
+                        size: 20,
+                      ))
+                    ]),
+                  ],
+                ),
+                Center(child: _fileListContainer(context))
+              ],
+              dividerBuilder:
+                  (axis, index, resizable, dragging, highlighted, themeData) =>
+                      Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                          width: 0.5,
+                          color: Colors.black),
+            ),
           ),
         ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            _showNewFileDialog();
+          },
+          tooltip: 'Add new file',
+          child: const Icon(Icons.add),
+        ),
+        bottomNavigationBar:
+            _locationsRow(), // This trailing comma makes auto-formatting nicer for build methods.
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showNewFileDialog();
-        },
-        tooltip: 'Add new file',
-        child: const Icon(Icons.add),
-      ),
-      bottomNavigationBar:
-          _locationsRow(), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 

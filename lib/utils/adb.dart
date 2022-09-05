@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
@@ -69,10 +70,7 @@ abstract class Adb {
     await Process.run("chmod", ["+x", _adbCurrentPath!]);
   }
 
-  static Future<ProcessResult> runAdbCommand(
-      String? serial, List<String> args) async {
-    var newArgs = serial != null ? ["-s", serial, ...args] : args;
-
+  static Future<String> _getAdbPath() async {
     if (_adbCurrentPath == null) {
       var downloadPath = await _getDownloadPath();
       if (await downloadPath.exists()) {
@@ -83,7 +81,14 @@ abstract class Adb {
       }
     }
 
-    var process = await Process.run(_adbCurrentPath!, newArgs);
+    return _adbCurrentPath!;
+  }
+
+  static Future<ProcessResult> runAdbCommand(
+      String? serial, List<String> args) async {
+    var newArgs = serial != null ? ["-s", serial, ...args] : args;
+
+    var process = await Process.run(await _getAdbPath(), newArgs);
     if (process.stderr != null && process.stderr.toString().isNotEmpty) {
       throw process.stderr.toString();
     }
@@ -91,6 +96,13 @@ abstract class Adb {
     // if (process.exitCode != 0) throw "Process exit code was not 0!";
 
     return process;
+  }
+
+  static Future<Process> startAdbCommand(
+      String? serial, List<String> args) async {
+    var newArgs = serial != null ? ["-s", serial, ...args] : args;
+
+    return await Process.start(await _getAdbPath(), newArgs);
   }
 
   static String normalizeOutput(String output) {
@@ -175,6 +187,16 @@ abstract class Adb {
         .map((e) => e.substring(0, e.indexOf("\t")).replaceAll("\n", "").trim())
         .where((element) => element.isNotEmpty)
         .toList(growable: false);
+  }
+
+  static Future<Stream<String>> logcat(String? serialName) async {
+    await runAdbCommand(serialName, ["logcat", "-c"]); // flush
+
+    var result = await startAdbCommand(serialName, ["logcat"]);
+    
+    return result.stdout
+        .transform(utf8.decoder)
+        .transform(const LineSplitter());
   }
 
   static Future<String?> getDeviceName(String? serialName) async {

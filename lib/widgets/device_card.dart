@@ -41,6 +41,23 @@ class DeviceCard extends StatelessWidget {
                   // TODO: Make this copy to clipboard or something
                   // maybe device details page?
                   child: TextButton(onPressed: () {}, child: Text(serialName))),
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  children: [
+                    IconButton(
+                        onPressed: () => Routes.log(context, serialName),
+                        icon: const Icon(
+                          FluentIcons.notepad_24_filled,
+                          size: 24,
+                        ))
+                  ],
+                ),
+              ),
             )
           ],
         ),

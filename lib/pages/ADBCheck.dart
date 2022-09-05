@@ -1,4 +1,3 @@
-import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';

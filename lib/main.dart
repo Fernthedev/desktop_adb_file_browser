@@ -1,6 +1,7 @@
 import 'package:desktop_adb_file_browser/pages/ADBCheck.dart';
 import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
+import 'package:desktop_adb_file_browser/pages/logger.dart';
 import 'package:desktop_adb_file_browser/pigeon_impl.dart';
 import 'package:desktop_adb_file_browser/routes.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
@@ -13,7 +14,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:routemaster/routemaster.dart';
 
 final routes = RouteMap(routes: {
-  '/': (_) => const MaterialPage(key: ValueKey("adbcheck"), child: ADBCheck(redirectPage: '/devices',)),
+  '/': (_) => const MaterialPage(
+      key: ValueKey("adbcheck"),
+      child: ADBCheck(
+        redirectPage: '/devices',
+      )),
 
   '/devices': (_) =>
       const MaterialPage(key: ValueKey("devices"), child: DevicesPage()),
@@ -23,6 +28,11 @@ final routes = RouteMap(routes: {
       child: DeviceBrowser(
         serial: info.pathParameters['device']!,
         initialAddress: info.pathParameters['path']!,
+      )),
+  'log/:device': (info) => MaterialPage(
+      key: const ValueKey("log"),
+      child: LogPage(
+        serial: info.pathParameters['device']!,
       ))
 
   // '/feed': (_) => MaterialPage(child: FeedPage()),
@@ -105,4 +115,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

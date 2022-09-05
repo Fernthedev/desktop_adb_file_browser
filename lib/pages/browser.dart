@@ -28,27 +28,84 @@ import 'package:watcher/watcher.dart';
 @immutable
 class DeviceBrowser extends StatefulWidget {
   final String serial;
-  final TextEditingController _addressBar;
+
   final TextEditingController _filterController = TextEditingController();
-
   final ScrollController _scrollController = AdjustableScrollController(60);
-
-  final StackCollection<String> _paths = StackCollection();
-  final StackCollection<String> _forwardPaths = StackCollection();
+  final _FileBrowser _fileBrowser;
 
   DeviceBrowser(
       {Key? key, required String initialAddress, required this.serial})
-      : _addressBar = TextEditingController(
-            text: Adb.fixPath(initialAddress, addQuotes: false)),
+      : _fileBrowser = _FileBrowser(
+            addressBar: TextEditingController(
+                text: Adb.fixPath(initialAddress, addQuotes: false))),
         super(key: key);
 
   @override
   State<DeviceBrowser> createState() => _DeviceBrowserState();
 }
 
+typedef FileNavigateEvent = void Function(String newPath);
+
+class _FileBrowser {
+  _FileBrowser({required this.addressBar});
+
+  final TextEditingController addressBar;
+
+  final StackCollection<String> _historyPaths = StackCollection();
+  final StackCollection<String> _forwardPaths = StackCollection();
+
+  String get _currentPath => addressBar.text;
+  set _currentPath(String val) => addressBar.text = val;
+
+  FileNavigateEvent? navigateEvent;
+
+  void back() {
+    if (_historyPaths.isEmpty) return;
+    debugPrint("Pushed back $_currentPath");
+
+    _forwardPaths.push(_currentPath);
+    _refreshFiles(newPath: _historyPaths.pop(), addToHistory: false);
+  }
+
+  void forward() {
+    if (_forwardPaths.isEmpty) return;
+    debugPrint("Pushed forward ${_forwardPaths.isNotEmpty}");
+
+    _refreshFiles(newPath: _forwardPaths.pop());
+  }
+
+  void navigateToDirectory(String directory) {
+    _refreshFiles(newPath: directory);
+    _forwardPaths.clear();
+    debugPrint("clear forward");
+  }
+
+  void _refreshFiles({String? newPath, bool addToHistory = true}) {
+    var oldAddressText = _currentPath;
+
+    newPath = newPath == null
+        ? null
+        : Adb.adbPathContext
+            .canonicalize(Adb.fixPath(newPath, addQuotes: false));
+
+    if (newPath != null) {
+      if (addToHistory) {
+        _historyPaths.push(_currentPath);
+      }
+      _currentPath = newPath;
+    }
+
+    /// Don't refresh unnecessarily
+    /// This will still allow refreshes when pressing enter
+    /// on the address bar because the address bar passes [path] as null
+    /// TODO: Remove this or clarify
+    if (newPath != null && oldAddressText == newPath) return;
+
+    navigateEvent?.call(newPath ?? _currentPath);
+  }
+}
+
 // TODO: Gestures
-// TODO: Add shortcuts (sidebar?)
-// TODO: A text field which on save adds an entry to the shortcut list
 // TODO: Add download progress snackbar (similar to upload progress)
 // TODO: Make snackbar progress animation ease exponential because it looks
 // TODO: File details page
@@ -57,7 +114,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   bool list = true;
   bool _dragging = false;
   late Future<List<String>?> _fileListingFuture;
-  late Future<SharedPreferences> preferences;
+  // late Future<SharedPreferences> preferences;
   Map<String, FileData> fileCache = {}; // date time cache
 
   late ListenableHolder<void> onForwardClick;
@@ -69,10 +126,12 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   @override
   void initState() {
     super.initState();
-    onForwardClick =
-        native2flutter.mouseForwardClick.addListener((_) => forward());
-    onBackClick = native2flutter.mouseBackClick.addListener((_) => back());
-    _refreshFiles(updateState: false, pushToHistory: false);
+    widget._fileBrowser.navigateEvent = _onNavigate;
+    onForwardClick = native2flutter.mouseForwardClick
+        .addListener((_) => widget._fileBrowser.forward());
+    onBackClick = native2flutter.mouseBackClick
+        .addListener((_) => widget._fileBrowser.back());
+    _onNavigate(widget._fileBrowser._currentPath);
   }
 
   @override
@@ -82,66 +141,16 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     onBackClick.dispose();
   }
 
-  String get _currentPath => widget._addressBar.text;
+  void _onNavigate(String newPath) {
+    debugPrint("Loading $newPath");
+    fileCache = {};
+    _fileListingFuture = Adb.getFilesInDirectory(widget.serial, newPath);
 
-  void back() {
-    if (widget._paths.isEmpty) return;
-    debugPrint("Pushed back $_currentPath");
-
-    widget._forwardPaths.push(_currentPath);
-    _refreshFiles(
-        path: widget._paths.pop(),
-        pushToHistory: false,
-        clearForwardHistory: false);
+    setState(() {});
   }
 
-  void forward() {
-    if (widget._forwardPaths.isEmpty) return;
-    debugPrint("Pushed forward ${widget._forwardPaths.isNotEmpty}");
-
-    _refreshFiles(
-        path: widget._forwardPaths.pop(),
-        pushToHistory: true,
-        clearForwardHistory: false);
-  }
-
-  void _refreshFiles(
-      {String? path,
-      bool pushToHistory = true,
-      bool clearForwardHistory = true,
-      bool updateState = true,
-      bool refetch = true}) {
-    var oldAddressText = _currentPath;
-
-    path = path == null
-        ? null
-        : Adb.adbPathContext.canonicalize(Adb.fixPath(path, addQuotes: false));
-
-    if (path != null) {
-      if (pushToHistory) {
-        widget._paths.push(_currentPath);
-      }
-      widget._addressBar.text = path;
-    }
-
-    if (clearForwardHistory) {
-      widget._forwardPaths.clear();
-      debugPrint("clear forward");
-    }
-
-    /// Don't refresh unnecessarily
-    /// This will still allow refreshes when pressing enter
-    /// on the address bar because the address bar passes [path] as null
-    if (path != null && oldAddressText == path) return;
-
-    if (refetch) {
-      fileCache = {};
-      _fileListingFuture =
-          Adb.getFilesInDirectory(widget.serial, path ?? _currentPath);
-    }
-    if (updateState) {
-      setState(() {});
-    }
+  void _refresh() {
+    _onNavigate(widget._fileBrowser._currentPath);
   }
 
   @override
@@ -195,11 +204,11 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
               if (event.isAltPressed) {
                 if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
-                  back();
+                  widget._fileBrowser.back();
                   return KeyEventResult.handled;
                 }
                 if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
-                  forward();
+                  widget._fileBrowser.forward();
                   return KeyEventResult.handled;
                 }
               }
@@ -231,8 +240,10 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           tooltip: 'Add new file',
           child: const Icon(Icons.add),
         ),
-        bottomNavigationBar:
-            _locationsRow(), // This trailing comma makes auto-formatting nicer for build methods.
+        bottomNavigationBar: _SplitRow(
+            browser: widget._fileBrowser,
+            key: ValueKey(widget._fileBrowser
+                ._currentPath)), // This trailing comma makes auto-formatting nicer for build methods.
       ),
     );
   }
@@ -244,8 +255,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           child: TabBarView(
             children: [
               ShortcutsListWidget(
-                currentPath: _currentPath,
-                onTap: _navigateToDirectory,
+                currentPath: widget._fileBrowser._currentPath,
+                onTap: widget._fileBrowser.navigateToDirectory,
               ),
               FileWatcherList(serial: widget.serial, onUpdate: onWatchAdd)
             ],
@@ -276,8 +287,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             FluentIcons.folder_arrow_up_24_regular,
           ),
           onPressed: () {
-            _refreshFiles(
-                path: Adb.adbPathContext.dirname(widget._addressBar.text));
+            widget._fileBrowser.navigateToDirectory(
+                Adb.adbPathContext.dirname(widget._fileBrowser._currentPath));
           },
         ),
         IconButton(
@@ -286,14 +297,14 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             FluentIcons.arrow_left_20_regular,
           ),
           onPressed: () {
-            back();
+            widget._fileBrowser.back();
           },
         ),
         IconButton(
           splashRadius: 20,
           icon: const Icon(FluentIcons.arrow_clockwise_28_regular),
           onPressed: () {
-            _refreshFiles();
+            _refresh();
           },
         ),
       ],
@@ -306,10 +317,14 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: TextField(
-          controller: widget._addressBar,
+          controller: widget._fileBrowser.addressBar,
           autocorrect: false,
           onSubmitted: (s) {
-            _refreshFiles();
+            if (s == widget._fileBrowser._currentPath) {
+              _refresh();
+            } else {
+              widget._fileBrowser.navigateToDirectory(s);
+            }
           },
           decoration: const InputDecoration(
             // cool animation border effect
@@ -332,10 +347,12 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         controller: widget._filterController,
         autocorrect: false,
         onChanged: (s) {
-          _refreshFiles(refetch: false);
+          // Update UI to filter
+          setState(() {});
         },
         onSubmitted: (s) {
-          _refreshFiles(refetch: false);
+          // Update UI to filter
+          setState(() {});
         },
         decoration: const InputDecoration(
           // cool animation border effect
@@ -454,7 +471,9 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             isCard: true,
             isDirectory: isDir,
             fullFilePath: file,
-            onClick: isDir ? () => _navigateToDirectory(file) : () {},
+            onClick: isDir
+                ? () => widget._fileBrowser.navigateToDirectory(file)
+                : () {},
             downloadFile: _saveFileToDesktop,
             renameFileCallback: _renameFile,
             modifiedTime: Future.value(null),
@@ -485,7 +504,9 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           isCard: false,
           isDirectory: isDir,
           fullFilePath: file,
-          onClick: isDir ? () => _navigateToDirectory(file) : () {},
+          onClick: isDir
+              ? () => widget._fileBrowser.navigateToDirectory(file)
+              : () {},
           downloadFile: _saveFileToDesktop,
           renameFileCallback: _renameFile,
           onDelete: _removeFileDialog,
@@ -495,42 +516,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       },
       itemCount: files.length,
     );
-  }
-
-  Widget _locationsRow() {
-    var locations = _currentPath.split("/");
-
-    if (locations.isNotEmpty && locations.first.isEmpty) {
-      locations.removeAt(0);
-    }
-
-    for (int i = 1; i < locations.length; i++) {
-      locations[i] = Adb.adbPathContext.join(locations[i - 1], locations[i]);
-    }
-
-    return SizedBox(
-      height: Theme.of(context).buttonTheme.height - 20,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: ListView(
-            shrinkWrap: true,
-            key: ValueKey(_currentPath),
-            scrollDirection: Axis.horizontal,
-            children: locations
-                .map((e) => [
-                      const Text("/"),
-                      TextButton(
-                          onPressed: () => _navigateToDirectory(e),
-                          child: Text(Adb.adbPathContext.basename(e)))
-                    ])
-                .expand<Widget>((element) => element)
-                .toList(growable: false)),
-      ),
-    );
-  }
-
-  void _navigateToDirectory(String directory) {
-    _refreshFiles(path: directory);
   }
 
   Future<void> _saveFileToDesktop(
@@ -557,7 +542,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
     for (String path in paths) {
       String dest = Adb.adbPathContext.join(
-          _currentPath, // adb file path
+          widget._fileBrowser._currentPath, // adb file path
           Adb.hostPath.basename(path) // host file name
           );
 
@@ -595,7 +580,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     );
 
     await Future.wait(tasks);
-    _refreshFiles(); // update UI
+    _refresh(); // update UI
 
     await Future.delayed(const Duration(seconds: 4));
     snackBar.close();
@@ -638,7 +623,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
                     task.then((_) {
                       Navigator.of(context).pop();
-                      _refreshFiles(refetch: true);
+                      _refresh();
                     });
                   },
                 ),
@@ -649,7 +634,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   Future<void> _showNewFileDialog() async {
     final TextEditingController fileNameController = TextEditingController();
     final ValueNotifier<FileCreation> fileCreation =
-        ValueNotifier(FileCreation.file);
+        ValueNotifier(FileCreation.File);
 
     await showDialog<void>(
       context: context,
@@ -670,23 +655,23 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           TextButton(
             child: const Text('Ok'),
             onPressed: () {
-              var path = Adb.adbPathContext
-                  .join(_currentPath, fileNameController.text);
+              var path = Adb.adbPathContext.join(
+                  widget._fileBrowser._currentPath, fileNameController.text);
 
               Future task;
 
               switch (fileCreation.value) {
-                case FileCreation.file:
+                case FileCreation.File:
                   task = Adb.createFile(widget.serial, path);
 
                   break;
-                case FileCreation.folder:
+                case FileCreation.Folder:
                   task = Adb.createDirectory(widget.serial, path);
                   break;
               }
 
               task.then((_) {
-                _refreshFiles(refetch: true);
+                _refresh();
 
                 Navigator.of(context).pop();
               });
@@ -719,6 +704,49 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     });
 
     OpenFile.open(dest);
+  }
+}
+
+class _SplitRow extends StatelessWidget {
+  const _SplitRow({
+    Key? key,
+    required this.browser,
+  }) : super(key: key);
+
+  final _FileBrowser browser;
+
+  @override
+  Widget build(BuildContext context) {
+    var currentPath = browser._currentPath;
+    var locations = currentPath.split("/");
+
+    if (locations.isNotEmpty && locations.first.isEmpty) {
+      locations.removeAt(0);
+    }
+
+    for (int i = 1; i < locations.length; i++) {
+      locations[i] = Adb.adbPathContext.join(locations[i - 1], locations[i]);
+    }
+
+    return SizedBox(
+      height: Theme.of(context).buttonTheme.height - 20,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: ListView(
+            shrinkWrap: true,
+            key: ValueKey(currentPath),
+            scrollDirection: Axis.horizontal,
+            children: locations
+                .map((e) => [
+                      const Text("/"),
+                      TextButton(
+                          onPressed: () => browser.navigateToDirectory(e),
+                          child: Text(Adb.adbPathContext.basename(e)))
+                    ])
+                .expand<Widget>((element) => element)
+                .toList(growable: false)),
+      ),
+    );
   }
 }
 
@@ -779,7 +807,8 @@ class FileData {
         fileSize = Adb.getFileSize(serialName, file);
 }
 
-enum FileCreation { file, folder }
+// ignore: constant_identifier_names
+enum FileCreation { File, Folder }
 
 class NewFileDialog extends StatefulWidget {
   const NewFileDialog(
@@ -807,8 +836,8 @@ class _NewFileDialogState extends State<NewFileDialog> {
         ),
         Row(
           children: [
-            _fileRadio(FileCreation.file),
-            _fileRadio(FileCreation.folder)
+            _fileRadio(FileCreation.File),
+            _fileRadio(FileCreation.Folder)
           ],
         )
       ],
@@ -824,7 +853,7 @@ class _NewFileDialogState extends State<NewFileDialog> {
             groupValue: widget.fileCreation.value,
             onChanged: ((value) {
               setState(() {
-                widget.fileCreation.value = value ?? FileCreation.file;
+                widget.fileCreation.value = value ?? FileCreation.File;
               });
             })),
       ],

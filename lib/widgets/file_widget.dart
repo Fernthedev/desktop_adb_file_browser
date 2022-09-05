@@ -277,6 +277,25 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                         icon: const Icon(Icons.download_rounded),
                         onPressed: _saveToDesktop,
                       ),
+                widget.isDirectory
+                    ? const Icon(
+                        null, // 16 + iconSize
+                      )
+                    : IconButton(
+                        icon:
+                            const Icon(FluentIcons.glasses_24_filled, size: 24),
+                        onPressed: _watchFile,
+                        splashRadius: FileWidgetUI._iconSplashRadius,
+                        tooltip: "Watch",
+                      ),
+                widget.isDirectory
+                    ? const Icon(null)
+                    : IconButton(
+                        icon: const Icon(FluentIcons.open_24_filled, size: 24),
+                        onPressed: _openTempFile,
+                        splashRadius: FileWidgetUI._iconSplashRadius,
+                        tooltip: "Open (temp)",
+                      ),
                 IconButton(
                     icon: const Icon(Icons.copy),
                     onPressed: _copyPathToClipboard),

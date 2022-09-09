@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:desktop_adb_file_browser/utils/adb.dart';
@@ -111,7 +112,9 @@ class LogPage extends StatelessWidget {
     var file = File(path);
     var writer = file.openWrite();
 
-    writer.writeAll(logs, Adb.hostPath.separator);
+    String lineEnding = Platform.isWindows ? '\n\r' : '\n';
+
+    writer.writeAll(logs, lineEnding);
     await writer.flush();
     await writer.close();
 

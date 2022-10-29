@@ -3,9 +3,6 @@ import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
 import 'package:desktop_adb_file_browser/pages/logger.dart';
 import 'package:desktop_adb_file_browser/pigeon_impl.dart';
-import 'package:desktop_adb_file_browser/routes.dart';
-import 'package:desktop_adb_file_browser/utils/adb.dart';
-import 'package:dio/dio.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -85,7 +82,6 @@ class MyApp extends StatelessWidget {
         scheme: FlexScheme.sanJuanBlue,
         surfaceMode: FlexSurfaceMode.highScaffoldLowSurface,
         blendLevel: 15,
-        appBarStyle: FlexAppBarStyle.background,
         appBarOpacity: 0.90,
         subThemesData: const FlexSubThemesData(
           blendOnLevel: 30,

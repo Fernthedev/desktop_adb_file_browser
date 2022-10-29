@@ -58,7 +58,10 @@ class _DevicesPageState extends State<DevicesPage> {
     return FutureBuilder(
       future: _deviceListFuture,
       builder: (BuildContext context, AsyncSnapshot<List<Device>?> snapshot) {
-        //  TODO: Error handling
+        if (snapshot.hasError) {
+          return Text("Error occurred: ${snapshot.error}");
+        }
+
         if (snapshot.hasData &&
             snapshot.data != null &&
             snapshot.connectionState == ConnectionState.done) {

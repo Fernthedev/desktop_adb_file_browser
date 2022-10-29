@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
+import 'package:async/async.dart';
 import 'package:desktop_adb_file_browser/utils/platform.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -90,7 +91,10 @@ abstract class Adb {
 
     var process = await Process.run(await _getAdbPath(), newArgs);
     if (process.stderr != null && process.stderr.toString().isNotEmpty) {
-      throw process.stderr.toString();
+      final error = process.stderr;
+      debugPrint("Error $error");
+      debugPrintStack();
+      throw error.toString();
     }
 
     // if (process.exitCode != 0) throw "Process exit code was not 0!";
@@ -193,10 +197,12 @@ abstract class Adb {
     await runAdbCommand(serialName, ["logcat", "-c"]); // flush
 
     var result = await startAdbCommand(serialName, ["logcat"]);
-    
-    return result.stdout
-        .transform(utf8.decoder)
-        .transform(const LineSplitter());
+
+    return StreamGroup.mergeBroadcast([
+      result.stderr.transform(utf8.decoder),
+      result.stdout.transform(utf8.decoder),
+    ]);
+    // .transform(const LineSplitter());
   }
 
   static Future<String?> getDeviceName(String? serialName) async {

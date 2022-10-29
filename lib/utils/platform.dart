@@ -11,6 +11,8 @@ import 'package:path/path.dart' as host_path;
 
 
 abstract class PlatformUtils {
+  static String get platformFileEnding => Platform.isWindows ? '\r\n' : '\n'; 
+
   /// The default directory name for Flutter's configs.
   /// Configs will be written to the user's config path. If there is already a
   /// file with the name `.${kConfigDir}_$name` in the user's home path, that

@@ -36,7 +36,7 @@ dependencies:
   shared_preferences: ^2.0.13
   path_provider: ^2.0.9
   file_selector: ^0.9.0
-  flex_color_scheme: ^5.1.0
+  flex_color_scheme: ^6.0.0
   google_fonts: ^3.0.1
   fluentui_system_icons: ^1.1.162
   routemaster: ^1.0.1
@@ -51,6 +51,7 @@ dependencies:
   watcher: ^1.0.1
   tuple: ^2.0.0
   open_file: ^3.2.1
+  async: ^2.9.0
 
 dev_dependencies:
   flutter_test:

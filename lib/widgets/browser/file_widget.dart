@@ -1,18 +1,22 @@
+import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:clipboard/clipboard.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
+import 'package:desktop_adb_file_browser/utils/file_browser.dart';
+import 'package:desktop_adb_file_browser/widgets/conditional.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:watcher/watcher.dart';
 
-typedef DeleteCallback = Future<void> Function(String source, bool file);
-
-typedef DownloadFileCallback = Future<void> Function(
-    String source, String fileName);
-typedef RenameFileCallback = Future<void> Function(
-    String source, String newName);
+typedef WatchFileCallback = Future<void> Function(
+    String source, String savePath);
 
 @immutable
 class FileWidgetUI extends StatefulWidget {
@@ -20,37 +24,33 @@ class FileWidgetUI extends StatefulWidget {
 
   final Future<DateTime?> modifiedTime;
   final Future<int?> fileSize;
-  final String fullFilePath;
+  final String initialFilePath;
   final bool isDirectory;
-  final VoidCallback onClick;
-  final DownloadFileCallback onWatch;
-  final DeleteCallback onDelete;
-  final DownloadFileCallback downloadFile;
-  final RenameFileCallback renameFileCallback;
-  final DownloadFileCallback openTempFile;
+  final FileBrowser browser;
+  final String serial;
+  final WatchFileCallback onWatch;
 
   final bool isCard;
 
-  const FileWidgetUI(
-      {Key? key,
-      required this.fullFilePath,
-      required this.isDirectory,
-      required this.onClick,
-      required this.downloadFile,
-      required this.renameFileCallback,
-      required this.isCard,
-      required this.modifiedTime,
-      required this.fileSize,
-      required this.onDelete,
-      required this.onWatch,
-      required this.openTempFile})
-      : super(key: key);
+  const FileWidgetUI({
+    Key? key,
+    required this.initialFilePath,
+    required this.isDirectory,
+    required this.browser,
+    required this.isCard,
+    required this.modifiedTime,
+    required this.fileSize,
+    required this.serial,
+    required this.onWatch,
+  }) : super(key: key);
 
   @override
   State<FileWidgetUI> createState() => _FileWidgetUIState();
 }
 
 class _FileWidgetUIState extends State<FileWidgetUI> {
+  bool downloading = false;
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _fileNameController;
   final FocusNode _focusNode = FocusNode();
@@ -74,7 +74,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
   @override
   void initState() {
     super.initState();
-    fullFilePath = widget.fullFilePath;
+    fullFilePath = widget.initialFilePath;
     _fileNameController = TextEditingController(text: friendlyFileName);
     // Exit rename mode when clicked away/unfocused
     _focusNode.addListener(() {
@@ -85,7 +85,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
   Widget _buildCard(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: widget.onClick,
+        onTap: _navigateToDir,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -111,7 +111,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                     ? const Icon(null)
                     : IconButton(
                         icon: const Icon(Icons.download_rounded),
-                        onPressed: _saveToDesktop,
+                        onPressed: _saveFileToDesktop,
                       ),
                 widget.isDirectory
                     ? const Icon(
@@ -137,7 +137,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                     onPressed: _copyPathToClipboard),
                 IconButton(
                   icon: const Icon(Icons.delete_forever),
-                  onPressed: _deleteSelf,
+                  onPressed: _removeFileDialog,
                   splashRadius: FileWidgetUI._iconSplashRadius,
                   tooltip: "Delete",
                 ),
@@ -162,40 +162,50 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
             _dateTime(),
-            ..._column(child: _fileSizeText()),
+            ..._lineSeparator(child: _fileSizeText()),
 
+            //download indicator
+            ConditionalWidget(
+              size: 24,
+              show: downloading,
+              child: const SizedBox(
+                width: 24,
+                child: CircularProgressIndicator.adaptive(
+                  value: null,
+                ),
+              ),
+            ),
             // icons
+            ConditionalWidget(
+              size: 24,
+              show: !widget.isDirectory,
+              child: IconButton(
+                icon: const Icon(Icons.download_rounded, size: 24),
+                onPressed: _saveFileToDesktop,
+                enableFeedback: false,
+                splashRadius: FileWidgetUI._iconSplashRadius,
+              ),
+            ),
+            ConditionalWidget(
+              size: 24,
+              show: !widget.isDirectory,
+              child: IconButton(
+                icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
+                onPressed: _watchFile,
+                splashRadius: FileWidgetUI._iconSplashRadius,
+                tooltip: "Watch",
+              ),
+            ),
+            ConditionalWidget(
+                show: !widget.isDirectory,
+                size: 24,
+                child: IconButton(
+                  icon: const Icon(FluentIcons.open_24_filled, size: 24),
+                  onPressed: _openTempFile,
+                  splashRadius: FileWidgetUI._iconSplashRadius,
+                  tooltip: "Open (temp)",
+                )),
 
-            widget.isDirectory
-                ? const SizedBox(
-                    width: 16 + 24, // 16 + iconSize
-                  )
-                : IconButton(
-                    icon: const Icon(Icons.download_rounded, size: 24),
-                    onPressed: _saveToDesktop,
-                    enableFeedback: false,
-                    splashRadius: FileWidgetUI._iconSplashRadius,
-                  ),
-            widget.isDirectory
-                ? const SizedBox(
-                    width: 16 + 24, // 16 + iconSize
-                  )
-                : IconButton(
-                    icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
-                    onPressed: _watchFile,
-                    splashRadius: FileWidgetUI._iconSplashRadius,
-                    tooltip: "Watch",
-                  ),
-            widget.isDirectory
-                ? const SizedBox(
-                    width: 16 + 24, // 16 + iconSize
-                  )
-                : IconButton(
-                    icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                    onPressed: _openTempFile,
-                    splashRadius: FileWidgetUI._iconSplashRadius,
-                    tooltip: "Open (temp)",
-                  ),
             IconButton(
               // TODO: Add user feedback when this occurs
               icon: const Icon(Icons.copy),
@@ -210,18 +220,18 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                 icon: Icon(editable ? Icons.check : Icons.edit)),
             IconButton(
               icon: const Icon(Icons.delete_forever),
-              onPressed: _deleteSelf,
+              onPressed: _removeFileDialog,
               splashRadius: FileWidgetUI._iconSplashRadius,
               tooltip: "Delete",
             ),
           ],
         ),
         onLongPress: _enterEditMode,
-        onTap: widget.onClick,
+        onTap: _navigateToDir,
         title: editable ? _fileNameForm() : Text(friendlyFileName));
   }
 
-  List<Widget> _column({required Widget child}) {
+  List<Widget> _lineSeparator({required Widget child}) {
     return [
       child,
       Container(
@@ -232,7 +242,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
   }
 
   Future<void> _copyPathToClipboard() {
-    return FlutterClipboard.copy(widget.fullFilePath);
+    return FlutterClipboard.copy(widget.initialFilePath);
   }
 
   Padding _dateTime() {
@@ -261,10 +271,6 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
             );
           })),
     );
-  }
-
-  Future<void> _deleteSelf() {
-    return widget.onDelete(widget.fullFilePath, !widget.isDirectory);
   }
 
   void _enterEditMode() {
@@ -337,13 +343,86 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     return widget.isDirectory ? Icons.folder : FluentIcons.document_48_regular;
   }
 
+  void _navigateToDir() {
+    if (!widget.isDirectory) {
+      return;
+    }
+
+    widget.browser.navigateToDirectory(fullFilePath);
+  }
+
   Future<void> _openTempFile() async {
-    return widget.openTempFile(widget.fullFilePath, friendlyFileName);
+    String questPath = widget.initialFilePath;
+    String fileName = friendlyFileName;
+
+    var temp = await getTemporaryDirectory();
+    var randomName = "${Random().nextInt(10000)}$fileName";
+
+    var dest = Adb.hostPath.join(temp.path, randomName);
+    await Adb.downloadFile(widget.serial, questPath, dest);
+
+    StreamSubscription? subscription;
+    subscription = Watcher(dest).events.listen((event) async {
+      if (event.type == ChangeType.REMOVE || !(await File(dest).exists())) {
+        await subscription!.cancel();
+      }
+
+      if (event.type == ChangeType.MODIFY) {
+        await Adb.uploadFile(widget.serial, dest, questPath);
+      }
+    });
+
+    OpenFile.open(dest);
+  }
+
+  Future<void> _removeFileDialog() async {
+    String path = widget.initialFilePath;
+    bool file = !widget.isDirectory;
+    await showDialog<void>(
+        context: context,
+        builder: ((context) => AlertDialog(
+              title: const Text("Confirm?"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                      "Are you sure you want to delete this file/folder?"),
+                  Text(path)
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text('Ok'),
+                  onPressed: () {
+                    Future task;
+                    if (file) {
+                      task = Adb.removeFile(widget.serial, path);
+                    } else {
+                      task = Adb.removeDirectory(widget.serial, path);
+                    }
+
+                    task.then((_) {
+                      Navigator.of(context).pop();
+                      widget.browser.refresh();
+                    });
+                  },
+                ),
+              ],
+            )));
   }
 
   Future<void> _renameFile() async {
     var newName = _fileNameController.text;
-    var future = widget.renameFileCallback(fullFilePath, newName);
+
+    String source = fullFilePath;
+    var task = Adb.moveFile(widget.serial, source,
+        Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
 
     // TODO: unspaghetify
     if (newName != friendlyFileName) {
@@ -352,11 +431,18 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
             .join(Adb.adbPathContext.dirname(fullFilePath), newName);
       });
     }
-    await future;
+    await task;
   }
 
-  Future<void> _saveToDesktop() {
-    return widget.downloadFile(widget.fullFilePath, friendlyFileName);
+  Future<String?> _saveFileToDesktop() async {
+    String source = widget.initialFilePath;
+
+    final savePath = await getSavePath(suggestedName: friendlyFileName);
+
+    if (savePath == null) return savePath;
+
+    await Adb.downloadFile(widget.serial, source, savePath);
+    return savePath;
   }
 
   String? _validateNewName(String? newName) {
@@ -370,6 +456,10 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
   }
 
   Future<void> _watchFile() async {
-    return widget.onWatch(widget.fullFilePath, friendlyFileName);
+    String? savePath = await _saveFileToDesktop();
+    if (savePath == null) {
+      return;
+    }
+    return widget.onWatch(widget.initialFilePath, savePath);
   }
 }

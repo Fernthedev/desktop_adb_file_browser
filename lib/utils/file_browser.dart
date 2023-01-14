@@ -17,6 +17,10 @@ class FileBrowser {
 
   set _currentPath(String val) => addressBar.text = val;
 
+  void refresh() {
+    _refreshFiles(newPath: null, addToHistory: false);
+  }
+
   void back() {
     if (_historyPaths.isEmpty) return;
     debugPrint("Pushed back $currentPath");

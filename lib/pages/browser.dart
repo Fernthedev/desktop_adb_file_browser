@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:math';
 
 import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
@@ -20,11 +18,8 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:multi_split_view/multi_split_view.dart';
-import 'package:open_file/open_file.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:tuple/tuple.dart';
-import 'package:watcher/watcher.dart';
 
 @immutable
 class DeviceBrowser extends StatefulWidget {
@@ -390,83 +385,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     setState(() {});
   }
 
-  Future<void> _openTempFile(String questPath, String fileName) async {
-    var temp = await getTemporaryDirectory();
-    var randomName = "${Random().nextInt(10000)}$fileName";
-
-    var dest = Adb.hostPath.join(temp.path, randomName);
-    await Adb.downloadFile(widget.serial, questPath, dest);
-
-    StreamSubscription? subscription;
-    subscription = Watcher(dest).events.listen((event) async {
-      if (event.type == ChangeType.REMOVE || !(await File(dest).exists())) {
-        await subscription!.cancel();
-      }
-
-      if (event.type == ChangeType.MODIFY) {
-        await Adb.uploadFile(widget.serial, dest, questPath);
-      }
-    });
-
-    OpenFile.open(dest);
-  }
-
   void _refresh() {
     _onNavigate(widget._fileBrowser.currentPath);
-  }
-
-  Future<void> _removeFileDialog(String path, bool file) async {
-    await showDialog<void>(
-        context: context,
-        builder: ((context) => AlertDialog(
-              title: const Text("Confirm?"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                      "Are you sure you want to delete this file/folder?"),
-                  Text(path)
-                ],
-              ),
-              actions: [
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                TextButton(
-                  child: const Text('Ok'),
-                  onPressed: () {
-                    Future task;
-                    if (file) {
-                      task = Adb.removeFile(widget.serial, path);
-                    } else {
-                      task = Adb.removeDirectory(widget.serial, path);
-                    }
-
-                    task.then((_) {
-                      Navigator.of(context).pop();
-                      _refresh();
-                    });
-                  },
-                ),
-              ],
-            )));
-  }
-
-  Future<void> _renameFile(String source, String newName) async {
-    await Adb.moveFile(widget.serial, source,
-        Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
-  }
-
-  Future<void> _saveFileToDesktop(
-      String source, String friendlyFilename) async {
-    final savePath = await getSavePath(suggestedName: friendlyFilename);
-
-    if (savePath == null) return;
-
-    await Adb.downloadFile(widget.serial, source, savePath);
   }
 
   Future<void> _showNewFileDialog() async {
@@ -572,36 +492,37 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   }
 
   GridView _viewAsGrid(List<String> files) {
-    return GridView.extent(
+    return GridView.builder(
         key: ValueKey(files),
         controller: widget._scrollController,
         shrinkWrap: true,
-        childAspectRatio: 17.0 / 9.0,
         padding: const EdgeInsets.all(4.0),
-        mainAxisSpacing: 4.0,
-        crossAxisSpacing: 4.0,
-        maxCrossAxisExtent: 280,
-        children: files.map((file) {
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          childAspectRatio: 17.0 / 9.0,
+          mainAxisSpacing: 4.0,
+          crossAxisSpacing: 4.0,
+          maxCrossAxisExtent: 280,
+        ),
+        itemCount: files.length,
+        itemBuilder: (context, index) {
+          var file = files[index];
           var isDir = file.endsWith("/");
+          var fileData = fileCache.putIfAbsent(
+              file, () => FileData(serialName: widget.serial, file: file));
 
           return GridTile(
               child: FileWidgetUI(
             key: ValueKey(file),
             isCard: true,
             isDirectory: isDir,
-            fullFilePath: file,
-            onClick: isDir
-                ? () => widget._fileBrowser.navigateToDirectory(file)
-                : () {},
-            downloadFile: _saveFileToDesktop,
-            renameFileCallback: _renameFile,
-            modifiedTime: Future.value(null),
-            fileSize: Future.value(null),
-            onDelete: _removeFileDialog,
+            initialFilePath: file,
+            modifiedTime: fileData.lastModifiedTime,
+            fileSize: fileData.fileSize,
             onWatch: _watchFile,
-            openTempFile: _openTempFile,
+            browser: widget._fileBrowser,
+            serial: widget.serial,
           ));
-        }).toList(growable: false));
+        });
   }
 
   ListView _viewAsList(List<String> files) {
@@ -622,27 +543,17 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           fileSize: fileData.fileSize,
           isCard: false,
           isDirectory: isDir,
-          fullFilePath: file,
-          onClick: isDir
-              ? () => widget._fileBrowser.navigateToDirectory(file)
-              : () {},
-          downloadFile: _saveFileToDesktop,
-          renameFileCallback: _renameFile,
-          onDelete: _removeFileDialog,
+          initialFilePath: file,
           onWatch: _watchFile,
-          openTempFile: _openTempFile,
+          browser: widget._fileBrowser,
+          serial: widget.serial,
         );
       },
       itemCount: files.length,
     );
   }
 
-  Future<void> _watchFile(String source, String friendlyFilename) async {
-    final savePath = await getSavePath(suggestedName: friendlyFilename);
-
-    if (savePath == null) return;
-
-    await Adb.downloadFile(widget.serial, source, savePath);
+  Future<void> _watchFile(String source, String savePath) async {
     onWatchAdd.invoke(Tuple2(savePath, source));
   }
 }

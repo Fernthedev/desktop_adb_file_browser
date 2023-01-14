@@ -9,9 +9,8 @@ import 'dart:io';
 
 import 'package:path/path.dart' as host_path;
 
-
 abstract class PlatformUtils {
-  static String get platformFileEnding => Platform.isWindows ? '\r\n' : '\n'; 
+  static String get platformFileEnding => Platform.isWindows ? '\r\n' : '\n';
 
   /// The default directory name for Flutter's configs.
   /// Configs will be written to the user's config path. If there is already a

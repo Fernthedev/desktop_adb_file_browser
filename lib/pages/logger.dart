@@ -28,7 +28,7 @@ class _LogPageState extends State<LogPage> {
   StreamSubscription<String>? _streamSubscription;
 
   // Since Dart can't keep up fast enough with logcat when spammed,
-  // we queue the save for when the stream slows down 
+  // we queue the save for when the stream slows down
   // which we assume is no longer spam
   bool waitForSave = false;
   DateTime lastStreamSend = DateTime.now();

@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 class _Native2FlutterCodec extends StandardMessageCodec {
   const _Native2FlutterCodec();
 }
+
 abstract class Native2Flutter {
   static const MessageCodec<Object?> codec = _Native2FlutterCodec();
 
@@ -17,15 +18,18 @@ abstract class Native2Flutter {
   static void setup(Native2Flutter? api, {BinaryMessenger? binaryMessenger}) {
     {
       final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
-          'dev.flutter.pigeon.Native2Flutter.onClick', codec, binaryMessenger: binaryMessenger);
+          'dev.flutter.pigeon.Native2Flutter.onClick', codec,
+          binaryMessenger: binaryMessenger);
       if (api == null) {
         channel.setMessageHandler(null);
       } else {
         channel.setMessageHandler((Object? message) async {
-          assert(message != null, 'Argument for dev.flutter.pigeon.Native2Flutter.onClick was null.');
+          assert(message != null,
+              'Argument for dev.flutter.pigeon.Native2Flutter.onClick was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final bool? arg_forward = (args[0] as bool?);
-          assert(arg_forward != null, 'Argument for dev.flutter.pigeon.Native2Flutter.onClick was null, expected non-null bool.');
+          assert(arg_forward != null,
+              'Argument for dev.flutter.pigeon.Native2Flutter.onClick was null, expected non-null bool.');
           api.onClick(arg_forward!);
           return;
         });

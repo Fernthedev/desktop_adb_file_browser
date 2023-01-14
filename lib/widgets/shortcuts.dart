@@ -4,8 +4,6 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-
-
 typedef ShortcutTapFunction = void Function(String path);
 
 class ShortcutsListWidget extends StatefulWidget {

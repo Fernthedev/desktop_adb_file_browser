@@ -6,7 +6,6 @@ import 'dart:collection';
 class StackCollection<T> {
   final Queue<T> _queue;
 
-
   StackCollection() : _queue = Queue<T>();
   StackCollection.fromQueue(this._queue);
 

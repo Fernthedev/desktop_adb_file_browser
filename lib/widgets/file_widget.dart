@@ -7,7 +7,6 @@ import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
 
 typedef DownloadFileCallback = Future<void> Function(
     String source, String fileName);

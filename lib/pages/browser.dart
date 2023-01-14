@@ -4,17 +4,19 @@ import 'dart:math';
 
 import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
+import 'package:desktop_adb_file_browser/utils/file_browser.dart';
+import 'package:desktop_adb_file_browser/utils/file_data.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
-import 'package:desktop_adb_file_browser/utils/stack.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
-import 'package:desktop_adb_file_browser/widgets/file_widget.dart';
+import 'package:desktop_adb_file_browser/widgets/browser/file_widget.dart';
+import 'package:desktop_adb_file_browser/widgets/browser/new_file_dialog.dart';
+import 'package:desktop_adb_file_browser/widgets/browser/upload_file.dart';
 import 'package:desktop_adb_file_browser/widgets/shortcuts.dart';
 import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:multi_split_view/multi_split_view.dart';
@@ -30,11 +32,11 @@ class DeviceBrowser extends StatefulWidget {
 
   final TextEditingController _filterController = TextEditingController();
   final ScrollController _scrollController = AdjustableScrollController(60);
-  final _FileBrowser _fileBrowser;
+  final FileBrowser _fileBrowser;
 
   DeviceBrowser(
       {Key? key, required String initialAddress, required this.serial})
-      : _fileBrowser = _FileBrowser(
+      : _fileBrowser = FileBrowser(
             addressBar: TextEditingController(
                 text: Adb.fixPath(initialAddress, addQuotes: false))),
         super(key: key);
@@ -43,66 +45,8 @@ class DeviceBrowser extends StatefulWidget {
   State<DeviceBrowser> createState() => _DeviceBrowserState();
 }
 
-typedef FileNavigateEvent = void Function(String newPath);
-
-class _FileBrowser {
-  _FileBrowser({required this.addressBar});
-
-  final TextEditingController addressBar;
-
-  final StackCollection<String> _historyPaths = StackCollection();
-  final StackCollection<String> _forwardPaths = StackCollection();
-
-  String get _currentPath => addressBar.text;
-  set _currentPath(String val) => addressBar.text = val;
-
-  FileNavigateEvent? navigateEvent;
-
-  void back() {
-    if (_historyPaths.isEmpty) return;
-    debugPrint("Pushed back $_currentPath");
-
-    _forwardPaths.push(_currentPath);
-    _refreshFiles(newPath: _historyPaths.pop(), addToHistory: false);
-  }
-
-  void forward() {
-    if (_forwardPaths.isEmpty) return;
-    debugPrint("Pushed forward ${_forwardPaths.isNotEmpty}");
-
-    _refreshFiles(newPath: _forwardPaths.pop());
-  }
-
-  void navigateToDirectory(String directory) {
-    _refreshFiles(newPath: directory);
-    _forwardPaths.clear();
-    debugPrint("clear forward");
-  }
-
-  void _refreshFiles({String? newPath, bool addToHistory = true}) {
-    var oldAddressText = _currentPath;
-
-    newPath = newPath == null
-        ? null
-        : Adb.adbPathContext
-            .canonicalize(Adb.fixPath(newPath, addQuotes: false));
-
-    if (newPath != null) {
-      if (addToHistory) {
-        _historyPaths.push(_currentPath);
-      }
-      _currentPath = newPath;
-    }
-
-    /// Don't refresh unnecessarily
-    /// This will still allow refreshes when pressing enter
-    /// on the address bar because the address bar passes [path] as null
-    /// TODO: Remove this or clarify
-    if (newPath != null && oldAddressText == newPath) return;
-
-    navigateEvent?.call(newPath ?? _currentPath);
-  }
-}
+// ignore: constant_identifier_names
+enum FileCreation { File, Folder }
 
 // TODO: Gestures
 // TODO: Add download progress snackbar (similar to upload progress)
@@ -123,99 +67,69 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       EventListenable();
 
   @override
-  void initState() {
-    super.initState();
-    widget._fileBrowser.navigateEvent = _onNavigate;
-    onForwardClick = native2flutter.mouseForwardClick
-        .addListener((_) => widget._fileBrowser.forward());
-    onBackClick = native2flutter.mouseBackClick
-        .addListener((_) => widget._fileBrowser.back());
-    _onNavigate(widget._fileBrowser._currentPath);
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    onForwardClick.dispose();
-    onBackClick.dispose();
-  }
-
-  void _onNavigate(String newPath) {
-    debugPrint("Loading $newPath");
-    fileCache = {};
-    _fileListingFuture = Adb.getFilesInDirectory(widget.serial, newPath);
-
-    setState(() {});
-  }
-
-  void _refresh() {
-    _onNavigate(widget._fileBrowser._currentPath);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      initialIndex: 0,
-      length: 2,
-      child: Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Row(
-            children: [
-              _navigationActions(),
-              _addressBar(),
-              _filterBar(),
-              _fileActions()
+    return Focus(
+      key: const ValueKey("Focus"),
+      autofocus: true,
+      canRequestFocus: true,
+      descendantsAreFocusable: true,
+      skipTraversal: true,
+      onKey: (node, event) {
+        if (!event.repeat) {
+          // TODO: Figure out how to allow lower focus take control
+          // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
+          //   back();
+          //   return KeyEventResult.handled;
+          // }
+
+          if (event.isAltPressed) {
+            if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
+              widget._fileBrowser.back();
+              return KeyEventResult.handled;
+            }
+            if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
+              widget._fileBrowser.forward();
+              return KeyEventResult.handled;
+            }
+          }
+        }
+
+        return KeyEventResult.ignored;
+      },
+      child: DefaultTabController(
+        initialIndex: 0,
+        length: 2,
+        child: Scaffold(
+          appBar: AppBar(
+            // Here we take the value from the MyHomePage object that was created by
+            // the App.build method, and use it to set our appbar title.
+            title: Row(
+              children: [
+                _navigationActions(),
+                _addressBar(),
+                _filterBar(),
+                _fileActions()
+              ],
+            ),
+            leading: IconButton(
+              icon: const Icon(FluentIcons.folder_24_regular),
+              onPressed: () {
+                Routemaster.of(context).history.back();
+              },
+            ),
+            actions: [
+              //
+              IconButton(
+                icon: Icon(list ? Icons.list : Icons.grid_3x3),
+                onPressed: () {
+                  setState(() {
+                    list = !list;
+                  });
+                },
+              )
             ],
           ),
-          leading: IconButton(
-            icon: const Icon(FluentIcons.folder_24_regular),
-            onPressed: () {
-              Routemaster.of(context).history.back();
-            },
-          ),
-          actions: [
-            //
-            IconButton(
-              icon: Icon(list ? Icons.list : Icons.grid_3x3),
-              onPressed: () {
-                setState(() {
-                  list = !list;
-                });
-              },
-            )
-          ],
-        ),
-        body: Focus(
-          key: const ValueKey("Focus"),
-          autofocus: true,
-          canRequestFocus: true,
-          descendantsAreFocusable: true,
-          skipTraversal: true,
-          onKey: (node, event) {
-            if (!event.repeat) {
-              // TODO: Figure out how to allow lower focus take control
-              // if (event.isKeyPressed(LogicalKeyboardKey.backspace)) {
-              //   back();
-              //   return KeyEventResult.handled;
-              // }
-
-              if (event.isAltPressed) {
-                if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
-                  widget._fileBrowser.back();
-                  return KeyEventResult.handled;
-                }
-                if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
-                  widget._fileBrowser.forward();
-                  return KeyEventResult.handled;
-                }
-              }
-            }
-
-            return KeyEventResult.ignored;
-          },
-          child: MultiSplitViewTheme(
+          body: MultiSplitViewTheme(
             data: MultiSplitViewThemeData(dividerThickness: 5.5),
             child: MultiSplitView(
               initialAreas: [Area(weight: 0.15)],
@@ -231,83 +145,37 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
                           color: Colors.black),
             ),
           ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              _showNewFileDialog();
+            },
+            tooltip: 'Add new file',
+            child: const Icon(Icons.add),
+          ),
+          bottomNavigationBar: _SplitRow(
+              browser: widget._fileBrowser,
+              key: ValueKey(widget._fileBrowser.currentPath)),
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            _showNewFileDialog();
-          },
-          tooltip: 'Add new file',
-          child: const Icon(Icons.add),
-        ),
-        bottomNavigationBar: _SplitRow(
-            browser: widget._fileBrowser,
-            key: ValueKey(widget._fileBrowser
-                ._currentPath)), // This trailing comma makes auto-formatting nicer for build methods.
       ),
     );
   }
 
-  Column _leftPanel() {
-    return Column(
-      children: [
-        Expanded(
-          child: TabBarView(
-            children: [
-              ShortcutsListWidget(
-                currentPath: widget._fileBrowser._currentPath,
-                onTap: widget._fileBrowser.navigateToDirectory,
-              ),
-              FileWatcherList(serial: widget.serial, onUpdate: onWatchAdd)
-            ],
-          ),
-        ),
-        const TabBar(tabs: [
-          Tab(
-              icon: Icon(
-            FluentIcons.bookmark_20_filled,
-            size: 20,
-          )),
-          Tab(
-              icon: Icon(
-            FluentIcons.glasses_20_filled,
-            size: 20,
-          ))
-        ]),
-      ],
-    );
+  @override
+  void dispose() {
+    super.dispose();
+    onForwardClick.dispose();
+    onBackClick.dispose();
   }
 
-  Wrap _navigationActions() {
-    return Wrap(
-      children: [
-        IconButton(
-          splashRadius: 20,
-          icon: const Icon(
-            FluentIcons.folder_arrow_up_24_regular,
-          ),
-          onPressed: () {
-            widget._fileBrowser.navigateToDirectory(
-                Adb.adbPathContext.dirname(widget._fileBrowser._currentPath));
-          },
-        ),
-        IconButton(
-          splashRadius: 20,
-          icon: const Icon(
-            FluentIcons.arrow_left_20_regular,
-          ),
-          onPressed: () {
-            widget._fileBrowser.back();
-          },
-        ),
-        IconButton(
-          splashRadius: 20,
-          icon: const Icon(FluentIcons.arrow_clockwise_28_regular),
-          onPressed: () {
-            _refresh();
-          },
-        ),
-      ],
-    );
+  @override
+  void initState() {
+    super.initState();
+    widget._fileBrowser.navigateEvent = _onNavigate;
+    onForwardClick = native2flutter.mouseForwardClick
+        .addListener((_) => widget._fileBrowser.forward());
+    onBackClick = native2flutter.mouseBackClick
+        .addListener((_) => widget._fileBrowser.back());
+    _onNavigate(widget._fileBrowser.currentPath);
   }
 
   Expanded _addressBar() {
@@ -319,7 +187,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           controller: widget._fileBrowser.addressBar,
           autocorrect: false,
           onSubmitted: (s) {
-            if (s == widget._fileBrowser._currentPath) {
+            if (s == widget._fileBrowser.currentPath) {
               _refresh();
             } else {
               widget._fileBrowser.navigateToDirectory(s);
@@ -335,33 +203,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             constraints: BoxConstraints.tightFor(height: 40),
           ),
-        ),
-      ),
-    );
-  }
-
-  Expanded _filterBar() {
-    return Expanded(
-      child: TextField(
-        controller: widget._filterController,
-        autocorrect: false,
-        onChanged: (s) {
-          // Update UI to filter
-          setState(() {});
-        },
-        onSubmitted: (s) {
-          // Update UI to filter
-          setState(() {});
-        },
-        decoration: const InputDecoration(
-          // cool animation border effect
-          // this makes it rectangular when not selected
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(10.0)),
-          ),
-          hintText: 'Search',
-          contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-          constraints: BoxConstraints.tightFor(height: 40),
         ),
       ),
     );
@@ -386,9 +227,25 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     );
   }
 
-  Iterable<String> _filteredFiles(Iterable<String> files) {
-    var filter = widget._filterController.text.toLowerCase();
-    return files.where((element) => element.toLowerCase().contains(filter));
+  DropTarget _fileListContainer(BuildContext context) {
+    return DropTarget(
+      onDragDone: (detail) => _uploadFiles(detail.files.map((e) => e.path)),
+      onDragEntered: (detail) {
+        setState(() {
+          _dragging = true;
+        });
+      },
+      onDragExited: (detail) {
+        setState(() {
+          _dragging = false;
+        });
+      },
+      child: Container(
+        color:
+            _dragging ? Theme.of(context).primaryColor.withOpacity(0.4) : null,
+        child: _fileView(),
+      ),
+    );
   }
 
   FutureBuilder<List<String>?> _fileView() {
@@ -430,25 +287,288 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     );
   }
 
-  DropTarget _fileListContainer(BuildContext context) {
-    return DropTarget(
-      onDragDone: (detail) => _uploadFiles(detail.files.map((e) => e.path)),
-      onDragEntered: (detail) {
-        setState(() {
-          _dragging = true;
-        });
-      },
-      onDragExited: (detail) {
-        setState(() {
-          _dragging = false;
-        });
-      },
-      child: Container(
-        color:
-            _dragging ? Theme.of(context).primaryColor.withOpacity(0.4) : null,
-        child: _fileView(),
+  Expanded _filterBar() {
+    return Expanded(
+      child: TextField(
+        controller: widget._filterController,
+        autocorrect: false,
+        onChanged: (s) {
+          // Update UI to filter
+          setState(() {});
+        },
+        onSubmitted: (s) {
+          // Update UI to filter
+          setState(() {});
+        },
+        decoration: const InputDecoration(
+          // cool animation border effect
+          // this makes it rectangular when not selected
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10.0)),
+          ),
+          hintText: 'Search',
+          contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+          constraints: BoxConstraints.tightFor(height: 40),
+        ),
       ),
     );
+  }
+
+  Iterable<String> _filteredFiles(Iterable<String> files) {
+    var filter = widget._filterController.text.toLowerCase();
+    return files.where((element) => element.toLowerCase().contains(filter));
+  }
+
+  Column _leftPanel() {
+    return Column(
+      children: [
+        Expanded(
+          child: TabBarView(
+            children: [
+              ShortcutsListWidget(
+                currentPath: widget._fileBrowser.currentPath,
+                onTap: widget._fileBrowser.navigateToDirectory,
+              ),
+              FileWatcherList(serial: widget.serial, onUpdate: onWatchAdd)
+            ],
+          ),
+        ),
+        const TabBar(tabs: [
+          Tab(
+              icon: Icon(
+            FluentIcons.bookmark_20_filled,
+            size: 20,
+          )),
+          Tab(
+              icon: Icon(
+            FluentIcons.glasses_20_filled,
+            size: 20,
+          ))
+        ]),
+      ],
+    );
+  }
+
+  Wrap _navigationActions() {
+    return Wrap(
+      children: [
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(
+            FluentIcons.folder_arrow_up_24_regular,
+          ),
+          onPressed: () {
+            widget._fileBrowser.navigateToDirectory(
+                Adb.adbPathContext.dirname(widget._fileBrowser.currentPath));
+          },
+        ),
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(
+            FluentIcons.arrow_left_20_regular,
+          ),
+          onPressed: () {
+            widget._fileBrowser.back();
+          },
+        ),
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(FluentIcons.arrow_clockwise_28_regular),
+          onPressed: () {
+            _refresh();
+          },
+        ),
+      ],
+    );
+  }
+
+  void _onNavigate(String newPath) {
+    debugPrint("Loading $newPath");
+    fileCache = {};
+    _fileListingFuture = Adb.getFilesInDirectory(widget.serial, newPath);
+
+    setState(() {});
+  }
+
+  Future<void> _openTempFile(String questPath, String fileName) async {
+    var temp = await getTemporaryDirectory();
+    var randomName = "${Random().nextInt(10000)}$fileName";
+
+    var dest = Adb.hostPath.join(temp.path, randomName);
+    await Adb.downloadFile(widget.serial, questPath, dest);
+
+    StreamSubscription? subscription;
+    subscription = Watcher(dest).events.listen((event) async {
+      if (event.type == ChangeType.REMOVE || !(await File(dest).exists())) {
+        await subscription!.cancel();
+      }
+
+      if (event.type == ChangeType.MODIFY) {
+        await Adb.uploadFile(widget.serial, dest, questPath);
+      }
+    });
+
+    OpenFile.open(dest);
+  }
+
+  void _refresh() {
+    _onNavigate(widget._fileBrowser.currentPath);
+  }
+
+  Future<void> _removeFileDialog(String path, bool file) async {
+    await showDialog<void>(
+        context: context,
+        builder: ((context) => AlertDialog(
+              title: const Text("Confirm?"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                      "Are you sure you want to delete this file/folder?"),
+                  Text(path)
+                ],
+              ),
+              actions: [
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text('Ok'),
+                  onPressed: () {
+                    Future task;
+                    if (file) {
+                      task = Adb.removeFile(widget.serial, path);
+                    } else {
+                      task = Adb.removeDirectory(widget.serial, path);
+                    }
+
+                    task.then((_) {
+                      Navigator.of(context).pop();
+                      _refresh();
+                    });
+                  },
+                ),
+              ],
+            )));
+  }
+
+  Future<void> _renameFile(String source, String newName) async {
+    await Adb.moveFile(widget.serial, source,
+        Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
+  }
+
+  Future<void> _saveFileToDesktop(
+      String source, String friendlyFilename) async {
+    final savePath = await getSavePath(suggestedName: friendlyFilename);
+
+    if (savePath == null) return;
+
+    await Adb.downloadFile(widget.serial, source, savePath);
+  }
+
+  Future<void> _showNewFileDialog() async {
+    final TextEditingController fileNameController = TextEditingController();
+    final ValueNotifier<FileCreation> fileCreation =
+        ValueNotifier(FileCreation.File);
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Create new file'),
+        content: NewFileDialog(
+          fileNameController: fileNameController,
+          fileCreation: fileCreation,
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: const Text('Ok'),
+            onPressed: () {
+              var path = Adb.adbPathContext.join(
+                  widget._fileBrowser.currentPath, fileNameController.text);
+
+              Future task;
+
+              switch (fileCreation.value) {
+                case FileCreation.File:
+                  task = Adb.createFile(widget.serial, path);
+
+                  break;
+                case FileCreation.Folder:
+                  task = Adb.createDirectory(widget.serial, path);
+                  break;
+              }
+
+              task.then((_) {
+                _refresh();
+
+                Navigator.of(context).pop();
+              });
+            },
+          ),
+        ],
+      ),
+    );
+
+    fileNameController.dispose();
+    fileCreation.dispose();
+  }
+
+  void _uploadFiles(Iterable<String> paths) async {
+    debugPrint("Uploading $paths");
+    var tasks = paths.map((path) {
+      String dest = Adb.adbPathContext.join(
+          widget._fileBrowser.currentPath, // adb file path
+          Adb.hostPath.basename(path) // host file name
+          );
+
+      // C:\Users\foo.txt -> currentPath/foo.txt
+      return Adb.uploadFile(widget.serial, path, dest);
+    });
+
+    // this is so scuffed
+    // I do this to automatically update the snack bar progress
+    var tasksDone = 0;
+    var notifier = ValueNotifier<double>(0);
+
+    Future.forEach(tasks, (e) async {
+      tasksDone++;
+      notifier.value = tasksDone / tasks.length;
+    });
+
+    // Snack bar
+    var snackBar = ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: UploadingFilesWidget(
+          progressIndications: notifier,
+          taskAmount: tasks.length,
+        ),
+        duration: const Duration(days: 365), // year old snackbar
+        width: 680.0, // Width of the SnackBar.
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8.0, // Inner padding for SnackBar content.
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+      ),
+    );
+
+    await Future.wait(tasks);
+    _refresh(); // update UI
+
+    await Future.delayed(const Duration(seconds: 4));
+    snackBar.close();
   }
 
   GridView _viewAsGrid(List<String> files) {
@@ -517,15 +637,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     );
   }
 
-  Future<void> _saveFileToDesktop(
-      String source, String friendlyFilename) async {
-    final savePath = await getSavePath(suggestedName: friendlyFilename);
-
-    if (savePath == null) return;
-
-    await Adb.downloadFile(widget.serial, source, savePath);
-  }
-
   Future<void> _watchFile(String source, String friendlyFilename) async {
     final savePath = await getSavePath(suggestedName: friendlyFilename);
 
@@ -534,189 +645,19 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     await Adb.downloadFile(widget.serial, source, savePath);
     onWatchAdd.invoke(Tuple2(savePath, source));
   }
-
-  void _uploadFiles(Iterable<String> paths) async {
-    debugPrint("Uploading $paths");
-    List<Future> tasks = [];
-
-    for (String path in paths) {
-      String dest = Adb.adbPathContext.join(
-          widget._fileBrowser._currentPath, // adb file path
-          Adb.hostPath.basename(path) // host file name
-          );
-
-      // C:\Users\foo.txt -> currentPath/foo.txt
-      tasks.add(Adb.uploadFile(widget.serial, path, dest));
-    }
-
-    // this is so scuffed
-    // I do this to automatically update the snack bar progress
-    var tasksDone = 0;
-    var notifier = ValueNotifier<double>(0);
-
-    Future.forEach(tasks, (e) async {
-      tasksDone++;
-      notifier.value = tasksDone / tasks.length;
-    });
-
-    // Snack bar
-    var snackBar = ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: UploadingFilesWidget(
-          progressIndications: notifier,
-          taskAmount: tasks.length,
-        ),
-        duration: const Duration(days: 365), // year old snackbar
-        width: 680.0, // Width of the SnackBar.
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8.0, // Inner padding for SnackBar content.
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-      ),
-    );
-
-    await Future.wait(tasks);
-    _refresh(); // update UI
-
-    await Future.delayed(const Duration(seconds: 4));
-    snackBar.close();
-  }
-
-  Future<void> _renameFile(String source, String newName) async {
-    await Adb.moveFile(widget.serial, source,
-        Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
-  }
-
-  Future<void> _removeFileDialog(String path, bool file) async {
-    await showDialog<void>(
-        context: context,
-        builder: ((context) => AlertDialog(
-              title: const Text("Confirm?"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                      "Are you sure you want to delete this file/folder?"),
-                  Text(path)
-                ],
-              ),
-              actions: [
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                TextButton(
-                  child: const Text('Ok'),
-                  onPressed: () {
-                    Future task;
-                    if (file) {
-                      task = Adb.removeFile(widget.serial, path);
-                    } else {
-                      task = Adb.removeDirectory(widget.serial, path);
-                    }
-
-                    task.then((_) {
-                      Navigator.of(context).pop();
-                      _refresh();
-                    });
-                  },
-                ),
-              ],
-            )));
-  }
-
-  Future<void> _showNewFileDialog() async {
-    final TextEditingController fileNameController = TextEditingController();
-    final ValueNotifier<FileCreation> fileCreation =
-        ValueNotifier(FileCreation.File);
-
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: true, // user must tap button!
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Create new file'),
-        content: NewFileDialog(
-          fileNameController: fileNameController,
-          fileCreation: fileCreation,
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          TextButton(
-            child: const Text('Ok'),
-            onPressed: () {
-              var path = Adb.adbPathContext.join(
-                  widget._fileBrowser._currentPath, fileNameController.text);
-
-              Future task;
-
-              switch (fileCreation.value) {
-                case FileCreation.File:
-                  task = Adb.createFile(widget.serial, path);
-
-                  break;
-                case FileCreation.Folder:
-                  task = Adb.createDirectory(widget.serial, path);
-                  break;
-              }
-
-              task.then((_) {
-                _refresh();
-
-                Navigator.of(context).pop();
-              });
-            },
-          ),
-        ],
-      ),
-    );
-
-    fileNameController.dispose();
-    fileCreation.dispose();
-  }
-
-  Future<void> _openTempFile(String questPath, String fileName) async {
-    var temp = await getTemporaryDirectory();
-    var randomName = "${Random().nextInt(10000)}$fileName";
-
-    var dest = Adb.hostPath.join(temp.path, randomName);
-    await Adb.downloadFile(widget.serial, questPath, dest);
-
-    StreamSubscription? subscription;
-    subscription = Watcher(dest).events.listen((event) async {
-      if (event.type == ChangeType.REMOVE || !(await File(dest).exists())) {
-        await subscription!.cancel();
-      }
-
-      if (event.type == ChangeType.MODIFY) {
-        await Adb.uploadFile(widget.serial, dest, questPath);
-      }
-    });
-
-    OpenFile.open(dest);
-  }
 }
 
 class _SplitRow extends StatelessWidget {
+  final FileBrowser browser;
+
   const _SplitRow({
     Key? key,
     required this.browser,
   }) : super(key: key);
 
-  final _FileBrowser browser;
-
   @override
   Widget build(BuildContext context) {
-    var currentPath = browser._currentPath;
+    var currentPath = browser.currentPath;
     var locations = currentPath.split("/");
 
     if (locations.isNotEmpty && locations.first.isEmpty) {
@@ -745,117 +686,6 @@ class _SplitRow extends StatelessWidget {
                 .expand<Widget>((element) => element)
                 .toList(growable: false)),
       ),
-    );
-  }
-}
-
-class UploadingFilesWidget extends StatefulWidget {
-  const UploadingFilesWidget(
-      {Key? key, required this.taskAmount, required this.progressIndications})
-      : super(key: key);
-
-  final int taskAmount;
-  final ValueListenable<double> progressIndications;
-
-  @override
-  State<UploadingFilesWidget> createState() => _UploadingFilesWidgetState();
-}
-
-class _UploadingFilesWidgetState extends State<UploadingFilesWidget> {
-  @override
-  Widget build(BuildContext context) {
-    var progressIndications = widget.progressIndications;
-    var taskAmount = widget.taskAmount;
-
-    return ValueListenableBuilder<double>(
-        valueListenable: progressIndications,
-        builder: (BuildContext context, double progress, _) {
-          var theme = Theme.of(context);
-
-          return SizedBox(
-            height: 50,
-            child: Column(
-              children: [
-                // Reverse calculation because less data needed to be passed!
-                Text(
-                  "Uploading ${(progress * taskAmount).round()}/$taskAmount (${(progress * 100).round()}%)",
-                  style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.snackBarTheme.contentTextStyle?.color),
-                ),
-                const SizedBox(height: 20),
-                LinearProgressIndicator(
-                  value: progress,
-                  color: Theme.of(context).colorScheme.secondary,
-                )
-              ],
-            ),
-          );
-        });
-  }
-}
-
-class FileData {
-  final String file;
-  final String serialName;
-
-  Future<DateTime?> lastModifiedTime;
-  Future<int?> fileSize;
-
-  FileData({required this.serialName, required this.file})
-      : lastModifiedTime = Adb.getFileModifiedDate(serialName, file),
-        fileSize = Adb.getFileSize(serialName, file);
-}
-
-// ignore: constant_identifier_names
-enum FileCreation { File, Folder }
-
-class NewFileDialog extends StatefulWidget {
-  const NewFileDialog(
-      {Key? key, required this.fileNameController, required this.fileCreation})
-      : super(key: key);
-
-  final TextEditingController fileNameController;
-  final ValueNotifier<FileCreation> fileCreation;
-
-  @override
-  State<NewFileDialog> createState() => _NewFileDialogState();
-}
-
-class _NewFileDialogState extends State<NewFileDialog> {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        TextFormField(
-          controller: widget.fileNameController,
-          autocorrect: false,
-          autofocus: true,
-          decoration: const InputDecoration(hintText: "New file"),
-        ),
-        Row(
-          children: [
-            _fileRadio(FileCreation.File),
-            _fileRadio(FileCreation.Folder)
-          ],
-        )
-      ],
-    );
-  }
-
-  Row _fileRadio(FileCreation f) {
-    return Row(
-      children: [
-        Text(f.name),
-        Radio<FileCreation>(
-            value: f,
-            groupValue: widget.fileCreation.value,
-            onChanged: ((value) {
-              setState(() {
-                widget.fileCreation.value = value ?? FileCreation.File;
-              });
-            })),
-      ],
     );
   }
 }

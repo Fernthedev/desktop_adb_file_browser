@@ -3,17 +3,16 @@ import 'dart:math';
 import 'package:clipboard/clipboard.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:filesize/filesize.dart';
-
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+typedef DeleteCallback = Future<void> Function(String source, bool file);
+
 typedef DownloadFileCallback = Future<void> Function(
     String source, String fileName);
-
 typedef RenameFileCallback = Future<void> Function(
     String source, String newName);
-typedef DeleteCallback = Future<void> Function(String source, bool file);
 
 @immutable
 class FileWidgetUI extends StatefulWidget {
@@ -56,9 +55,21 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
   late final TextEditingController _fileNameController;
   final FocusNode _focusNode = FocusNode();
 
-  String get friendlyFileName => Adb.adbPathContext.basename(fullFilePath);
   late String fullFilePath;
   bool editable = false;
+  String get friendlyFileName => Adb.adbPathContext.basename(fullFilePath);
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.isCard ? _buildCard(context) : _buildListTile(context);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _fileNameController.dispose();
+    _focusNode.dispose();
+  }
 
   @override
   void initState() {
@@ -71,72 +82,71 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     });
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-    _fileNameController.dispose();
-    _focusNode.dispose();
-  }
-
-  Future<void> _deleteSelf() {
-    return widget.onDelete(widget.fullFilePath, !widget.isDirectory);
-  }
-
-  Future<void> _copyPathToClipboard() {
-    return FlutterClipboard.copy(widget.fullFilePath);
-  }
-
-  Future<void> _saveToDesktop() {
-    return widget.downloadFile(widget.fullFilePath, friendlyFileName);
-  }
-
-  Future<void> _watchFile() async {
-    return widget.onWatch(widget.fullFilePath, friendlyFileName);
-  }
-
-  Future<void> _renameFile() async {
-    var newName = _fileNameController.text;
-    var future = widget.renameFileCallback(fullFilePath, newName);
-
-    // TODO: unspaghetify
-    if (newName != friendlyFileName) {
-      setState(() {
-        fullFilePath = Adb.adbPathContext
-            .join(Adb.adbPathContext.dirname(fullFilePath), newName);
-      });
-    }
-    await future;
-  }
-
-  Future<void> _openTempFile() async {
-    return widget.openTempFile(widget.fullFilePath, friendlyFileName);
-  }
-
-  String? _validateNewName(String? newName) {
-    if (newName == null || newName.isEmpty) {
-      return "New name cannot be empty";
-    }
-
-    if (newName.contains("/")) return "Cannot contain slashes";
-
-    return null;
-  }
-
-  void _enterEditMode() {
-    setState(() {
-      editable = true;
-      _focusNode.requestFocus();
-    });
-  }
-
-  void _exitEditMode({bool save = true}) {
-    setState(() {
-      editable = false;
-      _focusNode.unfocus();
-      if (save) {
-        _formKey.currentState?.save();
-      }
-    });
+  Widget _buildCard(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: widget.onClick,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: <Widget>[
+            Flexible(
+              flex: 1,
+              fit: FlexFit.loose,
+              child: ListTile(
+                title: Icon(
+                  _getIcon(),
+                  size: 16 * 3.0,
+                ),
+                subtitle: Text(
+                  friendlyFileName,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            Wrap(
+              clipBehavior: Clip.antiAlias,
+              children: [
+                widget.isDirectory
+                    ? const Icon(null)
+                    : IconButton(
+                        icon: const Icon(Icons.download_rounded),
+                        onPressed: _saveToDesktop,
+                      ),
+                widget.isDirectory
+                    ? const Icon(
+                        null, // 16 + iconSize
+                      )
+                    : IconButton(
+                        icon:
+                            const Icon(FluentIcons.glasses_24_filled, size: 24),
+                        onPressed: _watchFile,
+                        splashRadius: FileWidgetUI._iconSplashRadius,
+                        tooltip: "Watch",
+                      ),
+                widget.isDirectory
+                    ? const Icon(null)
+                    : IconButton(
+                        icon: const Icon(FluentIcons.open_24_filled, size: 24),
+                        onPressed: _openTempFile,
+                        splashRadius: FileWidgetUI._iconSplashRadius,
+                        tooltip: "Open (temp)",
+                      ),
+                IconButton(
+                    icon: const Icon(Icons.copy),
+                    onPressed: _copyPathToClipboard),
+                IconButton(
+                  icon: const Icon(Icons.delete_forever),
+                  onPressed: _deleteSelf,
+                  splashRadius: FileWidgetUI._iconSplashRadius,
+                  tooltip: "Delete",
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildListTile(BuildContext context) {
@@ -211,6 +221,69 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
         title: editable ? _fileNameForm() : Text(friendlyFileName));
   }
 
+  List<Widget> _column({required Widget child}) {
+    return [
+      child,
+      Container(
+        width: 2,
+        color: Theme.of(context).colorScheme.inverseSurface,
+      )
+    ];
+  }
+
+  Future<void> _copyPathToClipboard() {
+    return FlutterClipboard.copy(widget.fullFilePath);
+  }
+
+  Padding _dateTime() {
+    // date time
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: FutureBuilder<DateTime?>(
+          future: widget.modifiedTime,
+          builder: ((context, snapshot) {
+            String text = snapshot.error?.toString() ?? "...";
+
+            var date = snapshot.data?.toLocal();
+            if (date != null) {
+              var year = date.year;
+              var day = date.day.toString().padLeft(2, '0');
+              var month = date.month.toString().padLeft(2, '0');
+              var hour = max(date.hour % 12, 1).toString().padLeft(2, '0');
+              var minute = date.minute.toString().padLeft(2, '0');
+              var second = date.second.toString().padLeft(2, '0');
+              text = "$year-$month-$day $hour:$minute:$second";
+            }
+
+            return Text(
+              text,
+              style: Theme.of(context).textTheme.subtitle2,
+            );
+          })),
+    );
+  }
+
+  Future<void> _deleteSelf() {
+    return widget.onDelete(widget.fullFilePath, !widget.isDirectory);
+  }
+
+  void _enterEditMode() {
+    setState(() {
+      editable = true;
+      _focusNode.requestFocus();
+    });
+  }
+
+  void _exitEditMode({bool save = true}) {
+    setState(() {
+      editable = false;
+      _focusNode.unfocus();
+      if (save) {
+        _formKey.currentState?.save();
+      }
+    });
+  }
+
   // I hate this
   Form _fileNameForm() {
     return Form(
@@ -245,120 +318,6 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
     );
   }
 
-  Widget _buildCard(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: widget.onClick,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: <Widget>[
-            Flexible(
-              flex: 1,
-              fit: FlexFit.loose,
-              child: ListTile(
-                title: Icon(
-                  _getIcon(),
-                  size: 16 * 3.0,
-                ),
-                subtitle: Text(
-                  friendlyFileName,
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            ),
-            Wrap(
-              clipBehavior: Clip.antiAlias,
-              children: [
-                widget.isDirectory
-                    ? const Icon(null)
-                    : IconButton(
-                        icon: const Icon(Icons.download_rounded),
-                        onPressed: _saveToDesktop,
-                      ),
-                widget.isDirectory
-                    ? const Icon(
-                        null, // 16 + iconSize
-                      )
-                    : IconButton(
-                        icon:
-                            const Icon(FluentIcons.glasses_24_filled, size: 24),
-                        onPressed: _watchFile,
-                        splashRadius: FileWidgetUI._iconSplashRadius,
-                        tooltip: "Watch",
-                      ),
-                widget.isDirectory
-                    ? const Icon(null)
-                    : IconButton(
-                        icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                        onPressed: _openTempFile,
-                        splashRadius: FileWidgetUI._iconSplashRadius,
-                        tooltip: "Open (temp)",
-                      ),
-                IconButton(
-                    icon: const Icon(Icons.copy),
-                    onPressed: _copyPathToClipboard),
-                IconButton(
-                  icon: const Icon(Icons.delete_forever),
-                  onPressed: _deleteSelf,
-                  splashRadius: FileWidgetUI._iconSplashRadius,
-                  tooltip: "Delete",
-                ),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getIcon() {
-    return widget.isDirectory ? Icons.folder : FluentIcons.document_48_regular;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return widget.isCard ? _buildCard(context) : _buildListTile(context);
-  }
-
-  List<Widget> _column({required Widget child}) {
-    return [
-      child,
-      Container(
-        width: 2,
-        color: Theme.of(context).colorScheme.inverseSurface,
-      )
-    ];
-  }
-
-  Padding _dateTime() {
-    // date time
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: FutureBuilder<DateTime?>(
-          future: widget.modifiedTime,
-          builder: ((context, snapshot) {
-            String text = snapshot.error?.toString() ?? "...";
-
-            var date = snapshot.data?.toLocal();
-            if (date != null) {
-              var year = date.year;
-              var day = date.day.toString().padLeft(2, '0');
-              var month = date.month.toString().padLeft(2, '0');
-              var hour = max(date.hour % 12, 1).toString().padLeft(2, '0');
-              var minute = date.minute.toString().padLeft(2, '0');
-              var second = date.second.toString().padLeft(2, '0');
-              text = "$year-$month-$day $hour:$minute:$second";
-            }
-
-            return Text(
-              text,
-              style: Theme.of(context).textTheme.subtitle2,
-            );
-          })),
-    );
-  }
-
   Padding _fileSizeText() {
     // date time
     return Padding(
@@ -372,5 +331,45 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
                 textAlign: TextAlign.left,
               ))),
     );
+  }
+
+  IconData _getIcon() {
+    return widget.isDirectory ? Icons.folder : FluentIcons.document_48_regular;
+  }
+
+  Future<void> _openTempFile() async {
+    return widget.openTempFile(widget.fullFilePath, friendlyFileName);
+  }
+
+  Future<void> _renameFile() async {
+    var newName = _fileNameController.text;
+    var future = widget.renameFileCallback(fullFilePath, newName);
+
+    // TODO: unspaghetify
+    if (newName != friendlyFileName) {
+      setState(() {
+        fullFilePath = Adb.adbPathContext
+            .join(Adb.adbPathContext.dirname(fullFilePath), newName);
+      });
+    }
+    await future;
+  }
+
+  Future<void> _saveToDesktop() {
+    return widget.downloadFile(widget.fullFilePath, friendlyFileName);
+  }
+
+  String? _validateNewName(String? newName) {
+    if (newName == null || newName.isEmpty) {
+      return "New name cannot be empty";
+    }
+
+    if (newName.contains("/")) return "Cannot contain slashes";
+
+    return null;
+  }
+
+  Future<void> _watchFile() async {
+    return widget.onWatch(widget.fullFilePath, friendlyFileName);
   }
 }

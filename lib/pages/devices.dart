@@ -1,10 +1,8 @@
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/device_card.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
-
-// TODO: Add wireless connection
-// TODO: Add button for toggling device into wireless
 
 class DevicesPage extends StatefulWidget {
   const DevicesPage({Key? key}) : super(key: key);
@@ -37,6 +35,10 @@ class _DevicesPageState extends State<DevicesPage> {
         // the App.build method, and use it to set our appbar title.
         title: const Text(DevicesPage.title),
         automaticallyImplyLeading: Routemaster.of(context).history.canGoBack,
+        leading: IconButton(
+          icon: const Icon(FluentIcons.add_24_filled),
+          onPressed: _connectDialog,
+        ),
       ),
       body: Center(
           // Center is a layout widget. It takes a single child and positions it
@@ -88,7 +90,7 @@ class _DevicesPageState extends State<DevicesPage> {
     );
   }
 
-  GridView _deviceGridView(List<Device> devices) {
+  GridView _deviceGridView(Iterable<Device> devices) {
     return GridView.extent(
         childAspectRatio: 12.0 / 11.0,
         padding: const EdgeInsets.all(4.0),
@@ -102,5 +104,46 @@ class _DevicesPageState extends State<DevicesPage> {
                     e.deviceManufacturer ?? "Unknown Manufacturer",
                 serialName: e.serialName))
             .toList(growable: false));
+  }
+
+  Future<void> _connectDialog() async {
+    TextEditingController ipController = TextEditingController();
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Connect device wirelessly'),
+        content: Column(
+          children: [
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: ipController,
+                  autocorrect: false,
+                  autofocus: true,
+                  decoration: const InputDecoration(hintText: "IP"),
+                ),
+              ],
+            )
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: const Text('Ok'),
+            onPressed: () {
+              Adb.connectWireless(ipController.text, 5555);
+            },
+          ),
+        ],
+      ),
+    );
   }
 }

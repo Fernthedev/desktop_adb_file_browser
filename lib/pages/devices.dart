@@ -108,42 +108,162 @@ class _DevicesPageState extends State<DevicesPage> {
 
   Future<void> _connectDialog() async {
     TextEditingController ipController = TextEditingController();
+    TextEditingController portController = TextEditingController(text: "5555");
 
     await showDialog<void>(
       context: context,
       barrierDismissible: true, // user must tap button!
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Connect device wirelessly'),
-        content: Column(
-          children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: ipController,
-                  autocorrect: false,
-                  autofocus: true,
-                  decoration: const InputDecoration(hintText: "IP"),
-                ),
-              ],
-            )
-          ],
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          TextButton(
-            child: const Text('Ok'),
-            onPressed: () {
-              Adb.connectWireless(ipController.text, 5555);
-            },
-          ),
-        ],
+      builder: (BuildContext context) => WirelessConnectDialog(
+          ipController: ipController, portController: portController),
+    );
+  }
+}
+
+class WirelessConnectDialog extends StatefulWidget {
+  WirelessConnectDialog({
+    Key? key,
+    required this.ipController,
+    required this.portController,
+  }) : super(key: key);
+
+  final TextEditingController ipController;
+  final TextEditingController portController;
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  State<WirelessConnectDialog> createState() => _WirelessConnectDialogState();
+}
+
+class _WirelessConnectDialogState extends State<WirelessConnectDialog> {
+  Future<void>? connectFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    if (connectFuture == null) {
+      return _connectPrompt();
+    }
+
+    return FutureBuilder(
+      builder: (context, snapshot) {
+        if (snapshot.error != null) {
+          return _error(snapshot.error.toString());
+        }
+
+        if (!snapshot.hasData) {
+          return _connectingWait();
+        }
+
+        return _success();
+      },
+      future: connectFuture?.timeout(const Duration(seconds: 30)),
+    );
+  }
+
+  Widget _success() {
+    return AlertDialog(
+      title: const Text("Success"),
+      content: Center(
+        child: Text(
+            "Successfully connected to ${widget.ipController.text}:${widget.portController.text}"),
       ),
     );
+  }
+
+  Widget _error(String error) {
+    return AlertDialog(
+      title: const Text("Error"),
+      content: SizedBox.square(
+        dimension: 80,
+        child: Center(
+          child: Text(error),
+        ),
+      ),
+    );
+  }
+
+  Widget _connectingWait() {
+    return const AlertDialog(
+      title: Text("Connecting"),
+      content: SizedBox.square(
+        dimension: 80,
+        child: Center(
+          child: CircularProgressIndicator.adaptive(
+            value: null,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _connectPrompt() {
+    return AlertDialog(
+      title: const Text('Connect device wirelessly'),
+      content: Form(
+        key: widget._formKey,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  controller: widget.ipController,
+                  autocorrect: false,
+                  autofocus: true,
+                  validator: (value) =>
+                      value?.isEmpty == true ? "No value provided" : null,
+                  decoration: const InputDecoration(hintText: "IP"),
+                ),
+              ),
+              Flexible(
+                fit: FlexFit.loose,
+                child: TextFormField(
+                  controller: widget.portController,
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty == true) {
+                      return "No value provided";
+                    }
+
+                    if (int.tryParse(value) == null) {
+                      return "Not a number";
+                    }
+
+                    return null;
+                  },
+                  autocorrect: false,
+                  autofocus: true,
+                  decoration: const InputDecoration(hintText: "Port"),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: const Text('Cancel'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          onPressed: _connect,
+          child: const Text('Ok'),
+        ),
+      ],
+    );
+  }
+
+  void _connect() {
+    if (!widget._formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      connectFuture = Adb.connectWireless(
+          widget.ipController.text, int.parse(widget.portController.text));
+    });
   }
 }

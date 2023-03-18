@@ -1,10 +1,8 @@
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/device_card.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
-
-// TODO: Add wireless connection
-// TODO: Add button for toggling device into wireless
 
 class DevicesPage extends StatefulWidget {
   const DevicesPage({Key? key}) : super(key: key);
@@ -37,6 +35,10 @@ class _DevicesPageState extends State<DevicesPage> {
         // the App.build method, and use it to set our appbar title.
         title: const Text(DevicesPage.title),
         automaticallyImplyLeading: Routemaster.of(context).history.canGoBack,
+        leading: IconButton(
+          icon: const Icon(FluentIcons.add_24_filled),
+          onPressed: _connectDialog,
+        ),
       ),
       body: Center(
           // Center is a layout widget. It takes a single child and positions it
@@ -88,7 +90,7 @@ class _DevicesPageState extends State<DevicesPage> {
     );
   }
 
-  GridView _deviceGridView(List<Device> devices) {
+  GridView _deviceGridView(Iterable<Device> devices) {
     return GridView.extent(
         childAspectRatio: 12.0 / 11.0,
         padding: const EdgeInsets.all(4.0),
@@ -102,5 +104,166 @@ class _DevicesPageState extends State<DevicesPage> {
                     e.deviceManufacturer ?? "Unknown Manufacturer",
                 serialName: e.serialName))
             .toList(growable: false));
+  }
+
+  Future<void> _connectDialog() async {
+    TextEditingController ipController = TextEditingController();
+    TextEditingController portController = TextEditingController(text: "5555");
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) => WirelessConnectDialog(
+          ipController: ipController, portController: portController),
+    );
+  }
+}
+
+class WirelessConnectDialog extends StatefulWidget {
+  WirelessConnectDialog({
+    Key? key,
+    required this.ipController,
+    required this.portController,
+  }) : super(key: key);
+
+  final TextEditingController ipController;
+  final TextEditingController portController;
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  State<WirelessConnectDialog> createState() => _WirelessConnectDialogState();
+}
+
+class _WirelessConnectDialogState extends State<WirelessConnectDialog> {
+  Future<void>? connectFuture;
+
+  @override
+  Widget build(BuildContext context) {
+    if (connectFuture == null) {
+      return _connectPrompt();
+    }
+
+    return FutureBuilder(
+      builder: (context, snapshot) {
+        if (snapshot.error != null) {
+          return _error(snapshot.error.toString());
+        }
+
+        if (!snapshot.hasData) {
+          return _connectingWait();
+        }
+
+        return _success();
+      },
+      future: connectFuture?.timeout(const Duration(seconds: 30)),
+    );
+  }
+
+  Widget _success() {
+    return AlertDialog(
+      title: const Text("Success"),
+      content: Center(
+        child: Text(
+            "Successfully connected to ${widget.ipController.text}:${widget.portController.text}"),
+      ),
+    );
+  }
+
+  Widget _error(String error) {
+    return AlertDialog(
+      title: const Text("Error"),
+      content: SizedBox.square(
+        dimension: 80,
+        child: Center(
+          child: Text(error),
+        ),
+      ),
+    );
+  }
+
+  Widget _connectingWait() {
+    return const AlertDialog(
+      title: Text("Connecting"),
+      content: SizedBox.square(
+        dimension: 80,
+        child: Center(
+          child: CircularProgressIndicator.adaptive(
+            value: null,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _connectPrompt() {
+    return AlertDialog(
+      title: const Text('Connect device wirelessly'),
+      content: Form(
+        key: widget._formKey,
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Expanded(
+                flex: 2,
+                child: TextFormField(
+                  controller: widget.ipController,
+                  autocorrect: false,
+                  autofocus: true,
+                  validator: (value) =>
+                      value?.isEmpty == true ? "No value provided" : null,
+                  decoration: const InputDecoration(hintText: "IP"),
+                ),
+              ),
+              Flexible(
+                fit: FlexFit.loose,
+                child: TextFormField(
+                  controller: widget.portController,
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty == true) {
+                      return "No value provided";
+                    }
+
+                    if (int.tryParse(value) == null) {
+                      return "Not a number";
+                    }
+
+                    return null;
+                  },
+                  autocorrect: false,
+                  autofocus: true,
+                  decoration: const InputDecoration(hintText: "Port"),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          child: const Text('Cancel'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          onPressed: _connect,
+          child: const Text('Ok'),
+        ),
+      ],
+    );
+  }
+
+  void _connect() {
+    if (!widget._formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      connectFuture = Adb.connectWireless(
+          widget.ipController.text, int.parse(widget.portController.text));
+    });
   }
 }

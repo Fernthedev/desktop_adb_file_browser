@@ -1,4 +1,5 @@
 import 'package:desktop_adb_file_browser/routes.dart';
+import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 
@@ -54,6 +55,12 @@ class DeviceCard extends StatelessWidget {
                         icon: const Icon(
                           FluentIcons.notepad_24_filled,
                           size: 24,
+                        )),
+                    IconButton(
+                        onPressed: () => _enableWireless(context),
+                        icon: const Icon(
+                          FluentIcons.wifi_1_24_filled,
+                          size: 24,
                         ))
                   ],
                 ),
@@ -61,6 +68,31 @@ class DeviceCard extends StatelessWidget {
             )
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _enableWireless(BuildContext context) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true, // user must tap button!
+      builder: (BuildContext context) => AlertDialog(
+        title: const Text('Wireless'),
+        content: const Text("Enable wireless mode on device?"),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+          TextButton(
+            child: const Text('Ok'),
+            onPressed: () {
+              Adb.enableWireless(serialName);
+            },
+          ),
+        ],
       ),
     );
   }

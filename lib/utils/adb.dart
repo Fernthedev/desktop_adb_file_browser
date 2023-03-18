@@ -296,6 +296,14 @@ abstract class Adb {
   static Future<void> removeDirectory(String serialName, String path) async {
     await runAdbCommand(serialName, ["shell", "rm -r ${fixPath(path)}"]);
   }
+
+  static Future<void> enableWireless(String serialName) async {
+    await runAdbCommand(serialName, ["tcpip", "5555"]);
+  }
+
+  static Future<void> connectWireless(String ip, int port) async {
+    await runAdbCommand(null, ["connect", "$ip:$port"]);
+  }
 }
 
 class Device {

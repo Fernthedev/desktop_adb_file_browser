@@ -147,9 +147,13 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             tooltip: 'Add new file',
             child: const Icon(Icons.add),
           ),
-          bottomNavigationBar: _SplitRow(
+          bottomNavigationBar: SizedBox(
+            height: Theme.of(context).buttonTheme.height,
+            child: _SplitRow(
               browser: widget._fileBrowser,
-              key: ValueKey(widget._fileBrowser.currentPath)),
+              key: ValueKey(widget._fileBrowser.currentPath),
+            ),
+          ),
         ),
       ),
     );
@@ -579,8 +583,21 @@ class _SplitRow extends StatelessWidget {
       locations[i] = Adb.adbPathContext.join(locations[i - 1], locations[i]);
     }
 
+    // return Padding(
+    //   padding: const EdgeInsets.all(8.0),
+    //   child: SegmentedButton<String>(
+
+    //     segments: locations
+    //         .map((e) => ButtonSegment(
+    //             label: Text("/${Adb.adbPathContext.basename(e)}"), value: e))
+    //         .toList(growable: false),
+    //     selected: {locations.last},
+    //     onSelectionChanged: (e) => browser.navigateToDirectory(e.first),
+    //   ),
+    // );
+
     return SizedBox(
-      height: Theme.of(context).buttonTheme.height - 20,
+      // height: Theme.of(context).buttonTheme.height,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: ListView(
@@ -589,7 +606,9 @@ class _SplitRow extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             children: locations
                 .map((e) => [
-                      const Text("/"),
+                      const VerticalDivider(
+                        thickness: 0.5,
+                      ),
                       TextButton(
                           onPressed: () => browser.navigateToDirectory(e),
                           child: Text(Adb.adbPathContext.basename(e)))

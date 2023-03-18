@@ -52,6 +52,8 @@ dependencies:
   tuple: ^2.0.0
   open_file: ^3.2.1
   async: ^2.10.0
+  fluent_ui: ^4.4.1
+  macos_ui: ^1.12.2
 
 dev_dependencies:
   flutter_test:

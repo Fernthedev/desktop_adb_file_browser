@@ -7,6 +7,10 @@ Focus is directed to ensuring a smooth and reliable experience, though some page
 Being Flutter, it works on Linux, Mac and Windows (though for now, limited to x64).
 It uses `adb` under the hood and provides a mechanism to download if need be. 
 
+## Screenshots:
+![Devices](./docs/devices.png)
+![File Manager](./docs/file_manager.png)
+
 Some features:
 - Not limited to a single device connection
 - Wireless ADB support

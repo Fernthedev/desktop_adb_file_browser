@@ -47,7 +47,7 @@ dependencies:
   win32: ^4.1.4
   dio: ^5.0.3
   archive: ^3.3.1
-  desktop_drop: ^0.4.0
+  desktop_drop: ^0.4.1
   watcher: ^1.0.1
   tuple: ^2.0.0
   open_file: ^3.2.1

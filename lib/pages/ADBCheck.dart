@@ -79,7 +79,7 @@ class _ADBDownloadDialogState extends State<ADBDownloadDialog> {
               }, cancelToken);
 
               if (!mounted) return;
-              Navigator.pop(context);
+              Navigator.of(context, rootNavigator: true).pop();
             },
             child: const Text("Ok"))
       ],

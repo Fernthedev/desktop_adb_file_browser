@@ -143,13 +143,13 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
                           color: Colors.black),
             ),
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              _showNewFileDialog();
-            },
-            tooltip: 'Add new file',
-            child: const Icon(Icons.add),
-          ),
+          // floatingActionButton: FloatingActionButton(
+          //   onPressed: () {
+          //     _showNewFileDialog();
+          //   },
+          //   tooltip: 'Add new file',
+          //   child: const Icon(Icons.add),
+          // ),
           bottomNavigationBar: SizedBox(
             height: Theme.of(context).buttonTheme.height,
             child: _breadCumbs(),
@@ -262,11 +262,22 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           icon: const Icon(
             FluentIcons.folder_add_20_regular,
           ),
+          tooltip: "Upload file or folder",
           onPressed: () {
             openFiles().then((value) {
               if (value.isEmpty) return;
               _uploadFiles(value.map((e) => e.path));
             });
+          },
+        ),
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(
+            FluentIcons.add_20_regular,
+          ),
+          tooltip: "Add new file",
+          onPressed: () {
+            _showNewFileDialog();
           },
         ),
       ],

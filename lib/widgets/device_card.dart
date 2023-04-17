@@ -7,67 +7,48 @@ import 'package:flutter/material.dart';
 class DeviceCard extends StatelessWidget {
   const DeviceCard({
     Key? key,
-    required this.deviceName,
-    required this.deviceManufacturer,
-    required this.serialName,
+    required this.device,
   }) : super(key: key);
 
-  final String deviceName;
-  final String deviceManufacturer;
-  final String serialName;
+  final Device device;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Routes.browse(context, serialName),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Expanded(
-              flex: 2,
-              child: ListTile(
-                leading: const Icon(
-                  FluentIcons.phone_24_regular,
-                  size: 24 * 1.6,
-                ),
-                title: Text(deviceName),
-                subtitle: Text(deviceManufacturer),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                  padding: const EdgeInsets.all(5),
-                  // TODO: Make this copy to clipboard or something
-                  // maybe device details page?
-                  child: TextButton(onPressed: () {}, child: Text(serialName))),
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Wrap(
-                  crossAxisAlignment: WrapCrossAlignment.end,
-                  children: [
-                    IconButton(
-                        onPressed: () => Routes.log(context, serialName),
-                        icon: const Icon(
-                          FluentIcons.notepad_24_filled,
-                          size: 24,
-                        )),
-                    IconButton(
-                        onPressed: () => _enableWireless(context),
-                        icon: const Icon(
-                          FluentIcons.wifi_1_24_filled,
-                          size: 24,
-                        ))
-                  ],
-                ),
-              ),
-            )
-          ],
-        ),
+    return ListTile(
+      leading: const Icon(
+        FluentIcons.phone_24_regular,
+        size: 24 * 1.6,
+      ),
+      title: Text(device.modelName),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          Text(device.deviceManufacturer ?? "Unknown Manufacturer"),
+          TextButton(
+            child: Text(device.serialName),
+            onPressed: () {},
+          ),
+        ],
+      ),
+      onTap: () => Routes.browse(context, device.serialName),
+      isThreeLine: true,
+      trailing: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.end,
+        children: [
+          IconButton(
+              onPressed: () => Routes.log(context, device.serialName),
+              icon: const Icon(
+                FluentIcons.notepad_24_filled,
+                size: 24,
+              )),
+          IconButton(
+              onPressed: () => _enableWireless(context),
+              icon: const Icon(
+                FluentIcons.wifi_1_24_filled,
+                size: 24,
+              ))
+        ],
       ),
     );
   }
@@ -89,7 +70,7 @@ class DeviceCard extends StatelessWidget {
           TextButton(
             child: const Text('Ok'),
             onPressed: () {
-              Adb.enableWireless(serialName);
+              Adb.enableWireless(device.serialName);
             },
           ),
         ],

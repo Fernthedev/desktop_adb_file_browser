@@ -90,19 +90,11 @@ class _DevicesPageState extends State<DevicesPage> {
     );
   }
 
-  GridView _deviceGridView(Iterable<Device> devices) {
-    return GridView.extent(
-        childAspectRatio: 12.0 / 11.0,
+  ListView _deviceGridView(Iterable<Device> devices) {
+    return ListView(
         padding: const EdgeInsets.all(4.0),
-        mainAxisSpacing: 4.0,
-        crossAxisSpacing: 4.0,
-        maxCrossAxisExtent: 250,
         children: devices
-            .map((e) => DeviceCard(
-                deviceName: e.modelName,
-                deviceManufacturer:
-                    e.deviceManufacturer ?? "Unknown Manufacturer",
-                serialName: e.serialName))
+            .map((e) => DeviceCard(device: e))
             .toList(growable: false));
   }
 

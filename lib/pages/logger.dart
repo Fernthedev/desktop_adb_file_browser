@@ -117,10 +117,10 @@ class _LogPageState extends State<LogPage> {
         padding: const EdgeInsets.all(8.0),
         child: Visibility(
           visible: showLogs,
-          replacement: Center(
+          replacement: const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
+              children: [
                 Padding(
                   padding: EdgeInsets.all(8.0),
                   child: CircularProgressIndicator(),
@@ -130,7 +130,7 @@ class _LogPageState extends State<LogPage> {
             ),
           ),
           child: Container(
-            color: Theme.of(context).backgroundColor,
+            color: Theme.of(context).colorScheme.background,
             child: buildList(),
           ),
         ),

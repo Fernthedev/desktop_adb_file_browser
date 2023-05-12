@@ -69,10 +69,10 @@ class _DevicesPageState extends State<DevicesPage> {
             snapshot.connectionState == ConnectionState.done) {
           return _deviceGridView(snapshot.data!);
         } else {
-          return Center(
+          return const Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: const <Widget>[
+              children: <Widget>[
                 SizedBox(
                   width: 60,
                   height: 60,

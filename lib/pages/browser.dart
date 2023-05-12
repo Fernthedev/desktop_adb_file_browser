@@ -266,10 +266,10 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           return list ? _viewAsList(filteredList) : _viewAsGrid(filteredList);
         }
 
-        return Center(
+        return const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const <Widget>[
+            children: <Widget>[
               SizedBox(
                 width: 60,
                 height: 60,

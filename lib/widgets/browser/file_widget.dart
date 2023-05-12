@@ -267,7 +267,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
 
             return Text(
               text,
-              style: Theme.of(context).textTheme.subtitle2,
+              style: Theme.of(context).textTheme.titleSmall,
             );
           })),
     );
@@ -333,7 +333,7 @@ class _FileWidgetUIState extends State<FileWidgetUI> {
           builder: ((context, snapshot) => Text(
                 snapshot.error?.toString() ??
                     (snapshot.data != null ? filesize(snapshot.data) : "..."),
-                style: Theme.of(context).textTheme.subtitle2,
+                style: Theme.of(context).textTheme.titleSmall,
                 textAlign: TextAlign.left,
               ))),
     );

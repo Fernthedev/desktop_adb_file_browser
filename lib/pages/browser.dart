@@ -1,10 +1,8 @@
 import 'dart:async';
-import 'dart:collection';
 
 import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/utils/file_browser.dart';
-import 'package:desktop_adb_file_browser/utils/file_data.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
@@ -536,7 +534,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
               child: FileCardWidget(
             key: ValueKey(file),
             isCard: true,
-            fileData: fileData.fileData,
+            fileWrapper: fileData,
           ));
         });
   }
@@ -552,13 +550,17 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           width: double.infinity,
           child: FileDataTable(
               fileData: files.map((file) {
+            final isDir = file.endsWith("/");
+
             return fileCache.putIfAbsent(
                 file,
                 () => FileBrowserDataWrapper(FileBrowserData(
                       modifiedTime:
                           Adb.getFileModifiedDate(widget.serial, file),
-                      fileSize: Adb.getFileSize(widget.serial, file),
-                      isDirectory: file.endsWith("/"),
+                      fileSize: !isDir
+                          ? Adb.getFileSize(widget.serial, file)
+                          : Future.value(null),
+                      isDirectory: isDir,
                       initialFilePath: file,
                       onWatch: _watchFile,
                       browser: widget._fileBrowser,

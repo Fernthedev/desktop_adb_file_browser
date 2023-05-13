@@ -6,13 +6,13 @@ import 'package:flutter/material.dart';
 class FileCardWidget extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
-  final FileBrowserData fileData;
+  final FileBrowserDataWrapper fileWrapper;
 
   final bool isCard;
 
   const FileCardWidget({
     Key? key,
-    required this.fileData,
+    required this.fileWrapper,
     required this.isCard,
   }) : super(key: key);
 
@@ -20,12 +20,12 @@ class FileCardWidget extends StatefulWidget {
   State<FileCardWidget> createState() => _FileCardWidgetState();
 }
 
-class _FileCardWidgetState extends State<FileCardWidget> with FileDataState {
+class _FileCardWidgetState extends State<FileCardWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: navigateToDir,
+        onTap: widget.fileWrapper.navigateToDir,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -35,11 +35,11 @@ class _FileCardWidgetState extends State<FileCardWidget> with FileDataState {
               fit: FlexFit.loose,
               child: ListTile(
                 title: Icon(
-                  getIcon(),
+                  widget.fileWrapper.getIcon(),
                   size: 16 * 3.0,
                 ),
                 subtitle: Text(
-                  friendlyFileName,
+                  widget.fileWrapper.friendlyFileName,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -47,37 +47,37 @@ class _FileCardWidgetState extends State<FileCardWidget> with FileDataState {
             Wrap(
               clipBehavior: Clip.antiAlias,
               children: [
-                fileData.isDirectory
+                widget.fileWrapper.fileData.isDirectory
                     ? const Icon(null)
                     : IconButton(
                         icon: const Icon(Icons.download_rounded),
-                        onPressed: saveFileToDesktop,
+                        onPressed: widget.fileWrapper.saveFileToDesktop,
                       ),
-                fileData.isDirectory
+                widget.fileWrapper.fileData.isDirectory
                     ? const Icon(
                         null, // 16 + iconSize
                       )
                     : IconButton(
                         icon:
                             const Icon(FluentIcons.glasses_24_filled, size: 24),
-                        onPressed: watchFile,
+                        onPressed: widget.fileWrapper.watchFile,
                         splashRadius: FileCardWidget._iconSplashRadius,
                         tooltip: "Watch",
                       ),
-                fileData.isDirectory
+                widget.fileWrapper.fileData.isDirectory
                     ? const Icon(null)
                     : IconButton(
                         icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                        onPressed: openTempFile,
+                        onPressed: widget.fileWrapper.openTempFile,
                         splashRadius: FileCardWidget._iconSplashRadius,
                         tooltip: "Open (temp)",
                       ),
                 IconButton(
                     icon: const Icon(Icons.copy),
-                    onPressed: copyPathToClipboard),
+                    onPressed: widget.fileWrapper.copyPathToClipboard),
                 IconButton(
                   icon: const Icon(Icons.delete_forever),
-                  onPressed: () => removeFileDialog(context),
+                  onPressed: () => widget.fileWrapper.removeFileDialog(context),
                   splashRadius: FileCardWidget._iconSplashRadius,
                   tooltip: "Delete",
                 ),
@@ -88,7 +88,4 @@ class _FileCardWidgetState extends State<FileCardWidget> with FileDataState {
       ),
     );
   }
-
-  @override
-  FileBrowserData get fileData => widget.fileData;
 }

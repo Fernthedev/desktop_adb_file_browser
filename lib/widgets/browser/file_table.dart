@@ -28,35 +28,36 @@ class _FileDataTableState extends State<FileDataTable> {
           ascending = a;
         });
 
-    final sortedFiles = widget.fileData.toList(growable: false);
-    sortedFiles.sort((a, b) {
-      final sortMultiplier = ascending ? 1 : -1;
-      // name
-      if (sort == 0) {
-        return sortMultiplier *
-            a.friendlyFileName.compareTo(b.friendlyFileName);
-      }
+    final sortedFiles = widget.fileData.toList(growable: false)
+      ..sort((a, b) {
+        final sortMultiplier = ascending ? 1 : -1;
+        // name
+        if (sort == 0) {
+          return sortMultiplier *
+              a.friendlyFileName.compareTo(b.friendlyFileName);
+        }
 
-      return 0;
-      // TODO:
-      // Date
-      // if (sort == 1) {
-      //   final aSize = (a.fileData.time) ?? 0;
-      //   final bSize = (await b.fileData.fileSize) ?? 0;
-      //   return sortMultiplier * aSize.compareTo(bSize);
-      // }
-      // Size
-      // if (sort == 2) {
-      //   return sortMultiplier *
-      //       a.friendlyFileName.compareTo(b.friendlyFileName);
-      // }
-    });
+        return 0;
+        // TODO:
+        // Date
+        // if (sort == 1) {
+        //   final aSize = (a.fileData.time) ?? 0;
+        //   final bSize = (await b.fileData.fileSize) ?? 0;
+        //   return sortMultiplier * aSize.compareTo(bSize);
+        // }
+        // Size
+        // if (sort == 2) {
+        //   return sortMultiplier *
+        //       a.friendlyFileName.compareTo(b.friendlyFileName);
+        // }
+      });
 
     //
     return DataTable(
         // return BetterLazyTable(
         sortAscending: ascending,
         sortColumnIndex: sort,
+        key: ValueKey(widget.fileData),
         columns: [
           DataColumn(label: const Text("Name"), onSort: onSort),
           DataColumn(label: const Text("Date"), numeric: true, onSort: onSort),
@@ -64,7 +65,7 @@ class _FileDataTableState extends State<FileDataTable> {
           const DataColumn(label: Text("Actions"))
         ],
         rows: sortedFiles
-            .map((e) => DataRow(cells: [
+            .map((e) => DataRow(key: ValueKey(e), cells: [
                   DataCell(
                     _nameCell(e),
                     showEditIcon: !e.editable,
@@ -74,6 +75,7 @@ class _FileDataTableState extends State<FileDataTable> {
                     }),
                     onDoubleTap: () => setState(() {
                       e.editable = !e.editable;
+                      _renameDialog(e);
                     }),
                     onTap: () => e.navigateToDir(),
                   ),
@@ -85,53 +87,19 @@ class _FileDataTableState extends State<FileDataTable> {
   }
 
   Widget _nameCell(FileBrowserDataWrapper e) {
-    Widget text;
-    if (e.editable && false) {
-      text = TextFormField(
-        initialValue: e.friendlyFileName,
-        onFieldSubmitted: (value) {
-          setState(() {
-            e.editable = false;
-            e.renameFile(value);
-          });
-        },
-        onTapOutside: (_) => setState(() {
-          e.editable = false;
-        }),
-        validator: _validateNewName,
-        maxLines: 1,
-        enableSuggestions: false,
-        autocorrect: false,
-        decoration: const InputDecoration(
-          floatingLabelBehavior: FloatingLabelBehavior.never,
-          focusedErrorBorder: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: UnderlineInputBorder(),
-          border: InputBorder.none,
-          disabledBorder: InputBorder.none,
-          errorBorder: InputBorder.none,
-          fillColor: null,
-          filled: false,
-        ),
-      );
-
-      return text;
-    } else {
-      text = Text(e.friendlyFileName);
-      return Wrap(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Icon(
-                e.fileData.isDirectory
-                    ? Icons.folder
-                    : FluentIcons.document_24_regular, // document
-                size: 24),
+    Widget text = Text(e.friendlyFileName);
+    return Wrap(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          child: Icon(
+            e.getIcon(), // document
+            size: 24,
           ),
-          text
-        ],
-      );
-    }
+        ),
+        text
+      ],
+    );
   }
 
   // I hate this
@@ -225,65 +193,76 @@ class _FileDataTableState extends State<FileDataTable> {
   }
 
   Wrap _actionsRow(FileBrowserDataWrapper e) {
+    final actions = [
+      // icons
+      ConditionalWidget(
+        size: null,
+        show: !e.fileData.isDirectory,
+        child: () => IconButton(
+          icon: const Icon(Icons.download_rounded, size: 24),
+          onPressed: () async {
+            setState(() {
+              e.downloading = true;
+            });
+            await e.saveFileToDesktop();
+            setState(() {
+              e.downloading = false;
+            });
+          },
+          enableFeedback: false,
+          splashRadius: FileDataTable._iconSplashRadius,
+        ),
+      ),
+      ConditionalWidget(
+        size: null,
+        show: !e.fileData.isDirectory,
+        child: () => IconButton(
+          icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
+          onPressed: e.watchFile,
+          splashRadius: FileDataTable._iconSplashRadius,
+          tooltip: "Watch",
+        ),
+      ),
+      ConditionalWidget(
+          show: !e.fileData.isDirectory,
+          size: null,
+          child: () => IconButton(
+                icon: const Icon(FluentIcons.open_24_filled, size: 24),
+                onPressed: e.openTempFile,
+                splashRadius: FileDataTable._iconSplashRadius,
+                tooltip: "Open (temp)",
+              )),
+
+      IconButton(
+        // TODO: Add user feedback when this occurs
+        icon: const Icon(Icons.copy),
+        onPressed: e.copyPathToClipboard,
+        splashRadius: FileDataTable._iconSplashRadius,
+        tooltip: "Copy to clipboard",
+      ),
+
+      IconButton(
+        icon: const Icon(Icons.delete_forever),
+        onPressed: () => e.removeFileDialog(context),
+        splashRadius: FileDataTable._iconSplashRadius,
+        tooltip: "Delete",
+      ),
+    ].reversed.toList(growable: false);
+
     return Wrap(
-      children: [
-        //download indicator
-        ConditionalWidget(
-          size: 24,
-          show: e.downloading,
-          child: const SizedBox(
-            width: 24,
-            child: CircularProgressIndicator.adaptive(
-              value: null,
+      children: actions +
+          [
+            //download indicator
+            // TODO: Center
+            ConditionalWidget(
+              size: 20,
+              show: e.downloading,
+              child: () => const CircularProgressIndicator.adaptive(
+                value: null,
+                
+              ),
             ),
-          ),
-        ),
-        // icons
-        ConditionalWidget(
-          size: 24,
-          show: !e.fileData.isDirectory,
-          child: IconButton(
-            icon: const Icon(Icons.download_rounded, size: 24),
-            onPressed: e.saveFileToDesktop,
-            enableFeedback: false,
-            splashRadius: FileDataTable._iconSplashRadius,
-          ),
-        ),
-        ConditionalWidget(
-          size: 24,
-          show: !e.fileData.isDirectory,
-          child: IconButton(
-            icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
-            onPressed: e.watchFile,
-            splashRadius: FileDataTable._iconSplashRadius,
-            tooltip: "Watch",
-          ),
-        ),
-        ConditionalWidget(
-            show: !e.fileData.isDirectory,
-            size: 24,
-            child: IconButton(
-              icon: const Icon(FluentIcons.open_24_filled, size: 24),
-              onPressed: e.openTempFile,
-              splashRadius: FileDataTable._iconSplashRadius,
-              tooltip: "Open (temp)",
-            )),
-
-        IconButton(
-          // TODO: Add user feedback when this occurs
-          icon: const Icon(Icons.copy),
-          onPressed: e.copyPathToClipboard,
-          splashRadius: FileDataTable._iconSplashRadius,
-          tooltip: "Copy to clipboard",
-        ),
-
-        IconButton(
-          icon: const Icon(Icons.delete_forever),
-          onPressed: () => e.removeFileDialog(context),
-          splashRadius: FileDataTable._iconSplashRadius,
-          tooltip: "Delete",
-        ),
-      ],
+          ],
     );
   }
 
@@ -302,9 +281,12 @@ class _FileDataTableState extends State<FileDataTable> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text("Renaming: $path"),
-                TextFormField(
-                  controller: controller,
-                  validator: _validateNewName,
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextFormField(
+                    controller: controller,
+                    validator: _validateNewName,
+                  ),
                 )
               ],
             ),

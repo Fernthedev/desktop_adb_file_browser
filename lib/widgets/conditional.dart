@@ -7,7 +7,7 @@ class ConditionalWidget extends StatelessWidget {
 
   final bool show;
   final double size;
-  final Widget child;
+  final Widget child; // TODO: Optimize, ignore if not showing
 
   @override
   Widget build(BuildContext context) {

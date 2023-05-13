@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
@@ -7,6 +8,8 @@ import 'package:desktop_adb_file_browser/utils/file_data.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
+import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
+import 'package:desktop_adb_file_browser/widgets/browser/file_table.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_widget.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/new_file_dialog.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/upload_file.dart';
@@ -53,7 +56,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   bool _dragging = false;
   late Future<List<String>?> _fileListingFuture;
   // late Future<SharedPreferences> preferences;
-  Map<String, FileData> fileCache = {}; // date time cache
+  Map<String, FileBrowserDataWrapper> fileCache = {}; // date time cache
 
   late ListenableHolder<void> onForwardClick;
   late ListenableHolder<void> onBackClick;
@@ -252,7 +255,12 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       future: _fileListingFuture,
       key: ValueKey(_fileListingFuture),
       builder: (BuildContext context, AsyncSnapshot<List<String>?> snapshot) {
-        //  TODO: Error handling
+        if (snapshot.hasError && snapshot.error != null) {
+          return Center(
+            child: Text(snapshot.error.toString()),
+          );
+        }
+
         if (snapshot.hasData &&
             snapshot.data != null &&
             snapshot.connectionState == ConnectionState.done) {
@@ -266,6 +274,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           return list ? _viewAsList(filteredList) : _viewAsGrid(filteredList);
         }
 
+        // Loading
         return const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -512,49 +521,70 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           var file = files[index];
           var isDir = file.endsWith("/");
           var fileData = fileCache.putIfAbsent(
-              file, () => FileData(serialName: widget.serial, file: file));
+              file,
+              () => FileBrowserDataWrapper(FileBrowserData(
+                    isDirectory: isDir,
+                    initialFilePath: file,
+                    modifiedTime: Adb.getFileModifiedDate(widget.serial, file),
+                    fileSize: Adb.getFileSize(widget.serial, file),
+                    onWatch: _watchFile,
+                    browser: widget._fileBrowser,
+                    serial: widget.serial,
+                  )));
 
           return GridTile(
-              child: FileWidgetUI(
+              child: FileCardWidget(
             key: ValueKey(file),
             isCard: true,
-            isDirectory: isDir,
-            initialFilePath: file,
-            modifiedTime: fileData.lastModifiedTime,
-            fileSize: fileData.fileSize,
-            onWatch: _watchFile,
-            browser: widget._fileBrowser,
-            serial: widget.serial,
+            fileData: fileData.fileData,
           ));
         });
   }
 
-  ListView _viewAsList(List<String> files) {
-    return ListView.builder(
-      key: ValueKey(files),
-      addAutomaticKeepAlives: true,
-      controller: widget._scrollController,
-      itemBuilder: (BuildContext context, int index) {
-        var file = files[index];
-        var fileData = fileCache.putIfAbsent(
-            file, () => FileData(serialName: widget.serial, file: file));
+  _viewAsList(List<String> files) {
+    // var isDir = file.endsWith("/");
 
-        var isDir = file.endsWith("/");
-
-        return FileWidgetUI(
-          key: ValueKey(file),
-          modifiedTime: fileData.lastModifiedTime,
-          fileSize: fileData.fileSize,
-          isCard: false,
-          isDirectory: isDir,
-          initialFilePath: file,
-          onWatch: _watchFile,
-          browser: widget._fileBrowser,
-          serial: widget.serial,
-        );
-      },
-      itemCount: files.length,
+    return Align(
+      alignment: Alignment.topCenter,
+      child: SingleChildScrollView(
+        controller: widget._scrollController,
+        child: SizedBox(
+          width: double.infinity,
+          child: FileDataTable(
+              fileData: files.map((file) {
+            return fileCache.putIfAbsent(
+                file,
+                () => FileBrowserDataWrapper(FileBrowserData(
+                      modifiedTime:
+                          Adb.getFileModifiedDate(widget.serial, file),
+                      fileSize: Adb.getFileSize(widget.serial, file),
+                      isDirectory: file.endsWith("/"),
+                      initialFilePath: file,
+                      onWatch: _watchFile,
+                      browser: widget._fileBrowser,
+                      serial: widget.serial,
+                    )));
+          }).toList(growable: false)),
+        ),
+      ),
     );
+    // return SizedBox(
+    //   width: double.infinity,
+    //   child: FileDataTable(
+    //       fileData: files.map((file) {
+    //     return fileCache.putIfAbsent(
+    //         file,
+    //         () => FileBrowserDataWrapper(FileBrowserData(
+    //               modifiedTime: Adb.getFileModifiedDate(widget.serial, file),
+    //               fileSize: Adb.getFileSize(widget.serial, file),
+    //               isDirectory: file.endsWith("/"),
+    //               initialFilePath: file,
+    //               onWatch: _watchFile,
+    //               browser: widget._fileBrowser,
+    //               serial: widget.serial,
+    //             )));
+    //   }).toList(growable: false)),
+    // );
   }
 
   Future<void> _watchFile(String source, String savePath) async {

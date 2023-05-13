@@ -76,10 +76,11 @@ class _FileDataTableState extends State<FileDataTable> {
                         e.editable = !e.editable;
                         _renameDialog(e);
                       }),
-                      onDoubleTap: () => setState(() {
-                        e.editable = !e.editable;
-                        _renameDialog(e);
-                      }),
+                      // TODO: Increases delay by 300ms, reduce
+                      // onDoubleTap: () => setState(() {
+                      //   e.editable = !e.editable;
+                      //   _renameDialog(e);
+                      // }),
                       onTap: () => e.navigateToDir(),
                     ),
                     DataCell(_dateCell(e)),

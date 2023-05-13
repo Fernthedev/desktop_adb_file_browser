@@ -221,10 +221,10 @@ packages:
     dependency: "direct main"
     description:
       name: flex_color_scheme
-      sha256: "03a0ad67cc224b20aab9f9a775a6cef76c8f884887902a2d94635c187858b31b"
+      sha256: "6178eaa92d58e7803fbaca01eefc82d46144ee86a737529210c54234ff69d07a"
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.2"
+    version: "7.1.0"
   flex_seed_scheme:
     dependency: transitive
     description:
@@ -254,6 +254,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_breadcrumb:
+    dependency: "direct main"
+    description:
+      name: flutter_breadcrumb
+      sha256: "1531680034def621878562ad763079933dabe9f9f5d5add5a094190edc33259b"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.1"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -289,10 +297,10 @@ packages:
     dependency: "direct main"
     description:
       name: google_fonts
-      sha256: "8f099045e2f2a30e4d4d0a35f40c6bc941a8f2ca0e10ad9d214ee9edd3f37483"
+      sha256: "6b6f10f0ce3c42f6552d1c70d2c28d764cf22bb487f50f66cca31dcd5194f4d6"
       url: "https://pub.dev"
     source: hosted
-    version: "3.0.1"
+    version: "4.0.4"
   http:
     dependency: transitive
     description:
@@ -462,14 +470,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.6"
+  pedantic:
+    dependency: transitive
+    description:
+      name: pedantic
+      sha256: "67fc27ed9639506c856c840ccce7594d0bdcd91bc8d53d6e52359449a1d50602"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.11.1"
   pigeon:
     dependency: "direct dev"
     description:
       name: pigeon
-      sha256: "6b270420d0808903f4c2d848aa96f8c12e6275b15989270f24e552939642212f"
+      sha256: da0447df2790718101dfda5d14abbbf9179f42fd553e1833d899572d5f3d3131
       url: "https://pub.dev"
     source: hosted
-    version: "9.2.5"
+    version: "10.0.0"
   platform:
     dependency: transitive
     description:
@@ -687,10 +703,10 @@ packages:
     dependency: "direct main"
     description:
       name: win32
-      sha256: "6b75ac2ddd42f5c226fdaf4498a2b04071c06f1f2b8f7ab1c3f77cc7f2285ff1"
+      sha256: "5a751eddf9db89b3e5f9d50c20ab8612296e4e8db69009788d6c8b060a84191c"
       url: "https://pub.dev"
     source: hosted
-    version: "2.7.0"
+    version: "4.1.4"
   xdg_directories:
     dependency: transitive
     description:

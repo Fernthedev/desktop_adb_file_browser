@@ -19,6 +19,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:tuple/tuple.dart';
@@ -151,14 +152,58 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           ),
           bottomNavigationBar: SizedBox(
             height: Theme.of(context).buttonTheme.height,
-            child: _SplitRow(
-              browser: widget._fileBrowser,
-              key: ValueKey(widget._fileBrowser.currentPath),
-            ),
+            child: _breadCumbs(),
           ),
         ),
       ),
     );
+  }
+
+  Widget _breadCumbs() {
+    var currentPath = widget._fileBrowser.currentPath;
+    var locations = currentPath.split("/");
+
+    if (locations.isNotEmpty && locations.first.isEmpty) {
+      locations.removeAt(0);
+    }
+
+// prepend previous directory to location
+    for (int i = 1; i < locations.length; i++) {
+      locations[i] = Adb.adbPathContext.join(locations[i - 1], locations[i]);
+    }
+
+    return Container(
+      color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
+      child: BreadCrumb(
+        key: ValueKey(widget._fileBrowser.currentPath),
+        items: locations
+            .map((e) => BreadCrumbItem(
+                  borderRadius: BorderRadius.circular(4),
+                  content: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Text(
+                      Adb.adbPathContext.basename(e),
+                    ),
+                  ),
+                  onTap: () => widget._fileBrowser.navigateToDirectory(e),
+                ))
+            .toList(growable: false),
+        divider: const Icon(
+          FluentIcons.chevron_right_28_regular,
+          size: 28,
+        ),
+        overflow: ScrollableOverflow(
+          keepLastDivider: false,
+          reverse: false,
+          direction: Axis.horizontal,
+        ),
+        // divider: Icon(Icons.chevron_right),
+      ),
+    );
+    // return _SplitRow(
+    //         browser: widget._fileBrowser,
+    //         key: ValueKey(widget._fileBrowser.currentPath),
+    //       );
   }
 
   @override
@@ -295,8 +340,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       },
     );
   }
-
-
 
   Expanded _filterBar() {
     return Expanded(

@@ -1,17 +1,6 @@
 #include "flutter_window.h"
 
-#include "pigeon.hpp"
-
 #include <optional>
-
-#include <flutter/event_channel.h>
-#include <flutter/event_sink.h>
-#include <flutter/event_stream_handler_functions.h>
-
-#include <flutter/standard_method_codec.h>
-#include <windows.h>
-
-#include <memory>
 
 #include "flutter/generated_plugin_registrant.h"
 
@@ -37,9 +26,13 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
 
-  nativeToFlutter = std::make_unique<Native2Flutter>(flutter_controller_->engine()->messenger());
+  nativeToFlutter = std::make_unique<Native2Flutter>(
+      flutter_controller_->engine()->messenger());
 
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
+
+  flutter_controller_->engine()->SetNextFrameCallback([&]() { this->Show(); });
+
   return true;
 }
 
@@ -65,28 +58,30 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     }
   }
 
-  // std::cout
-  //     << "Received " << message << std::endl;
-
   switch (message) {
-    case WM_FONTCHANGE:
-      flutter_controller_->engine()->ReloadSystemFonts();
-      break;
-      // FERN BACK/FORWARD MOUSE BUTTONS
-    case 793: { // WM_XBUTTONUP
-      int flag = GET_XBUTTON_WPARAM(lparam); // HIWORD(wparam);
+  case WM_FONTCHANGE:
+    flutter_controller_->engine()->ReloadSystemFonts();
+    break;
+    // FERN BACK/FORWARD MOUSE BUTTONS
+  case 793: {                              // WM_XBUTTONUP
+    int flag = GET_XBUTTON_WPARAM(lparam); // HIWORD(wparam);
 
-      bool forward = flag & XBUTTON2;
-      // bool backward = flag & XBUTTON2;
+    bool forward = flag & XBUTTON2;
+    // bool backward = flag & XBUTTON2;
 
-      // std::cout
-      //     << "Forward pressed " << (forward ? "true" : "false")
-      //     << " flag " << wparam << " " << lparam << std::endl;
+    // std::cout
+    //     << "Forward pressed " << (forward ? "true" : "false")
+    //     << " flag " << wparam << " " << lparam << std::endl;
 
-      nativeToFlutter->onClick(forward, [](){});
-      break;
-    }
-    }
+    nativeToFlutter->OnClick(
+        forward, []() {},
+        [](FlutterError const &e) {
+          std::cout << "Error: " << e.code() << " " << e.message() << std::endl;
+          // std::cout << "Details: " << e.details() << std::endl;
+        });
+    break;
+  }
+  }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);
 }

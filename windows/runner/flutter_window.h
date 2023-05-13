@@ -3,7 +3,6 @@
 
 #include <flutter/dart_project.h>
 #include <flutter/flutter_view_controller.h>
-#include <flutter/method_channel.h>
 
 #include <memory>
 #include "pigeon.hpp"

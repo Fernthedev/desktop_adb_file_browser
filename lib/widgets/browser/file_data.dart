@@ -16,7 +16,7 @@ typedef WatchFileCallback = Future<void> Function(
     String source, String savePath);
 
 @immutable
-class FileBrowserData {
+class FileBrowserMetadata {
   final Future<DateTime?> modifiedTime;
   final Future<int?> fileSize;
   final String initialFilePath;
@@ -25,7 +25,7 @@ class FileBrowserData {
   final String serial;
   final WatchFileCallback onWatch;
 
-  const FileBrowserData({
+  const FileBrowserMetadata({
     Key? key,
     required this.initialFilePath,
     required this.isDirectory,
@@ -38,7 +38,7 @@ class FileBrowserData {
 }
 
 mixin FileDataState {
-  FileBrowserData get fileData;
+  FileBrowserMetadata get fileData;
 
   // Set in constructor or initState
   late String fullFilePath;
@@ -167,7 +167,7 @@ mixin FileDataState {
 
 final class FileBrowserDataWrapper with FileDataState {
   @override
-  final FileBrowserData fileData;
+  final FileBrowserMetadata fileData;
 
   bool downloading = false;
 

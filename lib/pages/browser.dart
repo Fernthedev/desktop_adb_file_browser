@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/utils/file_browser.dart';
+import 'package:desktop_adb_file_browser/utils/file_sort.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
@@ -264,11 +265,13 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             snapshot.connectionState == ConnectionState.done) {
           var filteredList =
               _filteredFiles(snapshot.data!).toList(growable: false);
+          // Directories + Files
+          filteredList.sort(fileSort);
 
-          filteredList = filteredList
-              .where((value) => value.endsWith("/"))
-              .followedBy(filteredList.where((value) => !value.endsWith("/")))
-              .toList(growable: false);
+          // filteredList = filteredList
+          //     .where((value) => value.endsWith("/"))
+          //     .followedBy(filteredList.where((value) => !value.endsWith("/")))
+          //     .toList(growable: false);
           return list ? _viewAsList(filteredList) : _viewAsGrid(filteredList);
         }
 
@@ -292,6 +295,8 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
       },
     );
   }
+
+
 
   Expanded _filterBar() {
     return Expanded(
@@ -322,6 +327,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   Iterable<String> _filteredFiles(Iterable<String> files) {
     var filter = widget._filterController.text.toLowerCase();
+    if (filter.isEmpty) return files;
     return files.where((element) => element.toLowerCase().contains(filter));
   }
 
@@ -390,10 +396,16 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   void _onNavigate(String newPath) {
     debugPrint("Loading $newPath");
-    fileCache = {};
-    _fileListingFuture = Adb.getFilesInDirectory(widget.serial, newPath);
 
-    setState(() {});
+    setState(() {
+      fileCache = {};
+
+      _fileListingFuture =
+          Adb.getFilesInDirectory(widget.serial, newPath).then((value) {
+        debugPrint("Finished adb");
+        return value;
+      });
+    });
   }
 
   void _refresh() {
@@ -520,7 +532,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
           var isDir = file.endsWith("/");
           var fileData = fileCache.putIfAbsent(
               file,
-              () => FileBrowserDataWrapper(FileBrowserData(
+              () => FileBrowserDataWrapper(FileBrowserMetadata(
                     isDirectory: isDir,
                     initialFilePath: file,
                     modifiedTime: Adb.getFileModifiedDate(widget.serial, file),
@@ -542,6 +554,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
   _viewAsList(List<String> files) {
     // var isDir = file.endsWith("/");
 
+    debugPrint("Viewing");
     return Align(
       alignment: Alignment.topCenter,
       child: SingleChildScrollView(
@@ -554,7 +567,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
             return fileCache.putIfAbsent(
                 file,
-                () => FileBrowserDataWrapper(FileBrowserData(
+                () => FileBrowserDataWrapper(FileBrowserMetadata(
                       modifiedTime:
                           Adb.getFileModifiedDate(widget.serial, file),
                       fileSize: !isDir

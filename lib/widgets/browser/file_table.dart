@@ -18,8 +18,11 @@ class FileDataTable extends StatefulWidget {
 
 // TODO: Optimize and lazy loading
 class _FileDataTableState extends State<FileDataTable> {
-  int sort = 0;
-  bool ascending = true;
+  int sort = sortDefault;
+  bool ascending = ascendingDefault;
+
+  static const sortDefault = 0;
+  static const ascendingDefault = true;
 
   @override
   Widget build(BuildContext context) {
@@ -28,15 +31,10 @@ class _FileDataTableState extends State<FileDataTable> {
           ascending = a;
         });
 
-    final sortedFiles = widget.fileData.toList(growable: false)
-      ..sort((a, b) {
-        final sortMultiplier = ascending ? 1 : -1;
-        // name
-        if (sort == 0) {
-          return sortMultiplier *
-              a.friendlyFileName.compareTo(b.friendlyFileName);
-        }
+    final sortedFiles = widget.fileData.toList(growable: false);
 
+    if (sort != sortDefault) {
+      sortedFiles.sort((a, b) {
         return 0;
         // TODO:
         // Date
@@ -51,6 +49,9 @@ class _FileDataTableState extends State<FileDataTable> {
         //       a.friendlyFileName.compareTo(b.friendlyFileName);
         // }
       });
+    }
+
+    final iterableFiles = ascending ? sortedFiles : sortedFiles.reversed;
 
     //
     return DataTable(
@@ -64,25 +65,28 @@ class _FileDataTableState extends State<FileDataTable> {
           DataColumn(label: const Text("Size"), numeric: true, onSort: onSort),
           const DataColumn(label: Text("Actions"))
         ],
-        rows: sortedFiles
-            .map((e) => DataRow(key: ValueKey(e), cells: [
-                  DataCell(
-                    _nameCell(e),
-                    showEditIcon: !e.editable,
-                    onLongPress: () => setState(() {
-                      e.editable = !e.editable;
-                      _renameDialog(e);
-                    }),
-                    onDoubleTap: () => setState(() {
-                      e.editable = !e.editable;
-                      _renameDialog(e);
-                    }),
-                    onTap: () => e.navigateToDir(),
-                  ),
-                  DataCell(_dateCell(e)),
-                  DataCell(_fileSizeCell(e)),
-                  DataCell(_actionsRow(e))
-                ]))
+        rows: iterableFiles
+            .map((e) => DataRow(
+                  key: ValueKey(e),
+                  cells: [
+                    DataCell(
+                      _nameCell(e),
+                      showEditIcon: !e.editable,
+                      onLongPress: () => setState(() {
+                        e.editable = !e.editable;
+                        _renameDialog(e);
+                      }),
+                      onDoubleTap: () => setState(() {
+                        e.editable = !e.editable;
+                        _renameDialog(e);
+                      }),
+                      onTap: () => e.navigateToDir(),
+                    ),
+                    DataCell(_dateCell(e)),
+                    DataCell(_fileSizeCell(e)),
+                    DataCell(_actionsRow(e))
+                  ],
+                ))
             .toList(growable: false));
   }
 
@@ -259,7 +263,6 @@ class _FileDataTableState extends State<FileDataTable> {
               show: e.downloading,
               child: () => const CircularProgressIndicator.adaptive(
                 value: null,
-                
               ),
             ),
           ],

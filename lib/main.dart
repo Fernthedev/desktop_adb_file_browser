@@ -72,7 +72,7 @@ class MyApp extends StatelessWidget {
       // If you do not have a themeMode switch, uncomment this line
       // to let the device system mode control the theme mode:
       // themeMode: ThemeMode.system,
-      themeMode: ThemeMode.dark,
+      themeMode: ThemeMode.system,
       // theme: ThemeData(
       //   // This is the theme of your application.
       //   //
@@ -89,35 +89,47 @@ class MyApp extends StatelessWidget {
   }
 
   ThemeData lightTheme() {
-    return FlexThemeData.light(
-      scheme: FlexScheme.sanJuanBlue,
-      surfaceMode: FlexSurfaceMode.highScaffoldLevelSurface,
-      blendLevel: 9,
-      subThemesData: const FlexSubThemesData(
-        blendOnLevel: 10,
-        blendOnColors: false,
-      ),
-      visualDensity: FlexColorScheme.comfortablePlatformDensity,
+    return ThemeData(
       useMaterial3: true,
-      swapLegacyOnMaterial3: true,
-      // To use the playground font, add GoogleFonts package and uncomment
-      // fontFamily: GoogleFonts.notoSans().fontFamily,
+      brightness: Brightness.light,
+      colorSchemeSeed: Colors.lightBlueAccent,
+      visualDensity: FlexColorScheme.comfortablePlatformDensity,
     );
+    // return FlexThemeData.light(
+    //   scheme: FlexScheme.sanJuanBlue,
+    //   surfaceMode: FlexSurfaceMode.highScaffoldLevelSurface,
+    //   blendLevel: 9,
+    //   subThemesData: const FlexSubThemesData(
+    //     blendOnLevel: 10,
+    //     blendOnColors: false,
+    //   ),
+    //   visualDensity: FlexColorScheme.comfortablePlatformDensity,
+    //   useMaterial3: true,
+    //   swapLegacyOnMaterial3: true,
+    //   // To use the playground font, add GoogleFonts package and uncomment
+    //   // fontFamily: GoogleFonts.notoSans().fontFamily,
+    // );
   }
 
   ThemeData darkTheme() {
-    return FlexThemeData.dark(
-      scheme: FlexScheme.sanJuanBlue,
-      surfaceMode: FlexSurfaceMode.highScaffoldLevelSurface,
-      blendLevel: 15,
-      subThemesData: const FlexSubThemesData(
-        blendOnLevel: 20,
-      ),
-      visualDensity: FlexColorScheme.comfortablePlatformDensity,
+    return ThemeData(
       useMaterial3: true,
-      swapLegacyOnMaterial3: true,
-      // To use the Playground font, add GoogleFonts package and uncomment
-      // fontFamily: GoogleFonts.notoSans().fontFamily,
+      brightness: Brightness.dark,
+      colorSchemeSeed: Colors.blue,
+      visualDensity: FlexColorScheme.comfortablePlatformDensity,
     );
+    // return FlexThemeData.dark(
+    //   scheme: FlexScheme.sanJuanBlue,
+    //   surfaceMode: FlexSurfaceMode.highScaffoldLevelSurface,
+    //   blendLevel: 15,
+    //   subThemesData: const FlexSubThemesData(
+    //     blendOnLevel: 20,
+    //   ),
+    //   visualDensity: FlexColorScheme.comfortablePlatformDensity,
+    //   useMaterial3: true,
+    //   swapLegacyOnMaterial3: true,
+    //   // To use the Playground font, add GoogleFonts package and uncomment
+    //   // fontFamily: GoogleFonts.notoSans().fontFamily,
+    // );
   }
 }

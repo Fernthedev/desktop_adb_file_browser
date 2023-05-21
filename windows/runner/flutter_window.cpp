@@ -63,22 +63,28 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     flutter_controller_->engine()->ReloadSystemFonts();
     break;
     // FERN BACK/FORWARD MOUSE BUTTONS
-  case 793: {                              // WM_XBUTTONUP
+
+
+    // 793
+  case WM_APPCOMMAND: {                              // WM_XBUTTONUP
     int flag = GET_XBUTTON_WPARAM(lparam); // HIWORD(wparam);
 
     bool forward = flag & XBUTTON2;
+    bool back = flag & XBUTTON1;
     // bool backward = flag & XBUTTON2;
 
     // std::cout
     //     << "Forward pressed " << (forward ? "true" : "false")
     //     << " flag " << wparam << " " << lparam << std::endl;
 
-    nativeToFlutter->OnClick(
-        forward, []() {},
-        [](FlutterError const &e) {
-          std::cout << "Error: " << e.code() << " " << e.message() << std::endl;
-          // std::cout << "Details: " << e.details() << std::endl;
-        });
+    if (forward || back) {
+      nativeToFlutter->OnClick(
+          forward, []() {},
+          [](FlutterError const &e) {
+            std::cout << "Error: " << e.code() << " " << e.message() << std::endl;
+            // std::cout << "Details: " << e.details() << std::endl;
+          });
+    }
     break;
   }
   }

@@ -1,4 +1,4 @@
-import 'package:desktop_adb_file_browser/pigeon.dart';
+import 'package:desktop_adb_file_browser/src/pigeon.g.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:flutter/services.dart';
 

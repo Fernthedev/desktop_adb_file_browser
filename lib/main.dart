@@ -2,7 +2,7 @@ import 'package:desktop_adb_file_browser/pages/adb_check.dart';
 import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
 import 'package:desktop_adb_file_browser/pages/logger.dart';
-import 'package:desktop_adb_file_browser/pigeon_impl.dart';
+import 'package:desktop_adb_file_browser/src/pigeon_impl.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';

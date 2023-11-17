@@ -26,7 +26,7 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
 
-  nativeToFlutter = std::make_unique<Native2Flutter>(
+  nativeToFlutter = std::make_unique<pigeon::Native2Flutter>(
       flutter_controller_->engine()->messenger());
 
   SetChildContent(flutter_controller_->view()->GetNativeWindow());

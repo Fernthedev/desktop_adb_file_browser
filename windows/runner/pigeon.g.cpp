@@ -3,7 +3,7 @@
 
 #undef _HAS_EXCEPTIONS
 
-#include "pigeon.hpp"
+#include "pigeon.g.h"
 
 #include <flutter/basic_message_channel.h>
 #include <flutter/binary_messenger.h>
@@ -14,6 +14,7 @@
 #include <optional>
 #include <string>
 
+namespace pigeon {
 using flutter::BasicMessageChannel;
 using flutter::CustomEncodableValue;
 using flutter::EncodableList;
@@ -60,3 +61,4 @@ void Native2Flutter::OnClick(
   });
 }
 
+}  // namespace pigeon

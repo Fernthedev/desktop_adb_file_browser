@@ -35,10 +35,12 @@ class _DevicesPageState extends State<DevicesPage> {
         // the App.build method, and use it to set our appbar title.
         title: const Text(DevicesPage.title),
         automaticallyImplyLeading: Routemaster.of(context).history.canGoBack,
-        leading: IconButton(
-          icon: const Icon(FluentIcons.add_24_filled),
-          onPressed: _connectDialog,
-        ),
+        actions: [
+          IconButton(
+            icon: const Icon(FluentIcons.add_24_filled),
+            onPressed: _connectDialog,
+          )
+        ],
       ),
       body: Center(
           // Center is a layout widget. It takes a single child and positions it
@@ -93,9 +95,8 @@ class _DevicesPageState extends State<DevicesPage> {
   ListView _deviceGridView(Iterable<Device> devices) {
     return ListView(
         padding: const EdgeInsets.all(4.0),
-        children: devices
-            .map((e) => DeviceCard(device: e))
-            .toList(growable: false));
+        children:
+            devices.map((e) => DeviceCard(device: e)).toList(growable: false));
   }
 
   Future<void> _connectDialog() async {

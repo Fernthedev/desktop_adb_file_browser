@@ -452,9 +452,10 @@ packages:
   pigeon:
     dependency: "direct dev"
     description:
-      path: "E:\\SSDUse\\ProgrammingProjects\\FlutterProjects\\flutter_packages\\packages\\pigeon"
-      relative: false
-    source: path
+      name: pigeon
+      sha256: e0060b1e70d72d079d9325f58d6e6d656322c71cba826ef9eebb92a9c8bfa3b6
+      url: "https://pub.dev"
+    source: hosted
     version: "13.1.1"
   platform:
     dependency: transitive

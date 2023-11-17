@@ -60,9 +60,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  # pigeon: ^13.1.1
-  pigeon: 
-    path: E:/SSDUse/ProgrammingProjects/FlutterProjects/flutter_packages/packages/pigeon
+  pigeon: ^13.1.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

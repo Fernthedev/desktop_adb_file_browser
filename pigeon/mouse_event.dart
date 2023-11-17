@@ -21,10 +21,10 @@ abstract class Native2Flutter {
   void onClick(bool forward);
 }
 
-// For pigeon bug-testing
-// @HostApi()
-// abstract class Flutter2Native {
-//   void random(bool x);
-// }
+For pigeon bug-testing
+@HostApi()
+abstract class Flutter2Native {
+  void random(bool x);
+}
 
 

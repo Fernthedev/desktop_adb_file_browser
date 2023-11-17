@@ -4,7 +4,7 @@ Compression=lzma
 SolidCompression=yes
 SetupIconFile=E:\SSDUse\ProgrammingProjects\FlutterProjects\desktop_adb_file_browser\assets/icon.ico
 OutputBaseFilename=windows_installer
-OutputDir=E:\SSDUse\ProgrammingProjects\FlutterProjects\desktop_adb_file_browser\build/windows/runner
+OutputDir=E:\SSDUse\ProgrammingProjects\FlutterProjects\desktop_adb_file_browser\build/windows/x64/runner
 
 AppName=Desktop Adb File Browser
 AppVersion=0.1.0
@@ -23,12 +23,12 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 
 [Files]
-Source: "E:\SSDUse\ProgrammingProjects\FlutterProjects\desktop_adb_file_browser\build/windows/runner/Release/desktop_adb_file_browser.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "E:\SSDUse\ProgrammingProjects\FlutterProjects\desktop_adb_file_browser\build/windows/runner/Release/\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "E:\SSDUse\ProgrammingProjects\FlutterProjects\desktop_adb_file_browser\build/windows/x64/runner/Release/desktop_adb_file_browser.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "E:\SSDUse\ProgrammingProjects\FlutterProjects\desktop_adb_file_browser\build/windows/x64/runner/Release/\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 
 [UninstallRun]
-Filename: "taskkill.exe"; Parameters: "/im adb.exe /f /t"
+Filename: "taskkill.exe"; Parameters: "/im adb.exe /f /t"; RunOnceId: "desktop_adb_file_browser"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"

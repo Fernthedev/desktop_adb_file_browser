@@ -7,7 +7,7 @@ import 'package:version/version.dart';
 // Hopefully the release build omits this
 void main() async {
   var executable =
-      File('build/windows/runner/Release/desktop_adb_file_browser.exe');
+      File('build/windows/x64/runner/Release/desktop_adb_file_browser.exe');
 
   InnoSetup(
     compression: const InnoSetupCompression("lzma"),
@@ -22,11 +22,11 @@ void main() async {
         executable: path.basename(executable.path)),
     files: InnoSetupFiles(
       executable: executable,
-      location: Directory('build/windows/runner/Release/'),
+      location: Directory('build/windows/x64/runner/Release/'),
     ),
     name: const InnoSetupName('windows_installer'),
     location: InnoSetupInstallerDirectory(
-      Directory('build/windows/runner'),
+      Directory('build/windows/x64/runner'),
     ),
     icon: InnoSetupIcon(
       File('assets/icon.ico'),
@@ -64,7 +64,7 @@ ${InnoSetupLanguagesBuilder(languages)}
 $files
 
 [UninstallRun]
-Filename: "taskkill.exe"; Parameters: "/im adb.exe /f /t"
+Filename: "taskkill.exe"; Parameters: "/im adb.exe /f /t"; RunOnceId: "desktop_adb_file_browser"
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}"

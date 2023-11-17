@@ -5,6 +5,7 @@ import 'package:desktop_adb_file_browser/widgets/conditional.dart';
 import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class FileDataTable extends StatefulWidget {
   static const double _iconSplashRadius = 20;
@@ -15,6 +16,8 @@ class FileDataTable extends StatefulWidget {
   @override
   State<FileDataTable> createState() => _FileDataTableState();
 }
+
+final defaultDateFormat = DateFormat("yyyy-MM-dd hh:mm aa");
 
 // TODO: Optimize and lazy loading
 class _FileDataTableState extends State<FileDataTable> {
@@ -160,19 +163,7 @@ class _FileDataTableState extends State<FileDataTable> {
         var date = snapshot.data?.toLocal();
 
         if (date != null) {
-          var year = date.year;
-
-          var day = date.day.toString().padLeft(2, '0');
-
-          var month = date.month.toString().padLeft(2, '0');
-
-          var hour = max(date.hour % 12, 1).toString().padLeft(2, '0');
-
-          var minute = date.minute.toString().padLeft(2, '0');
-
-          var second = date.second.toString().padLeft(2, '0');
-
-          text = "$year-$month-$day $hour:$minute:$second";
+          text = defaultDateFormat.format(date);
         }
 
         return Text(

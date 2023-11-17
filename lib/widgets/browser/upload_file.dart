@@ -6,8 +6,7 @@ class UploadingFilesWidget extends StatefulWidget {
 
   final ValueListenable<double> progressIndications;
   const UploadingFilesWidget(
-      {Key? key, required this.taskAmount, required this.progressIndications})
-      : super(key: key);
+      {super.key, required this.taskAmount, required this.progressIndications});
 
   @override
   State<UploadingFilesWidget> createState() => _UploadingFilesWidgetState();

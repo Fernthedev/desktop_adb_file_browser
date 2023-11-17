@@ -11,10 +11,10 @@ class FileCardWidget extends StatefulWidget {
   final bool isCard;
 
   const FileCardWidget({
-    Key? key,
+    super.key,
     required this.fileWrapper,
     required this.isCard,
-  }) : super(key: key);
+  });
 
   @override
   State<FileCardWidget> createState() => _FileCardWidgetState();

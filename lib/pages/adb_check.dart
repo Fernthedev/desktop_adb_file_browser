@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
 
 class ADBCheck extends StatefulWidget {
-  const ADBCheck({Key? key, required this.redirectPage}) : super(key: key);
+  const ADBCheck({super.key, required this.redirectPage});
 
   final String redirectPage;
 
@@ -23,8 +23,10 @@ class _ADBCheckState extends State<ADBCheck> {
     try {
       await Adb.runAdbCommand(null, ["start-server"]);
     } catch (e) {
-      await showDialog(
-          builder: (context) => const ADBDownloadDialog(), context: context);
+      if (context.mounted) {
+        await showDialog(
+            builder: (context) => const ADBDownloadDialog(), context: context);
+      }
     }
     if (!mounted) return;
     Routemaster.of(context).replace(widget.redirectPage);
@@ -41,8 +43,8 @@ class _ADBCheckState extends State<ADBCheck> {
 
 class ADBDownloadDialog extends StatefulWidget {
   const ADBDownloadDialog({
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   State<ADBDownloadDialog> createState() => _ADBDownloadDialogState();

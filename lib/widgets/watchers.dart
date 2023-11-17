@@ -12,8 +12,7 @@ import 'package:watcher/watcher.dart';
 
 class FileWatcherList extends StatefulWidget {
   const FileWatcherList(
-      {Key? key, required this.serial, required this.onUpdate})
-      : super(key: key);
+      {super.key, required this.serial, required this.onUpdate});
 
   final String serial;
 
@@ -87,8 +86,8 @@ class _FileWatcherListState extends State<FileWatcherList> {
 
   Future<void> update() async {
     var newMap = await _future;
-    for (var watcher
-        in _watchers.entries.where((element) => !newMap.containsKey(element))) {
+    for (var watcher in _watchers.entries
+        .where((element) => !newMap.containsKey(element.key))) {
       watcher.value.item2.cancel();
     }
 

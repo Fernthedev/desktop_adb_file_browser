@@ -6,8 +6,7 @@ class NewFileDialog extends StatefulWidget {
 
   final ValueNotifier<FileCreation> fileCreation;
   const NewFileDialog(
-      {Key? key, required this.fileNameController, required this.fileCreation})
-      : super(key: key);
+      {super.key, required this.fileNameController, required this.fileCreation});
 
   @override
   State<NewFileDialog> createState() => _NewFileDialogState();

@@ -11,9 +11,8 @@ import 'package:routemaster/routemaster.dart';
 import '../utils/scroll.dart';
 
 class LogPage extends StatefulWidget {
-  LogPage({Key? key, required String serial})
-      : logFuture = Adb.logcat(serial),
-        super(key: key);
+  LogPage({super.key, required String serial})
+      : logFuture = Adb.logcat(serial);
 
   final Future<Stream<String>> logFuture;
   final scrollController = AdjustableScrollController();
@@ -176,11 +175,11 @@ class _LogPageState extends State<LogPage> {
 
   void _saveLog() async {
     const String fileName = 'log.txt';
-    final String? path = await getSavePath(suggestedName: fileName);
+    final path = await getSaveLocation(suggestedName: fileName);
 
     if (path == null) return;
 
-    var file = File(path);
+    var file = File(path.path);
     var writer = file.openWrite();
 
     writer.writeAll(logs, PlatformUtils.platformFileEnding);

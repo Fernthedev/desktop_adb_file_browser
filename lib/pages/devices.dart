@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
 
 class DevicesPage extends StatefulWidget {
-  const DevicesPage({Key? key}) : super(key: key);
+  const DevicesPage({super.key});
 
   static const String title = "Devices";
 
@@ -113,10 +113,10 @@ class _DevicesPageState extends State<DevicesPage> {
 
 class WirelessConnectDialog extends StatefulWidget {
   WirelessConnectDialog({
-    Key? key,
+    super.key,
     required this.ipController,
     required this.portController,
-  }) : super(key: key);
+  });
 
   final TextEditingController ipController;
   final TextEditingController portController;

@@ -1,4 +1,4 @@
-import 'package:desktop_adb_file_browser/pages/ADBCheck.dart';
+import 'package:desktop_adb_file_browser/pages/adb_check.dart';
 import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
 import 'package:desktop_adb_file_browser/pages/logger.dart';
@@ -52,7 +52,7 @@ void main() {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   // This widget is the root of your application.
   @override

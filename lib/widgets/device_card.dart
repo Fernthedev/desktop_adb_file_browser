@@ -6,9 +6,9 @@ import 'package:flutter/material.dart';
 @immutable
 class DeviceCard extends StatelessWidget {
   const DeviceCard({
-    Key? key,
+    super.key,
     required this.device,
-  }) : super(key: key);
+  });
 
   final Device device;
 

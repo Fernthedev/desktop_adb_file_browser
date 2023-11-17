@@ -11,8 +11,7 @@ class ShortcutsListWidget extends StatefulWidget {
   final String currentPath;
 
   const ShortcutsListWidget(
-      {Key? key, required this.onTap, required this.currentPath})
-      : super(key: key);
+      {super.key, required this.onTap, required this.currentPath});
 
   @override
   State<ShortcutsListWidget> createState() => _ShortcutsListWidgetState();

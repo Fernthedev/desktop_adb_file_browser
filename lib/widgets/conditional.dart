@@ -5,8 +5,7 @@ typedef WidgetBuild = Widget Function();
 @immutable
 class ConditionalWidget extends StatelessWidget {
   const ConditionalWidget(
-      {Key? key, required this.show, required this.size, required this.child})
-      : super(key: key);
+      {super.key, required this.show, required this.size, required this.child});
 
   final bool show;
   final double? size;

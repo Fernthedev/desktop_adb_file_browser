@@ -33,11 +33,10 @@ class DeviceBrowser extends StatefulWidget {
   final FileBrowser _fileBrowser;
 
   DeviceBrowser(
-      {Key? key, required String initialAddress, required this.serial})
+      {super.key, required String initialAddress, required this.serial})
       : _fileBrowser = FileBrowser(
             addressBar: TextEditingController(
-                text: Adb.fixPath(initialAddress, addQuotes: false))),
-        super(key: key);
+                text: Adb.fixPath(initialAddress, addQuotes: false)));
 
   @override
   State<DeviceBrowser> createState() => _DeviceBrowserState();
@@ -658,63 +657,5 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
 
   Future<void> _watchFile(String source, String savePath) async {
     onWatchAdd.invoke(Tuple2(savePath, source));
-  }
-}
-
-class _SplitRow extends StatelessWidget {
-  final FileBrowser browser;
-
-  const _SplitRow({
-    Key? key,
-    required this.browser,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    var currentPath = browser.currentPath;
-    var locations = currentPath.split("/");
-
-    if (locations.isNotEmpty && locations.first.isEmpty) {
-      locations.removeAt(0);
-    }
-
-    for (int i = 1; i < locations.length; i++) {
-      locations[i] = Adb.adbPathContext.join(locations[i - 1], locations[i]);
-    }
-
-    // return Padding(
-    //   padding: const EdgeInsets.all(8.0),
-    //   child: SegmentedButton<String>(
-
-    //     segments: locations
-    //         .map((e) => ButtonSegment(
-    //             label: Text("/${Adb.adbPathContext.basename(e)}"), value: e))
-    //         .toList(growable: false),
-    //     selected: {locations.last},
-    //     onSelectionChanged: (e) => browser.navigateToDirectory(e.first),
-    //   ),
-    // );
-
-    return SizedBox(
-      // height: Theme.of(context).buttonTheme.height,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: ListView(
-            shrinkWrap: true,
-            key: ValueKey(currentPath),
-            scrollDirection: Axis.horizontal,
-            children: locations
-                .map((e) => [
-                      const VerticalDivider(
-                        thickness: 0.5,
-                      ),
-                      TextButton(
-                          onPressed: () => browser.navigateToDirectory(e),
-                          child: Text(Adb.adbPathContext.basename(e)))
-                    ])
-                .expand<Widget>((element) => element)
-                .toList(growable: false)),
-      ),
-    );
   }
 }

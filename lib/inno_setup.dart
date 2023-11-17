@@ -1,26 +1,27 @@
 import 'dart:io';
 
 import 'package:innosetup/innosetup.dart';
-import 'package:version/version.dart';
-
 import 'package:path/path.dart' as path;
+import 'package:version/version.dart';
 
 // Hopefully the release build omits this
 void main() async {
+  var executable =
+      File('build/windows/runner/Release/desktop_adb_file_browser.exe');
+
   InnoSetup(
     compression: const InnoSetupCompression("lzma"),
     app: InnoSetupApp(
-      name: 'Desktop Adb File Browser',
-      version: Version.parse("0.1.0"),
-      publisher: 'Fernthedev',
-      urls: InnoSetupAppUrls(
-        homeUrl:
-            Uri.parse('https://github.com/Fernthedev/desktop_adb_file_browser'),
-      ),
-    ),
+        name: 'Desktop Adb File Browser',
+        version: Version.parse("0.1.0"),
+        publisher: 'Fernthedev',
+        urls: InnoSetupAppUrls(
+          homeUrl: Uri.parse(
+              'https://github.com/Fernthedev/desktop_adb_file_browser'),
+        ),
+        executable: path.basename(executable.path)),
     files: InnoSetupFiles(
-      executable:
-          File('build/windows/runner/Release/desktop_adb_file_browser.exe'),
+      executable: executable,
       location: Directory('build/windows/runner/Release/'),
     ),
     name: const InnoSetupName('windows_installer'),

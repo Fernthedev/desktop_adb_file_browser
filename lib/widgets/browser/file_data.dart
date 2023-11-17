@@ -133,12 +133,12 @@ mixin FileDataState {
   Future<String?> saveFileToDesktop() async {
     String source = fileData.initialFilePath;
 
-    final savePath = await getSavePath(suggestedName: friendlyFileName);
+    final savePath = await getSaveLocation(suggestedName: friendlyFileName);
 
-    if (savePath == null) return savePath;
+    if (savePath == null) return null;
 
-    await Adb.downloadFile(fileData.serial, source, savePath);
-    return savePath;
+    await Adb.downloadFile(fileData.serial, source, savePath.path);
+    return savePath.path;
   }
 
   Future<void> watchFile() async {

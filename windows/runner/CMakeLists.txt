@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.14)
 project(runner LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+
 # Define the application target. To change its name, change BINARY_NAME in the
 # top-level CMakeLists.txt, not the value here, or `flutter run` will no longer
 # work.

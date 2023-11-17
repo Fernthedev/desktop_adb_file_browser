@@ -3,7 +3,7 @@ import 'package:pigeon/pigeon.dart';
 @ConfigurePigeon(PigeonOptions(
   dartOut: 'lib/src/pigeon.g.dart',
   dartOptions: DartOptions(),
-  cppOptions: CppOptions(namespace: "pigeon"),
+  cppOptions: CppOptions(namespace: "pigeon", ),
   cppHeaderOut: 'windows/runner/pigeon.g.h',
   cppSourceOut: 'windows/runner/pigeon.g.cpp',
   objcHeaderOut: 'macos/Runner/pigeon.g.h',
@@ -12,6 +12,7 @@ import 'package:pigeon/pigeon.dart';
   objcOptions: ObjcOptions(prefix: 'PGN'),
   // copyrightHeader: 'pigeons/copyright.txt',
   dartPackageName: 'desktop_adb_file_browser',
+
 ))
 
 // https://github.com/flutter/flutter/issues/108682
@@ -19,3 +20,11 @@ import 'package:pigeon/pigeon.dart';
 abstract class Native2Flutter {
   void onClick(bool forward);
 }
+
+// For pigeon bug-testing
+// @HostApi()
+// abstract class Flutter2Native {
+//   void random(bool x);
+// }
+
+

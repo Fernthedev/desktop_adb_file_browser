@@ -1,5 +1,8 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.14)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+
 project(desktop_adb_file_browser LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change

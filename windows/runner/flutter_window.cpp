@@ -87,7 +87,7 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     if (forward || back) {
       nativeToFlutter->OnClick(
           forward, []() {},
-          [](FlutterError const &e) {
+          [](pigeon::FlutterError const &e) {
             std::cout << "Error: " << e.code() << " " << e.message() << std::endl;
             // std::cout << "Details: " << e.details() << std::endl;
           });

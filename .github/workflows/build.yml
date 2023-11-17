@@ -99,7 +99,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.target }}
-        path: ./build/windows/runner/Release/*
+        path: ./build/windows/x64/runner/Release/*
         if-no-files-found: error
 
     # - name: Upload Windows MSIX installer
@@ -116,7 +116,7 @@ jobs:
       with:
         name: ${{ matrix.target }} Inno installer
         path: |
-          ./build/windows/runner/windows_installer.exe
+          ./build/windows/x64/runner/windows_installer.exe
         if-no-files-found: error
 
       # Linux

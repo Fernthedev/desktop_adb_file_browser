@@ -69,7 +69,7 @@ class _DevicesPageState extends State<DevicesPage> {
         if (snapshot.hasData &&
             snapshot.data != null &&
             snapshot.connectionState == ConnectionState.done) {
-          return _deviceGridView(snapshot.data!);
+          return _deviceListView(snapshot.data!);
         } else {
           return const Center(
             child: Column(
@@ -92,7 +92,7 @@ class _DevicesPageState extends State<DevicesPage> {
     );
   }
 
-  ListView _deviceGridView(Iterable<Device> devices) {
+  ListView _deviceListView(Iterable<Device> devices) {
     return ListView(
         padding: const EdgeInsets.all(4.0),
         children:

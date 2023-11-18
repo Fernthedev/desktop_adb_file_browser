@@ -44,6 +44,7 @@ mixin FileDataState {
   late String fullFilePath;
   bool editable = false;
 
+  /// Just the file name
   String get friendlyFileName => Adb.adbPathContext.basename(fullFilePath);
 
   Future<void> copyPathToClipboard() {

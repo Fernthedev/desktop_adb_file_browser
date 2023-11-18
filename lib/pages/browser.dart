@@ -320,8 +320,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
             snapshot.connectionState == ConnectionState.done) {
           var filteredList =
               _filteredFiles(snapshot.data!).toList(growable: false);
-          // Directories + Files
-          filteredList.sort(fileSort);
 
           // filteredList = filteredList
           //     .where((value) => value.endsWith("/"))
@@ -624,7 +622,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         child: SizedBox(
           width: double.infinity,
           child: FileDataTable(
-              fileData: files.map((file) {
+              originalFileData: files.map((file) {
             final isDir = file.endsWith("/");
 
             return fileCache.putIfAbsent(

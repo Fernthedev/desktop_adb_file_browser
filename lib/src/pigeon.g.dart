@@ -8,7 +8,8 @@ import 'dart:typed_data' show Float64List, Int32List, Int64List, Uint8List;
 import 'package:flutter/foundation.dart' show ReadBuffer, WriteBuffer;
 import 'package:flutter/services.dart';
 
-List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty = false}) {
+List<Object?> wrapResponse(
+    {Object? result, PlatformException? error, bool empty = false}) {
   if (empty) {
     return <Object?>[];
   }
@@ -26,14 +27,15 @@ abstract class Native2Flutter {
   static void setup(Native2Flutter? api, {BinaryMessenger? binaryMessenger}) {
     {
       final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
-          'dev.flutter.pigeon.desktop_adb_file_browser.Native2Flutter.onClick', codec,
+          'dev.flutter.pigeon.desktop_adb_file_browser.Native2Flutter.onClick',
+          codec,
           binaryMessenger: binaryMessenger);
       if (api == null) {
         channel.setMessageHandler(null);
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-          'Argument for dev.flutter.pigeon.desktop_adb_file_browser.Native2Flutter.onClick was null.');
+              'Argument for dev.flutter.pigeon.desktop_adb_file_browser.Native2Flutter.onClick was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final bool? arg_forward = (args[0] as bool?);
           assert(arg_forward != null,
@@ -43,8 +45,9 @@ abstract class Native2Flutter {
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);
-          }          catch (e) {
-            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          } catch (e) {
+            return wrapResponse(
+                error: PlatformException(code: 'error', message: e.toString()));
           }
         });
       }

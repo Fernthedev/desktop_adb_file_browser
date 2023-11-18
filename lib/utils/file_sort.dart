@@ -1,4 +1,3 @@
-
 ///
 /// Sorts directories (ends with /) first then files, finally alphabetical
 ///

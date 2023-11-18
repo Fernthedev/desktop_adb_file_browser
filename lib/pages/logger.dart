@@ -11,8 +11,7 @@ import 'package:routemaster/routemaster.dart';
 import '../utils/scroll.dart';
 
 class LogPage extends StatefulWidget {
-  LogPage({super.key, required String serial})
-      : logFuture = Adb.logcat(serial);
+  LogPage({super.key, required String serial}) : logFuture = Adb.logcat(serial);
 
   final Future<Stream<String>> logFuture;
   final scrollController = AdjustableScrollController();

@@ -20,6 +20,7 @@ class ShortcutsListWidget extends StatefulWidget {
 class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
   late Future<Map<String, String>> _future;
   late SharedPreferences _preferences;
+  final textController = TextEditingController();
 
   @override
   void initState() {
@@ -28,6 +29,12 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
       _preferences = value;
       return _resetFuture();
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    textController.dispose();
   }
 
   Future<Map<String, String>> _resetFuture() {
@@ -69,15 +76,48 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
                       _shortcutTile(context, index, map),
                   itemCount: map.length),
             ),
-            TextField(
-                key: ValueKey(widget.currentPath),
-                onSubmitted: (value) {
-                  map[value] = widget.currentPath;
-                  _updateMap(map);
-                }),
+            ConstrainedBox(
+              constraints: BoxConstraints.loose(const Size.fromHeight(60)),
+              child: _shortcutAddRow(),
+            )
           ],
         );
       },
+    );
+  }
+
+  Row _shortcutAddRow() {
+    return Row(
+      mainAxisSize: MainAxisSize.max,
+      children: [
+        // make text field take up
+        Expanded(
+          child: TextField(
+            key: ValueKey(widget.currentPath),
+            controller: textController,
+            decoration: const InputDecoration(
+              border: UnderlineInputBorder(
+                  borderRadius: BorderRadius.all(Radius.circular(2))),
+              filled: true,
+              labelText: 'Bookmark name',
+            ),
+            onSubmitted: addShortcut,
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            addShortcut(textController.text);
+          },
+          style: TextButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(5.0),
+            ),
+            // make the button take all height
+            fixedSize: const Size.fromHeight(1000),
+          ),
+          child: const Text("Add"),
+        )
+      ],
     );
   }
 
@@ -102,5 +142,15 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
         },
       ),
     );
+  }
+
+  void addShortcut(String name) async {
+    var map = await _future;
+
+    if (name.isEmpty) name = widget.currentPath;
+    if (name.isEmpty) return;
+
+    map[name] = widget.currentPath;
+    _updateMap(map);
   }
 }

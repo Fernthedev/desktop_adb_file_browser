@@ -214,7 +214,15 @@ class _FileDataTableState extends State<FileDataTable> {
         show: !e.fileData.isDirectory,
         child: () => IconButton(
           icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
-          onPressed: e.watchFile,
+          onPressed: () async {
+            setState(() {
+              e.downloading = true;
+            });
+            await e.watchFile();
+            setState(() {
+              e.downloading = false;
+            });
+          },
           splashRadius: FileDataTable._iconSplashRadius,
           tooltip: "Watch",
         ),

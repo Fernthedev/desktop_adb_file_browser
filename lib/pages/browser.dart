@@ -109,7 +109,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
               ],
             ),
             leading: IconButton(
-              icon: const Icon(FluentIcons.folder_24_regular),
+              icon: const Icon(FluentIcons.chevron_left_24_filled),
               onPressed: () {
                 Routemaster.of(context).history.back();
               },
@@ -420,7 +420,7 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         IconButton(
           splashRadius: 20,
           icon: const Icon(
-            FluentIcons.folder_arrow_up_24_regular,
+            FluentIcons.folder_arrow_up_20_regular,
           ),
           onPressed: () {
             widget._fileBrowser.navigateToDirectory(
@@ -438,7 +438,16 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         ),
         IconButton(
           splashRadius: 20,
-          icon: const Icon(FluentIcons.arrow_clockwise_28_regular),
+          icon: const Icon(
+            FluentIcons.arrow_right_20_regular,
+          ),
+          onPressed: () {
+            widget._fileBrowser.forward();
+          },
+        ),
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(FluentIcons.arrow_clockwise_20_regular),
           onPressed: () {
             _refresh();
           },

@@ -70,11 +70,12 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
             Expanded(
               flex: 2,
               child: ListView.builder(
-                  controller: AdjustableScrollController(),
-                  // shrinkWrap: true,
-                  itemBuilder: (context, index) =>
-                      _shortcutTile(context, index, map),
-                  itemCount: map.length),
+                controller: AdjustableScrollController(),
+                // shrinkWrap: true,
+                itemBuilder: (context, index) =>
+                    _shortcutTile(context, index, map),
+                itemCount: map.length,
+              ),
             ),
             ConstrainedBox(
               constraints: BoxConstraints.loose(const Size.fromHeight(60)),
@@ -104,7 +105,7 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
             onSubmitted: addShortcut,
           ),
         ),
-        TextButton(
+        IconButton(
           onPressed: () {
             addShortcut(textController.text);
           },
@@ -115,7 +116,7 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
             // make the button take all height
             fixedSize: const Size.fromHeight(1000),
           ),
-          child: const Text("Add"),
+          icon: const Icon(FluentIcons.add_28_regular),
         )
       ],
     );

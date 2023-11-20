@@ -643,23 +643,6 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
         ),
       ),
     );
-    // return SizedBox(
-    //   width: double.infinity,
-    //   child: FileDataTable(
-    //       fileData: files.map((file) {
-    //     return fileCache.putIfAbsent(
-    //         file,
-    //         () => FileBrowserDataWrapper(FileBrowserData(
-    //               modifiedTime: Adb.getFileModifiedDate(widget.serial, file),
-    //               fileSize: Adb.getFileSize(widget.serial, file),
-    //               isDirectory: file.endsWith("/"),
-    //               initialFilePath: file,
-    //               onWatch: _watchFile,
-    //               browser: widget._fileBrowser,
-    //               serial: widget.serial,
-    //             )));
-    //   }).toList(growable: false)),
-    // );
   }
 
   Future<void> _watchFile(String source, String savePath) async {

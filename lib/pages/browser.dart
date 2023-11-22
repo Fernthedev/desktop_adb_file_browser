@@ -53,9 +53,7 @@ enum FileCreation { File, Folder }
 class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   bool list = true;
   bool _dragging = false;
-  late Future<List<String>?> _fileListingFuture;
-  // late Future<SharedPreferences> preferences;
-  Map<String, FileBrowserDataWrapper> fileCache = {}; // date time cache
+  late Future<List<FileBrowserMetadata>?> _fileListingFuture;
 
   late ListenableHolder<void> onForwardClick;
   late ListenableHolder<void> onBackClick;
@@ -304,11 +302,11 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     );
   }
 
-  FutureBuilder<List<String>?> _fileView() {
+  FutureBuilder<List<FileBrowserMetadata>?> _fileView() {
     return FutureBuilder(
       future: _fileListingFuture,
       key: ValueKey(_fileListingFuture),
-      builder: (BuildContext context, AsyncSnapshot<List<String>?> snapshot) {
+      builder: (context, snapshot) {
         if (snapshot.hasError && snapshot.error != null) {
           return Center(
             child: Text(snapshot.error.toString()),
@@ -321,10 +319,6 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
           var filteredList =
               _filteredFiles(snapshot.data!).toList(growable: false);
 
-          // filteredList = filteredList
-          //     .where((value) => value.endsWith("/"))
-          //     .followedBy(filteredList.where((value) => !value.endsWith("/")))
-          //     .toList(growable: false);
           return list ? _viewAsList(filteredList) : _viewAsGrid(filteredList);
         }
 
@@ -376,10 +370,12 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     );
   }
 
-  Iterable<String> _filteredFiles(Iterable<String> files) {
+  Iterable<FileBrowserMetadata> _filteredFiles(
+      Iterable<FileBrowserMetadata> files) {
     var filter = widget._filterController.text.toLowerCase();
     if (filter.isEmpty) return files;
-    return files.where((element) => element.toLowerCase().contains(filter));
+    return files.where(
+        (element) => element.fullFilePath.toLowerCase().contains(filter));
   }
 
   Column _leftPanel() {
@@ -458,12 +454,28 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     debugPrint("Loading $newPath");
 
     setState(() {
-      fileCache = {};
-
       _fileListingFuture =
-          Adb.getFilesInDirectory(widget.serial, newPath).then((value) {
-        debugPrint("Finished adb");
-        return value;
+          Adb.getFilesInDirectory(widget.serial, newPath).then((list) async {
+        if (list == null) {
+          return null;
+        }
+
+        var entries = list.map((e) async {
+          var dateTime = await Adb.getFileModifiedDate(widget.serial, e);
+          var size = await Adb.getFileSize(widget.serial, e);
+
+          return FileBrowserMetadata(
+            browser: widget._fileBrowser,
+            modifiedTime: dateTime,
+            fileSize: size,
+            fullFilePath: e,
+            isDirectory: e.endsWith("/"),
+            onWatch: _watchFile,
+            serial: widget.serial,
+          );
+        }).toList(growable: false);
+
+        return Future.wait(entries);
       });
     });
   }
@@ -574,7 +586,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     snackBar.close();
   }
 
-  GridView _viewAsGrid(List<String> files) {
+  GridView _viewAsGrid(List<FileBrowserMetadata> files) {
     return GridView.builder(
         key: ValueKey(files),
         controller: widget._scrollController,
@@ -589,51 +601,27 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
         itemCount: files.length,
         itemBuilder: (context, index) {
           var file = files[index];
-          var isDir = file.endsWith("/");
-          var fileData = fileCache.putIfAbsent(
-              file,
-              () => FileBrowserDataWrapper(FileBrowserMetadata(
-                    isDirectory: isDir,
-                    initialFilePath: file,
-                    modifiedTime: Adb.getFileModifiedDate(widget.serial, file),
-                    fileSize: Adb.getFileSize(widget.serial, file),
-                    onWatch: _watchFile,
-                    browser: widget._fileBrowser,
-                    serial: widget.serial,
-                  )));
 
           return GridTile(
               child: FileCardWidget(
             key: ValueKey(file),
             isCard: true,
-            fileWrapper: fileData,
+            fileWrapper: file,
           ));
         });
   }
 
-  _viewAsList(List<String> files) {
+  _viewAsList(List<FileBrowserMetadata> files) {
     // var isDir = file.endsWith("/");
 
     debugPrint("Viewing");
-    return FileDataTable(
+    return Align(
+      alignment: Alignment.topCenter,
+      child: FileDataTable(
         scrollController: widget._scrollController,
-        originalFileData: files.map((file) {
-          final isDir = file.endsWith("/");
-
-          return fileCache.putIfAbsent(
-              file,
-              () => FileBrowserDataWrapper(FileBrowserMetadata(
-                    modifiedTime: Adb.getFileModifiedDate(widget.serial, file),
-                    fileSize: !isDir
-                        ? Adb.getFileSize(widget.serial, file)
-                        : Future.value(null),
-                    isDirectory: isDir,
-                    initialFilePath: file,
-                    onWatch: _watchFile,
-                    browser: widget._fileBrowser,
-                    serial: widget.serial,
-                  )));
-        }).toList(growable: false));
+        originalFileData: files,
+      ),
+    );
   }
 
   Future<void> _watchFile(String source, String savePath) async {

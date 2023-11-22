@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 class FileCardWidget extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
-  final FileBrowserDataWrapper fileWrapper;
+  final FileBrowserMetadata fileWrapper;
 
   final bool isCard;
 

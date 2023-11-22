@@ -6,14 +6,12 @@ import 'package:desktop_adb_file_browser/widgets/conditional.dart';
 import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
-import 'package:tuple/tuple.dart';
 
 class FileDataTable extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
-  final List<FileBrowserDataWrapper> originalFileData;
+  final List<FileBrowserMetadata> originalFileData;
   final ScrollController scrollController;
   const FileDataTable({
     super.key,
@@ -35,7 +33,7 @@ class _FileDataTableState extends State<FileDataTable> {
 
   SortingMethod sort = sortDefault;
   bool ascending = ascendingDefault;
-  List<FileBrowserDataWrapper>? sortedFileData;
+  List<FileBrowserMetadata>? sortedFileData;
 
   final _headerRowKey = UniqueKey();
 
@@ -77,24 +75,13 @@ class _FileDataTableState extends State<FileDataTable> {
         return DataRow(
           file: file,
           key: ValueKey(file.friendlyFileName),
-          onLongPress: () {
-            setState(() {
-              file.editable = !file.editable;
-              _renameDialog(file);
-            });
-          },
-          onTap: () => file.navigateToDir(),
         );
       },
     );
   }
 
   void _onSort(SortingMethod s, bool a) async {
-    var tempSorted = await _sortList(s, a);
-    // var tempSorted = await SchedulerBinding.instance.scheduleTask(
-    //   () => _sortList(s, a),
-    //   Priority.idle,
-    // );
+    var tempSorted = _sortList(s, a);
 
     if (!mounted) return;
 
@@ -106,127 +93,47 @@ class _FileDataTableState extends State<FileDataTable> {
     });
   }
 
-  Future<List<FileBrowserDataWrapper>> _sortList(
-      SortingMethod sortingMethod, bool ascending) async {
-    var tempSorted = widget.originalFileData.toList(growable: false);
+  List<FileBrowserMetadata> _sortList(
+      SortingMethod sortingMethod, bool ascending) {
     var sortMethod = switch (sortingMethod) {
       SortingMethod.name => _sortByName,
       SortingMethod.date => _sortByDate,
       SortingMethod.fileSize => _sortBySize,
     };
-    tempSorted = await sortMethod(tempSorted);
 
+    var tempSorted = widget.originalFileData.toList(growable: false);
     // Reverse
     if (!ascending) {
-      tempSorted = tempSorted.reversed.toList(growable: false);
+      var oldSortMethod = sortMethod;
+      sortMethod =
+          (FileBrowserMetadata a, FileBrowserMetadata b) => oldSortMethod(b, a);
     }
+
+    tempSorted.sort(sortMethod);
 
     return tempSorted;
   }
 
-  Future<List<FileBrowserDataWrapper>> _sortByName(
-      List<FileBrowserDataWrapper> l) async {
-    l.sort((a, b) => fileSort(a.fullFilePath, b.fullFilePath));
-
-    return l;
+  int _sortByName(FileBrowserMetadata a, FileBrowserMetadata b) {
+    return fileSort(a.fullFilePath, b.fullFilePath);
   }
 
-  Future<List<FileBrowserDataWrapper>> _sortByDate(
-      List<FileBrowserDataWrapper> l) async {
-    var datesFutures = l
-        .map((e) =>
-            e.fileData.modifiedTime.then((dateTime) => Tuple2(e, dateTime)))
-        .toList(growable: false);
-
-    var dateSorted = await Future.wait(datesFutures);
-    dateSorted.sort((a, b) {
-      if (a.item2 == null || b.item2 == null) {
-        return 0;
-      }
-
-      return a.item2!.compareTo(b.item2!);
-    });
-
-    return dateSorted.map((e) => e.item1).toList(growable: false);
-  }
-
-  Future<List<FileBrowserDataWrapper>> _sortBySize(
-      List<FileBrowserDataWrapper> l) async {
-    var sizeFutures = l
-        .map((e) => e.fileData.fileSize.then((fileSize) => Tuple2(e, fileSize)))
-        .toList(growable: false);
-
-    var sizeSorted = await Future.wait(sizeFutures);
-    sizeSorted.sort((a, b) {
-      if (a.item2 == null || b.item2 == null) {
-        return 0;
-      }
-
-      return a.item2!.compareTo(b.item2!);
-    });
-
-    return sizeSorted.map((e) => e.item1).toList(growable: false);
-  }
-
-  String? _validateNewName(String? newName) {
-    if (newName == null || newName.isEmpty) {
-      return "New name cannot be empty";
+  int _sortByDate(FileBrowserMetadata a, FileBrowserMetadata b) {
+    var modifiedTime1 = a.fileData.modifiedTime;
+    var modifiedTime2 = b.fileData.modifiedTime;
+    if (modifiedTime1 == null || modifiedTime2 == null) {
+      return 0;
     }
-
-    if (newName.contains("/")) return "Cannot contain slashes";
-
-    return null;
+    return modifiedTime1.compareTo(modifiedTime2);
   }
 
-  Future<void> _renameDialog(FileBrowserDataWrapper fileDataWrapper) async {
-    var fileData = fileDataWrapper.fileData;
-    String path = fileData.initialFilePath;
-    await showDialog<void>(
-        context: context,
-        builder: ((context) {
-          TextEditingController controller =
-              TextEditingController(text: fileDataWrapper.friendlyFileName);
-
-          return AlertDialog(
-            title: const Text("Rename"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Renaming: $path"),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextFormField(
-                    controller: controller,
-                    validator: _validateNewName,
-                  ),
-                )
-              ],
-            ),
-            actions: [
-              TextButton(
-                child: const Text('Cancel'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: const Text('Ok'),
-                onPressed: () async {
-                  await fileDataWrapper.renameFile(controller.text);
-
-                  // False positive
-                  // ignore: use_build_context_synchronously
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop();
-                  fileData.browser.refresh();
-                },
-              ),
-            ],
-          );
-        }));
-    setState(() {
-      fileDataWrapper.editable = false;
-    });
+  int _sortBySize(FileBrowserMetadata a, FileBrowserMetadata b) {
+    var modifiedSize1 = a.fileData.fileSize;
+    var modifiedSize2 = b.fileData.fileSize;
+    if (modifiedSize1 == null || modifiedSize2 == null) {
+      return 0;
+    }
+    return modifiedSize1.compareTo(modifiedSize2);
   }
 }
 
@@ -319,15 +226,11 @@ class HeaderCell extends StatelessWidget {
 }
 
 class DataRow extends StatefulWidget {
-  final FileBrowserDataWrapper file;
-  final VoidCallback onLongPress;
-  final VoidCallback onTap;
+  final FileBrowserMetadata file;
 
   const DataRow({
     super.key,
     required this.file,
-    required this.onLongPress,
-    required this.onTap,
   });
 
   @override
@@ -336,6 +239,7 @@ class DataRow extends StatefulWidget {
 
 class _DataRowState extends State<DataRow> {
   bool downloading = false;
+  bool editable = false;
 
   @override
   Widget build(BuildContext context) {
@@ -343,8 +247,13 @@ class _DataRowState extends State<DataRow> {
       children: [
         Expanded(
             child: InkWell(
-          onLongPress: widget.onLongPress,
-          onTap: widget.onTap,
+          onLongPress: () {
+            setState(() {
+              editable = !editable;
+              _renameDialog(widget.file);
+            });
+          },
+          onTap: () => widget.file.navigateToDir(),
           child: _nameCell(widget.file),
         )),
         Expanded(child: _dateCell(widget.file)),
@@ -354,7 +263,7 @@ class _DataRowState extends State<DataRow> {
     );
   }
 
-  Widget _nameCell(FileBrowserDataWrapper e) {
+  Widget _nameCell(FileBrowserMetadata e) {
     Widget text = Text(e.friendlyFileName);
     return Wrap(
       children: [
@@ -370,42 +279,94 @@ class _DataRowState extends State<DataRow> {
     );
   }
 
-  Widget _dateCell(FileBrowserDataWrapper e) {
-    return FutureBuilder<DateTime?>(
-      future: e.fileData.modifiedTime,
-      builder: ((context, snapshot) {
-        String text = snapshot.error?.toString() ?? "...";
+  Widget _dateCell(FileBrowserMetadata e) {
+    String text = "...";
 
-        var date = snapshot.data?.toLocal();
+    var date = e.fileData.modifiedTime?.toLocal();
 
-        if (date != null) {
-          text = defaultDateFormat.format(date);
-        }
+    if (date != null) {
+      text = defaultDateFormat.format(date);
+    }
 
-        return Text(
-          text,
-          style: Theme.of(context).textTheme.titleSmall,
-        );
-      }),
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.titleSmall,
     );
   }
 
-  Widget _fileSizeCell(FileBrowserDataWrapper e) {
-    return FutureBuilder<int?>(
-        future: e.fileData.fileSize,
-        builder: ((context, snapshot) {
-          final text = snapshot.error?.toString() ??
-              (snapshot.data != null ? filesize(snapshot.data) : "...");
-          return Text(
-            text,
-            style: Theme.of(context).textTheme.titleSmall,
-            textAlign: TextAlign.left,
-          );
-        }));
+  Widget _fileSizeCell(FileBrowserMetadata e) {
+    var fileSize = e.fileData.fileSize;
+    final text = fileSize != null ? filesize(fileSize) : "...";
+    return Text(
+      text,
+      style: Theme.of(context).textTheme.titleSmall,
+      textAlign: TextAlign.left,
+    );
   }
 
-  Widget _actionsCell(FileBrowserDataWrapper e) {
+  Widget _actionsCell(FileBrowserMetadata e) {
     return _ActionsCell(fileData: e);
+  }
+
+  Future<void> _renameDialog(FileBrowserMetadata fileDataWrapper) async {
+    var fileData = fileDataWrapper.fileData;
+    String path = fileData.fullFilePath;
+    await showDialog<void>(
+        context: context,
+        builder: ((context) {
+          TextEditingController controller =
+              TextEditingController(text: fileDataWrapper.friendlyFileName);
+
+          return AlertDialog(
+            title: const Text("Rename"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text("Renaming: $path"),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: TextFormField(
+                    controller: controller,
+                    validator: _validateNewName,
+                  ),
+                )
+              ],
+            ),
+            actions: [
+              TextButton(
+                child: const Text('Cancel'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+              TextButton(
+                child: const Text('Ok'),
+                onPressed: () async {
+                  await fileDataWrapper.renameFile(controller.text);
+
+                  // False positive
+                  // ignore: use_build_context_synchronously
+                  if (!context.mounted) return;
+                  Navigator.of(context).pop();
+                  fileData.browser.refresh();
+                },
+              ),
+            ],
+          );
+        }));
+    setState(() {
+      editable = false;
+    });
+  }
+
+  String? _validateNewName(String? newName) {
+    if (newName == null || newName.isEmpty) {
+      return "New name cannot be empty";
+    }
+
+    if (newName.contains("/")) return "Cannot contain slashes";
+
+    return null;
   }
 }
 
@@ -415,7 +376,7 @@ class _ActionsCell extends StatefulWidget {
     required this.fileData,
   });
 
-  final FileBrowserDataWrapper fileData;
+  final FileBrowserMetadata fileData;
 
   @override
   State<_ActionsCell> createState() => _ActionsCellState();
@@ -432,13 +393,7 @@ class _ActionsCellState extends State<_ActionsCell> {
         child: () => IconButton(
           icon: const Icon(Icons.download_rounded, size: 24),
           onPressed: () async {
-            setState(() {
-              widget.fileData.downloading = true;
-            });
             await widget.fileData.saveFileToDesktop();
-            setState(() {
-              widget.fileData.downloading = false;
-            });
           },
           enableFeedback: false,
           splashRadius: FileDataTable._iconSplashRadius,
@@ -450,13 +405,7 @@ class _ActionsCellState extends State<_ActionsCell> {
         child: () => IconButton(
           icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
           onPressed: () async {
-            setState(() {
-              widget.fileData.downloading = true;
-            });
             await widget.fileData.watchFile();
-            setState(() {
-              widget.fileData.downloading = false;
-            });
           },
           splashRadius: FileDataTable._iconSplashRadius,
           tooltip: "Watch",
@@ -492,7 +441,7 @@ class _ActionsCellState extends State<_ActionsCell> {
     // TODO: Center
     var downloadingIndicator = ConditionalWidget(
       size: 20,
-      show: widget.fileData.downloading,
+      show: false,
       child: () => const CircularProgressIndicator.adaptive(
         value: null,
       ),

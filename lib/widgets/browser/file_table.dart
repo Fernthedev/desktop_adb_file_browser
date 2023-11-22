@@ -1,16 +1,13 @@
 import 'dart:async';
-import 'dart:isolate';
 
 import 'package:desktop_adb_file_browser/utils/file_sort.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:desktop_adb_file_browser/widgets/conditional.dart';
 import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart' as path;
 import 'package:tuple/tuple.dart';
 
 class FileDataTable extends StatefulWidget {
@@ -27,7 +24,6 @@ final defaultDateFormat = DateFormat("yyyy-MM-dd hh:mm aa");
 
 enum SortingMethod { name, date, fileSize }
 
-// TODO: Optimize and lazy loading
 class _FileDataTableState extends State<FileDataTable> {
   static const sortDefault = SortingMethod.name;
   static const ascendingDefault = true;
@@ -48,7 +44,8 @@ class _FileDataTableState extends State<FileDataTable> {
   Widget build(BuildContext context) {
     return ListView.builder(
       shrinkWrap: true,
-      itemCount: sortedFileData.length * 2,
+      addAutomaticKeepAlives: true, // retain cells at the cost of memory
+      itemCount: (sortedFileData.length * 2) + 1,
       itemBuilder: (context, index) {
         if (index.isOdd) {
           // Divider
@@ -83,6 +80,10 @@ class _FileDataTableState extends State<FileDataTable> {
 
   void _onSort(SortingMethod s, bool a) async {
     var tempSorted = await _sortList(s, a);
+    // var tempSorted = await SchedulerBinding.instance.scheduleTask(
+    //   () => _sortList(s, a),
+    //   Priority.idle,
+    // );
 
     if (!mounted) return;
 

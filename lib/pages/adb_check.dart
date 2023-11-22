@@ -25,7 +25,10 @@ class _ADBCheckState extends State<ADBCheck> {
     } catch (e) {
       if (context.mounted) {
         await showDialog(
-            builder: (context) => const ADBDownloadDialog(), context: context);
+          builder: (context) => const ADBDownloadDialog(),
+          context: context,
+          barrierDismissible: false,
+        );
       }
     }
     if (!mounted) return;

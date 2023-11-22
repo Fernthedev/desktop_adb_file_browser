@@ -1,11 +1,17 @@
+import 'dart:async';
+import 'dart:isolate';
+
 import 'package:desktop_adb_file_browser/utils/file_sort.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:desktop_adb_file_browser/widgets/conditional.dart';
 import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
+import 'package:tuple/tuple.dart';
 
 class FileDataTable extends StatefulWidget {
   static const double _iconSplashRadius = 20;
@@ -76,7 +82,7 @@ class _FileDataTableState extends State<FileDataTable> {
   }
 
   void _onSort(SortingMethod s, bool a) async {
-    var tempSorted = _sortList(s, a);
+    var tempSorted = await _sortList(s, a);
 
     if (!mounted) return;
 
@@ -88,39 +94,66 @@ class _FileDataTableState extends State<FileDataTable> {
     });
   }
 
-  List<FileBrowserDataWrapper> _sortList(
-      SortingMethod sortingMethod, bool ascending) {
+  Future<List<FileBrowserDataWrapper>> _sortList(
+      SortingMethod sortingMethod, bool ascending) async {
+    var tempSorted = widget.originalFileData.toList(growable: false);
     var sortMethod = switch (sortingMethod) {
       SortingMethod.name => _sortByName,
-      SortingMethod.date => null,
-      SortingMethod.fileSize => null,
+      SortingMethod.date => _sortByDate,
+      SortingMethod.fileSize => _sortBySize,
     };
-    sortMethod ??= _sortByName;
+    tempSorted = await sortMethod(tempSorted);
 
-    var tempSorted = widget.originalFileData.toList(growable: false);
     // Reverse
     if (!ascending) {
-      var oldSortMethod = sortMethod;
-      sortMethod = (FileBrowserDataWrapper a, FileBrowserDataWrapper b) =>
-          oldSortMethod(b, a);
+      tempSorted = tempSorted.reversed.toList(growable: false);
     }
-
-    tempSorted.sort(sortMethod);
 
     return tempSorted;
   }
 
-  int _sortByName(FileBrowserDataWrapper a, FileBrowserDataWrapper b) {
-    return fileSort(a.fullFilePath, b.fullFilePath);
+  Future<List<FileBrowserDataWrapper>> _sortByName(
+      List<FileBrowserDataWrapper> l) async {
+    l.sort((a, b) => fileSort(a.fullFilePath, b.fullFilePath));
+
+    return l;
   }
 
-  // TODO: Await futures somehow
-  int _sortByDate(FileBrowserDataWrapper a, FileBrowserDataWrapper b) {
-    return 0;
+  Future<List<FileBrowserDataWrapper>> _sortByDate(
+      List<FileBrowserDataWrapper> l) async {
+    var datesFutures = l
+        .map((e) =>
+            e.fileData.modifiedTime.then((dateTime) => Tuple2(e, dateTime)))
+        .toList(growable: false);
+
+    var dateSorted = await Future.wait(datesFutures);
+    dateSorted.sort((a, b) {
+      if (a.item2 == null || b.item2 == null) {
+        return 0;
+      }
+
+      return a.item2!.compareTo(b.item2!);
+    });
+
+    return dateSorted.map((e) => e.item1).toList(growable: false);
   }
 
-  int _sortBySize(FileBrowserDataWrapper a, FileBrowserDataWrapper b) {
-    return 0;
+  Future<List<FileBrowserDataWrapper>> _sortBySize(
+      List<FileBrowserDataWrapper> l) async {
+    var sizeFutures = l
+        .map((e) => e.fileData.fileSize.then((fileSize) => Tuple2(e, fileSize)))
+        .toList(growable: false);
+
+    var sizeSorted = await Future.wait(sizeFutures);
+    sizeSorted.sort((a, b) {
+      if (a.item2 == null || b.item2 == null) {
+        return 0;
+      }
+
+      return a.item2!.compareTo(b.item2!);
+    });
+
+    return sizeSorted.map((e) => e.item1).toList(growable: false);
   }
 
   String? _validateNewName(String? newName) {
@@ -207,7 +240,7 @@ class TableHeaderRow extends StatelessWidget {
             ascending: ascending,
             onSort: () => onSort(SortingMethod.name, !ascending)),
         HeaderCell(
-            label: "Date",
+            label: "Modified Date",
             numeric: true,
             selected: selectedSort == SortingMethod.date,
             ascending: ascending,

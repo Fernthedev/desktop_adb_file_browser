@@ -70,29 +70,35 @@ class _DevicesPageState extends State<DevicesPage> {
             snapshot.data != null &&
             snapshot.connectionState == ConnectionState.done) {
           return _deviceListView(snapshot.data!);
-        } else {
-          return const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: CircularProgressIndicator(),
-                ),
-                Padding(
-                  padding: EdgeInsets.only(top: 16),
-                  child: Text('Awaiting result...'),
-                )
-              ],
-            ),
-          );
         }
+        return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: CircularProgressIndicator(),
+              ),
+              Padding(
+                padding: EdgeInsets.only(top: 16),
+                child: Text('Awaiting result...'),
+              )
+            ],
+          ),
+        );
       },
     );
   }
 
-  ListView _deviceListView(Iterable<Device> devices) {
+  Widget _deviceListView(Iterable<Device> devices) {
+    if (devices.isEmpty) {
+      return Center(
+        child: Text("No devices found",
+            style: Theme.of(context).textTheme.headlineLarge),
+      );
+    }
+
     return ListView(
         padding: const EdgeInsets.all(4.0),
         children:

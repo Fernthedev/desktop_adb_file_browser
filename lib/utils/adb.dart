@@ -36,7 +36,7 @@ abstract class Adb {
         hostPath.join(await PlatformUtils.configPath(_adbTempFolder)));
   }
 
-  static Future<File> _getADBPath() async {
+  static Future<File> _getADBDownloadPath() async {
     var downloadPath = await _getDownloadPath();
     return File(hostPath.join(downloadPath.path, "platform-tools", "adb"));
   }
@@ -67,20 +67,26 @@ abstract class Adb {
     final archive = ZipDecoder().decodeBuffer(InputStream(stream));
 
     extractArchiveToDisk(archive, downloadPath.path);
-    _adbCurrentPath = (await _getADBPath()).path;
+    _adbCurrentPath = (await _getADBDownloadPath()).path;
     await Process.run("chmod", ["+x", _adbCurrentPath!]);
   }
 
   static Future<String> _getAdbPath() async {
-    if (_adbCurrentPath == null) {
-      var downloadPath = await _getDownloadPath();
-      if (await downloadPath.exists()) {
-        _adbCurrentPath = (await _getADBPath()).path;
-      } else {
-        // Use adb in path
-        _adbCurrentPath = "adb";
-      }
+    if (_adbCurrentPath != null) {
+      return _adbCurrentPath!;
     }
+
+    var downloadPath = await _getDownloadPath();
+    if (await downloadPath.exists()) {
+      _adbCurrentPath = (await _getADBDownloadPath()).path;
+    } else if (Platform.isWindows) {
+      _adbCurrentPath = "adb.exe";
+    } else {
+      // Use adb in path
+    
+      _adbCurrentPath = "adb";
+    }
+
 
     return _adbCurrentPath!;
   }
@@ -89,7 +95,8 @@ abstract class Adb {
       String? serial, List<String> args) async {
     var newArgs = serial != null ? ["-s", serial, ...args] : args;
 
-    var process = await Process.run(await _getAdbPath(), newArgs);
+    var process =
+        await Process.run(await _getAdbPath(), newArgs, runInShell: true);
     if (process.stderr != null && process.stderr.toString().isNotEmpty) {
       final error = process.stderr;
       debugPrint("Error $error");
@@ -106,7 +113,7 @@ abstract class Adb {
       String? serial, List<String> args) async {
     var newArgs = serial != null ? ["-s", serial, ...args] : args;
 
-    return await Process.start(await _getAdbPath(), newArgs);
+    return await Process.start(await _getAdbPath(), newArgs, runInShell: true);
   }
 
   static String normalizeOutput(String output) {

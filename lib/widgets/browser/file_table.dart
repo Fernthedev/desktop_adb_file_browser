@@ -385,55 +385,75 @@ class _ActionsCell extends StatefulWidget {
 class _ActionsCellState extends State<_ActionsCell> {
   @override
   Widget build(BuildContext context) {
+    const tooltipDuration = Duration(milliseconds: 500);
+
     final actions = [
       // icons
       ConditionalWidget(
         size: null,
         show: !widget.fileData.fileData.isDirectory,
-        child: () => IconButton(
-          icon: const Icon(Icons.download_rounded, size: 24),
-          onPressed: () async {
-            await widget.fileData.saveFileToDesktop();
-          },
-          enableFeedback: false,
-          splashRadius: FileDataTable._iconSplashRadius,
+        child: () => Tooltip(
+          waitDuration: tooltipDuration,
+          message: "Download",
+          child: IconButton(
+            icon: const Icon(Icons.download_rounded, size: 24),
+            onPressed: () async {
+              await widget.fileData.saveFileToDesktop();
+            },
+            enableFeedback: false,
+            splashRadius: FileDataTable._iconSplashRadius,
+          ),
         ),
       ),
       ConditionalWidget(
         size: null,
         show: !widget.fileData.fileData.isDirectory,
-        child: () => IconButton(
-          icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
-          onPressed: () async {
-            await widget.fileData.watchFile();
-          },
-          splashRadius: FileDataTable._iconSplashRadius,
-          tooltip: "Watch",
-        ),
+        child: () {
+          return Tooltip(
+            message: "Watch changes (desktop -> device)",
+            waitDuration: tooltipDuration,
+            child: IconButton(
+              icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
+              onPressed: () async {
+                await widget.fileData.watchFile();
+              },
+              splashRadius: FileDataTable._iconSplashRadius,
+            ),
+          );
+        },
       ),
       ConditionalWidget(
           show: !widget.fileData.fileData.isDirectory,
           size: null,
-          child: () => IconButton(
-                icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                onPressed: widget.fileData.openTempFile,
-                splashRadius: FileDataTable._iconSplashRadius,
-                tooltip: "Open (temp)",
+          child: () => Tooltip(
+                message: "Open (temp)",
+                waitDuration: tooltipDuration,
+                child: IconButton(
+                  icon: const Icon(FluentIcons.open_24_filled, size: 24),
+                  onPressed: widget.fileData.openTempFile,
+                  splashRadius: FileDataTable._iconSplashRadius,
+                ),
               )),
 
-      IconButton(
-        // TODO: Add user feedback when this occurs
-        icon: const Icon(Icons.copy),
-        onPressed: widget.fileData.copyPathToClipboard,
-        splashRadius: FileDataTable._iconSplashRadius,
-        tooltip: "Copy to clipboard",
+      Tooltip(
+        message: "Copy to clipboard",
+        waitDuration: tooltipDuration,
+        child: IconButton(
+          // TODO: Add user feedback when this occurs
+          icon: const Icon(Icons.copy),
+          onPressed: widget.fileData.copyPathToClipboard,
+          splashRadius: FileDataTable._iconSplashRadius,
+        ),
       ),
 
-      IconButton(
-        icon: const Icon(Icons.delete_forever),
-        onPressed: () => widget.fileData.removeFileDialog(context),
-        splashRadius: FileDataTable._iconSplashRadius,
-        tooltip: "Delete",
+      Tooltip(
+        message: "Delete",
+        waitDuration: tooltipDuration,
+        child: IconButton(
+          icon: const Icon(Icons.delete_forever),
+          onPressed: () => widget.fileData.removeFileDialog(context),
+          splashRadius: FileDataTable._iconSplashRadius,
+        ),
       ),
     ].reversed.toList(growable: false);
 

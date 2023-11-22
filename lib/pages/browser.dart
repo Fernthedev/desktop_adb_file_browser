@@ -25,21 +25,21 @@ import 'package:routemaster/routemaster.dart';
 import 'package:tuple/tuple.dart';
 
 @immutable
-class DeviceBrowser extends StatefulWidget {
+class DeviceBrowserPage extends StatefulWidget {
   final String serial;
 
   final TextEditingController _filterController = TextEditingController();
   final ScrollController _scrollController = AdjustableScrollController(60);
   final FileBrowser _fileBrowser;
 
-  DeviceBrowser(
+  DeviceBrowserPage(
       {super.key, required String initialAddress, required this.serial})
       : _fileBrowser = FileBrowser(
             addressBar: TextEditingController(
                 text: Adb.fixPath(initialAddress, addQuotes: false)));
 
   @override
-  State<DeviceBrowser> createState() => _DeviceBrowserState();
+  State<DeviceBrowserPage> createState() => _DeviceBrowserPageState();
 }
 
 // ignore: constant_identifier_names
@@ -50,7 +50,7 @@ enum FileCreation { File, Folder }
 // TODO: Make snackbar progress animation ease exponential because it looks
 // TODO: File details page
 // TODO: Modularize widget into smaller widgets
-class _DeviceBrowserState extends State<DeviceBrowser> {
+class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   bool list = true;
   bool _dragging = false;
   late Future<List<String>?> _fileListingFuture;
@@ -615,34 +615,25 @@ class _DeviceBrowserState extends State<DeviceBrowser> {
     // var isDir = file.endsWith("/");
 
     debugPrint("Viewing");
-    return Align(
-      alignment: Alignment.topCenter,
-      child: SingleChildScrollView(
-        controller: widget._scrollController,
-        child: SizedBox(
-          width: double.infinity,
-          child: FileDataTable(
-              originalFileData: files.map((file) {
-            final isDir = file.endsWith("/");
+    return FileDataTable(
+        scrollController: widget._scrollController,
+        originalFileData: files.map((file) {
+          final isDir = file.endsWith("/");
 
-            return fileCache.putIfAbsent(
-                file,
-                () => FileBrowserDataWrapper(FileBrowserMetadata(
-                      modifiedTime:
-                          Adb.getFileModifiedDate(widget.serial, file),
-                      fileSize: !isDir
-                          ? Adb.getFileSize(widget.serial, file)
-                          : Future.value(null),
-                      isDirectory: isDir,
-                      initialFilePath: file,
-                      onWatch: _watchFile,
-                      browser: widget._fileBrowser,
-                      serial: widget.serial,
-                    )));
-          }).toList(growable: false)),
-        ),
-      ),
-    );
+          return fileCache.putIfAbsent(
+              file,
+              () => FileBrowserDataWrapper(FileBrowserMetadata(
+                    modifiedTime: Adb.getFileModifiedDate(widget.serial, file),
+                    fileSize: !isDir
+                        ? Adb.getFileSize(widget.serial, file)
+                        : Future.value(null),
+                    isDirectory: isDir,
+                    initialFilePath: file,
+                    onWatch: _watchFile,
+                    browser: widget._fileBrowser,
+                    serial: widget.serial,
+                  )));
+        }).toList(growable: false));
   }
 
   Future<void> _watchFile(String source, String savePath) async {

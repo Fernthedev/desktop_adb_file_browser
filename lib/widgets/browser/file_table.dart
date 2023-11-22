@@ -14,7 +14,12 @@ class FileDataTable extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
   final List<FileBrowserDataWrapper> originalFileData;
-  const FileDataTable({super.key, required this.originalFileData});
+  final ScrollController scrollController;
+  const FileDataTable({
+    super.key,
+    required this.originalFileData,
+    required this.scrollController,
+  });
 
   @override
   State<FileDataTable> createState() => _FileDataTableState();
@@ -30,32 +35,37 @@ class _FileDataTableState extends State<FileDataTable> {
 
   SortingMethod sort = sortDefault;
   bool ascending = ascendingDefault;
-  late List<FileBrowserDataWrapper> sortedFileData;
+  List<FileBrowserDataWrapper>? sortedFileData;
+
+  final _headerRowKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
 
-    sortedFileData = widget.originalFileData;
     _onSort(sort, ascending);
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      shrinkWrap: true,
-      addAutomaticKeepAlives: true, // retain cells at the cost of memory
-      itemCount: (sortedFileData.length * 2) + 1,
-      itemBuilder: (context, index) {
-        if (index.isOdd) {
-          // Divider
-          return const Divider(height: 1);
-        }
+    if (sortedFileData == null) {
+      return const Center(
+        child: CircularProgressIndicator.adaptive(),
+      );
+    }
 
-        final contentIndex = index ~/ 2; // Adjust the index for actual content
-        if (contentIndex == 0) {
+    return ListView.separated(
+      // + 1 for the header row
+      controller: widget.scrollController,
+      shrinkWrap: true,
+      addAutomaticKeepAlives: true,
+      itemCount: sortedFileData!.length + 1,
+      separatorBuilder: (c, index) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        if (index == 0) {
           // Header row
           return TableHeaderRow(
+            key: _headerRowKey,
             onSort: _onSort,
             ascending: ascending,
             selectedSort: sort,
@@ -63,9 +73,10 @@ class _FileDataTableState extends State<FileDataTable> {
         }
 
         // Data rows
-        final file = sortedFileData[contentIndex - 1];
+        final file = sortedFileData![index - 1];
         return DataRow(
           file: file,
+          key: ValueKey(file.friendlyFileName),
           onLongPress: () {
             setState(() {
               file.editable = !file.editable;
@@ -329,19 +340,16 @@ class _DataRowState extends State<DataRow> {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      mainAxisSize: MainAxisSize.max,
       children: [
         Expanded(
             child: InkWell(
-          // showEditIcon: !file.editable,
           onLongPress: widget.onLongPress,
           onTap: widget.onTap,
           child: _nameCell(widget.file),
         )),
-        Expanded(child: InkWell(child: _dateCell(widget.file))),
-        Expanded(child: InkWell(child: _fileSizeCell(widget.file))),
-        Expanded(child: InkWell(child: _actionsRow(widget.file, context))),
+        Expanded(child: _dateCell(widget.file)),
+        Expanded(child: _fileSizeCell(widget.file)),
+        Expanded(child: _actionsCell(widget.file)),
       ],
     );
   }
@@ -396,21 +404,40 @@ class _DataRowState extends State<DataRow> {
         }));
   }
 
-  Widget _actionsRow(FileBrowserDataWrapper e, BuildContext context) {
+  Widget _actionsCell(FileBrowserDataWrapper e) {
+    return _ActionsCell(fileData: e);
+  }
+}
+
+class _ActionsCell extends StatefulWidget {
+  const _ActionsCell({
+    super.key,
+    required this.fileData,
+  });
+
+  final FileBrowserDataWrapper fileData;
+
+  @override
+  State<_ActionsCell> createState() => _ActionsCellState();
+}
+
+class _ActionsCellState extends State<_ActionsCell> {
+  @override
+  Widget build(BuildContext context) {
     final actions = [
       // icons
       ConditionalWidget(
         size: null,
-        show: !e.fileData.isDirectory,
+        show: !widget.fileData.fileData.isDirectory,
         child: () => IconButton(
           icon: const Icon(Icons.download_rounded, size: 24),
           onPressed: () async {
             setState(() {
-              e.downloading = true;
+              widget.fileData.downloading = true;
             });
-            await e.saveFileToDesktop();
+            await widget.fileData.saveFileToDesktop();
             setState(() {
-              e.downloading = false;
+              widget.fileData.downloading = false;
             });
           },
           enableFeedback: false,
@@ -419,16 +446,16 @@ class _DataRowState extends State<DataRow> {
       ),
       ConditionalWidget(
         size: null,
-        show: !e.fileData.isDirectory,
+        show: !widget.fileData.fileData.isDirectory,
         child: () => IconButton(
           icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
           onPressed: () async {
             setState(() {
-              e.downloading = true;
+              widget.fileData.downloading = true;
             });
-            await e.watchFile();
+            await widget.fileData.watchFile();
             setState(() {
-              e.downloading = false;
+              widget.fileData.downloading = false;
             });
           },
           splashRadius: FileDataTable._iconSplashRadius,
@@ -436,11 +463,11 @@ class _DataRowState extends State<DataRow> {
         ),
       ),
       ConditionalWidget(
-          show: !e.fileData.isDirectory,
+          show: !widget.fileData.fileData.isDirectory,
           size: null,
           child: () => IconButton(
                 icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                onPressed: e.openTempFile,
+                onPressed: widget.fileData.openTempFile,
                 splashRadius: FileDataTable._iconSplashRadius,
                 tooltip: "Open (temp)",
               )),
@@ -448,32 +475,31 @@ class _DataRowState extends State<DataRow> {
       IconButton(
         // TODO: Add user feedback when this occurs
         icon: const Icon(Icons.copy),
-        onPressed: e.copyPathToClipboard,
+        onPressed: widget.fileData.copyPathToClipboard,
         splashRadius: FileDataTable._iconSplashRadius,
         tooltip: "Copy to clipboard",
       ),
 
       IconButton(
         icon: const Icon(Icons.delete_forever),
-        onPressed: () => e.removeFileDialog(context),
+        onPressed: () => widget.fileData.removeFileDialog(context),
         splashRadius: FileDataTable._iconSplashRadius,
         tooltip: "Delete",
       ),
     ].reversed.toList(growable: false);
 
+    //download indicator
+    // TODO: Center
+    var downloadingIndicator = ConditionalWidget(
+      size: 20,
+      show: widget.fileData.downloading,
+      child: () => const CircularProgressIndicator.adaptive(
+        value: null,
+      ),
+    );
+
     return Wrap(
-      children: actions +
-          [
-            //download indicator
-            // TODO: Center
-            ConditionalWidget(
-              size: 20,
-              show: e.downloading,
-              child: () => const CircularProgressIndicator.adaptive(
-                value: null,
-              ),
-            ),
-          ],
+      children: actions + [downloadingIndicator],
     );
   }
 }

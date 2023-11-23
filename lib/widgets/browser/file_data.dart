@@ -112,21 +112,19 @@ mixin FileDataState {
                   },
                 ),
                 TextButton(
-                  child: const Text('Ok'),
-                  onPressed: () {
-                    Future task;
-                    if (file) {
-                      task = Adb.removeFile(fileData.serial, path);
-                    } else {
-                      task = Adb.removeDirectory(fileData.serial, path);
-                    }
+                    child: const Text('Ok'),
+                    onPressed: () async {
+                      if (file) {
+                        await Adb.removeFile(fileData.serial, path);
+                      } else {
+                        await Adb.removeDirectory(fileData.serial, path);
+                      }
 
-                    task.then((_) {
-                      Navigator.of(context).pop();
                       fileData.browser.refresh();
-                    });
-                  },
-                ),
+                      if (context.mounted) {
+                        Navigator.of(context).pop();
+                      }
+                    }),
               ],
             )));
   }

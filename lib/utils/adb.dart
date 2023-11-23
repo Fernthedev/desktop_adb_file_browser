@@ -116,7 +116,7 @@ abstract class Adb {
     var adbPath = await _locateAdbPath();
 
     // ignore: avoid_print
-    Trace.info("Running adb command: \"$adbPath ${newArgs.join(" ")}\"");
+    Trace.info("Running adb command: \"$adbPath $newArgs\"");
 
     var process = await Process.run(adbPath, newArgs, runInShell: true);
     if (process.stderr != null && process.stderr.toString().isNotEmpty) {

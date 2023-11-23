@@ -102,14 +102,11 @@ class _FileDataTableState extends State<FileDataTable> {
     };
 
     var tempSorted = widget.originalFileData.toList(growable: false);
+    tempSorted.sort(sortMethod);
     // Reverse
     if (!ascending) {
-      var oldSortMethod = sortMethod;
-      sortMethod =
-          (FileBrowserMetadata a, FileBrowserMetadata b) => oldSortMethod(b, a);
+      tempSorted = tempSorted.reversed.toList(growable: false);
     }
-
-    tempSorted.sort(sortMethod);
 
     return tempSorted;
   }

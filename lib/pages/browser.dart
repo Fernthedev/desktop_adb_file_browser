@@ -17,6 +17,7 @@ import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
@@ -454,11 +455,16 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
 
   void _onNavigate(String newPath) {
     Trace.verbose("Loading $newPath");
+    // final token = ServicesBinding.rootIsolateToken;
+    // var future = compute((message) {
+    //   // why is this necessary?
+    //   BackgroundIsolateBinaryMessenger.ensureInitialized(message.item3!);
 
-    setState(() {
-      _fileListingFuture =
-          Adb.getFilesInDirectory(widget.serial, newPath).then((list) async {
-        var entries = list.map((e) async {
+    //   return Adb.getFilesInDirectory(message.item1, message.item2);
+    // }, Tuple3(widget.serial, newPath, token));
+    var future = Adb.getFilesInDirectory(widget.serial, newPath);
+
+    var filesFuture = future.then((list) => list.map((e) {
           return FileBrowserMetadata(
             browser: widget._fileBrowser,
             modifiedTime: e.date,
@@ -468,10 +474,10 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             onWatch: _watchFile,
             serial: widget.serial,
           );
-        }).toList(growable: false);
+        }).toList(growable: false));
 
-        return Future.wait(entries);
-      });
+    setState(() {
+      _fileListingFuture = filesFuture;
     });
   }
 

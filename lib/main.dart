@@ -68,6 +68,9 @@ void main() async {
   } catch (e) {
     Trace.error("Suffered error while setting up file logger: $e");
   }
+  WidgetsFlutterBinding.ensureInitialized();
+  final token = ServicesBinding.rootIsolateToken;
+  BackgroundIsolateBinaryMessenger.ensureInitialized(token!);
 
   runApp(const MyApp());
   Trace.verbose("Pigeon");

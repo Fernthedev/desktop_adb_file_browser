@@ -24,7 +24,6 @@ abstract class Adb {
   static const String _adbTempFolder = "adb-platform-tools";
   static String? _adbCurrentPath;
 
-
   static Future<void> downloadADB(
       DownloadProgressCallback c, CancelToken cancelToken) async {
     String adbFinalURL = adbDownloadURL;
@@ -52,9 +51,12 @@ abstract class Adb {
 
     extractArchiveToDisk(archive, downloadPath.path);
     _adbCurrentPath = (await _getADBInstalledExecPath()).path;
-    await Process.run("chmod", ["+x", _adbCurrentPath!]);
+    if (!Platform.isWindows) {
+      // ignore: avoid_print
+      print("Setting as executable for non-windows platforms");
+      await Process.run("chmod", ["+x", _adbCurrentPath!]);
+    }
   }
-
 
   static Future<Directory> _getDownloadPath() async {
     try {

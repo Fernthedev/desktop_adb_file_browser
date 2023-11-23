@@ -41,7 +41,7 @@ class _ADBDownloadDialogState extends State<ADBDownloadDialog> {
   int? current;
   int? total;
   CancelToken cancelToken = CancelToken();
-  Error? _error;
+  Exception? _error;
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +79,7 @@ class _ADBDownloadDialogState extends State<ADBDownloadDialog> {
       icon: const Icon(FluentIcons.error_circle_48_regular),
       title: const Text("Suffered error downloading"),
       content: Text(messages),
-      actions: [TextButton(onPressed: _continue, child: const Text("Ok"))],
+      actions: [TextButton(onPressed: _continue, child: const Text("Continue anyways"))],
     );
   }
 
@@ -97,7 +97,7 @@ class _ADBDownloadDialogState extends State<ADBDownloadDialog> {
     } catch (e) {
       // ignore: avoid_print
       print("Suffered error while downloading!\n$e");
-      if (e is Error) {
+      if (e is Exception) {
         setState(() {
           _error = e;
         });

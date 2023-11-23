@@ -96,6 +96,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
         length: 2,
         child: Scaffold(
           appBar: AppBar(
+            elevation: 0.8,
             // Here we take the value from the MyHomePage object that was created by
             // the App.build method, and use it to set our appbar title.
             title: Row(

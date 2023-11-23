@@ -391,24 +391,8 @@ class _ActionsCellState extends State<_ActionsCell> {
   Widget build(BuildContext context) {
     const tooltipDuration = Duration(milliseconds: 500);
 
-    final actions = [
+    final actions = <Widget>[
       // icons
-      ConditionalWidget(
-        size: null,
-        show: !widget.fileData.fileData.isDirectory,
-        child: () => Tooltip(
-          waitDuration: tooltipDuration,
-          message: "Download",
-          child: IconButton(
-            icon: const Icon(Icons.download_rounded, size: 24),
-            onPressed: () async {
-              await widget.fileData.saveFileToDesktop();
-            },
-            enableFeedback: false,
-            splashRadius: FileDataTable._iconSplashRadius,
-          ),
-        ),
-      ),
       ConditionalWidget(
         size: null,
         show: !widget.fileData.fileData.isDirectory,
@@ -438,6 +422,18 @@ class _ActionsCellState extends State<_ActionsCell> {
                   splashRadius: FileDataTable._iconSplashRadius,
                 ),
               )),
+      Tooltip(
+        waitDuration: tooltipDuration,
+        message: "Download",
+        child: IconButton(
+          icon: const Icon(Icons.download_rounded, size: 24),
+          onPressed: () async {
+            await widget.fileData.saveFileToDesktop();
+          },
+          enableFeedback: false,
+          splashRadius: FileDataTable._iconSplashRadius,
+        ),
+      ),
 
       Tooltip(
         message: "Copy to clipboard",

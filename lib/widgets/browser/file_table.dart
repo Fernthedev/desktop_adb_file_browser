@@ -267,7 +267,11 @@ class _DataRowState extends State<DataRow> {
   }
 
   Widget _nameCell(FileBrowserMetadata e) {
-    Widget text = Text(e.friendlyFileName);
+    Widget text = Text(
+      e.friendlyFileName,
+      overflow: TextOverflow.ellipsis,
+    );
+    
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [

@@ -22,6 +22,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:routemaster/routemaster.dart';
+import 'package:trace/trace.dart';
 import 'package:tuple/tuple.dart';
 
 @immutable
@@ -452,7 +453,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   }
 
   void _onNavigate(String newPath) {
-    debugPrint("Loading $newPath");
+    Trace.verbose("Loading $newPath");
 
     setState(() {
       _fileListingFuture =
@@ -540,7 +541,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   }
 
   void _uploadFiles(Iterable<String> paths) async {
-    debugPrint("Uploading $paths");
+    Trace.verbose("Uploading $paths");
     var tasks = paths.map((path) {
       String dest = Adb.adbPathContext.join(
           widget._fileBrowser.currentPath, // adb file path
@@ -615,7 +616,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   _viewAsList(List<FileBrowserMetadata> files) {
     // var isDir = file.endsWith("/");
 
-    debugPrint("Viewing");
+    Trace.verbose("Viewing");
     return Align(
       alignment: Alignment.topCenter,
       child: FileDataTable(

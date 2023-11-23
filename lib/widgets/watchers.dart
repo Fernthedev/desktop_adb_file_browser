@@ -7,6 +7,7 @@ import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trace/trace.dart';
 import 'package:tuple/tuple.dart';
 import 'package:watcher/watcher.dart';
 
@@ -66,7 +67,7 @@ class _FileWatcherListState extends State<FileWatcherList> {
     }
 
     if (event.type == ChangeType.MODIFY) {
-      debugPrint("Uploading changes");
+      Trace.verbose("Uploading changes");
       Adb.uploadFile(widget.serial, src, dest);
     }
   }

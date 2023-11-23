@@ -57,6 +57,7 @@ dependencies:
   flutter_breadcrumb: ^1.0.1
   version: ^3.0.2
   intl: ^0.18.1
+  trace: ^0.0.4-prerelease
 
 dev_dependencies:
   flutter_test:

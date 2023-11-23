@@ -1,6 +1,7 @@
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
 import 'package:flutter/widgets.dart';
+import 'package:trace/trace.dart';
 
 typedef FileNavigateEvent = void Function(String newPath);
 
@@ -23,7 +24,7 @@ class FileBrowser {
 
   void back() {
     if (_historyPaths.isEmpty) return;
-    debugPrint("Pushed back $currentPath");
+    Trace.verbose("Pushed back $currentPath");
 
     _forwardPaths.push(currentPath);
     _refreshFiles(newPath: _historyPaths.pop(), addToHistory: false);
@@ -31,7 +32,7 @@ class FileBrowser {
 
   void forward() {
     if (_forwardPaths.isEmpty) return;
-    debugPrint("Pushed forward ${_forwardPaths.isNotEmpty}");
+    Trace.verbose("Pushed forward ${_forwardPaths.isNotEmpty}");
 
     _refreshFiles(newPath: _forwardPaths.pop());
   }
@@ -39,7 +40,7 @@ class FileBrowser {
   void navigateToDirectory(String directory) {
     _refreshFiles(newPath: directory);
     _forwardPaths.clear();
-    debugPrint("clear forward");
+    Trace.verbose("clear forward");
   }
 
   void _refreshFiles({String? newPath, bool addToHistory = true}) {

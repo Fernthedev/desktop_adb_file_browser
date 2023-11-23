@@ -7,6 +7,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
+import 'package:trace/trace.dart';
 
 import '../utils/scroll.dart';
 
@@ -55,19 +56,19 @@ class _LogPageState extends State<LogPage> {
           });
         });
         _streamSubscription?.onError((e) {
-          debugPrint(e);
+          Trace.verbose(e);
           _showError(e);
         });
         _streamSubscription?.onDone(() {
-          debugPrint("Done");
+          Trace.verbose("Done");
         });
       } catch (e) {
-        debugPrint(e.toString());
+        Trace.verbose(e.toString());
         _showError(e.toString());
       }
     }).onError((error, stackTrace) {
-      debugPrint("Error $error");
-      debugPrint(stackTrace.toString());
+      Trace.verbose("Error $error");
+      Trace.verbose(stackTrace.toString());
       _showError(error.toString());
     });
   }

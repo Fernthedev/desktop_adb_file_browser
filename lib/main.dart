@@ -6,7 +6,11 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:routemaster/routemaster.dart';
+import 'package:trace/trace.dart';
+
+import 'package:path/path.dart' as path;
 
 final routes = RouteMap(routes: {
   '/': (_) => const Redirect('/devices'),
@@ -35,14 +39,38 @@ final routes = RouteMap(routes: {
 
 late Native2FlutterImpl native2flutter;
 
-void main() {
+void main() async {
   LicenseRegistry.addLicense(() async* {
     final license = await rootBundle.loadString('google_fonts/OFL.txt');
     yield LicenseEntryWithLineBreaks(['google_fonts'], license);
   });
 
+  final ConsoleLogger logger = ConsoleLogger(
+    filter: DefaultLogFilter(
+      LogLevel.verbose,
+      debugOnly: false,
+    ),
+  );
+
+  Trace.registerLogger(logger);
+
+  try {
+    final filePath = await getApplicationSupportDirectory()
+        .then((value) => path.join(value.path, "logs"));
+    final FileLogger fileLogger = FileLogger(
+        filter: DefaultLogFilter(
+          LogLevel.verbose,
+          debugOnly: false,
+        ),
+        path: filePath);
+    Trace.registerLogger(fileLogger);
+    Trace.info("Placed logger at $filePath");
+  } catch (e) {
+    Trace.error("Suffered error while setting up file logger: $e");
+  }
+
   runApp(const MyApp());
-  debugPrint("Pigeon");
+  Trace.verbose("Pigeon");
   native2flutter = Native2FlutterImpl();
 }
 

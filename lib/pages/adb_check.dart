@@ -2,6 +2,7 @@ import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:dio/dio.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:trace/trace.dart';
 
 class ADBCheck extends StatefulWidget {
   const ADBCheck({super.key, required this.redirectPage});
@@ -79,7 +80,9 @@ class _ADBDownloadDialogState extends State<ADBDownloadDialog> {
       icon: const Icon(FluentIcons.error_circle_48_regular),
       title: const Text("Suffered error downloading"),
       content: Text(messages),
-      actions: [TextButton(onPressed: _continue, child: const Text("Continue anyways"))],
+      actions: [
+        TextButton(onPressed: _continue, child: const Text("Continue anyways"))
+      ],
     );
   }
 
@@ -96,7 +99,7 @@ class _ADBDownloadDialogState extends State<ADBDownloadDialog> {
       _continue();
     } catch (e) {
       // ignore: avoid_print
-      print("Suffered error while downloading!\n$e");
+      Trace.info("Suffered error while downloading!\n$e");
       if (e is Exception) {
         setState(() {
           _error = e;

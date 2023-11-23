@@ -17,6 +17,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.2.0"
+  analyzer_plugin:
+    dependency: transitive
+    description:
+      name: analyzer_plugin
+      sha256: "9661b30b13a685efaee9f02e5d01ed9f2b423bd889d28a304d02d704aee69161"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.11.3"
+  ansix:
+    dependency: transitive
+    description:
+      name: ansix
+      sha256: b0761b5a133341c6e5440ecdd763f0362f67f06a7cfb8f29a1b5b1f70c489e9e
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.3"
   archive:
     dependency: "direct main"
     description:
@@ -113,6 +129,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.6"
+  dart_style:
+    dependency: transitive
+    description:
+      name: dart_style
+      sha256: "40ae61a5d43feea6d24bd22c0537a6629db858963b99b4bc1c3db80676f32368"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.4"
+  data_class_plugin:
+    dependency: transitive
+    description:
+      name: data_class_plugin
+      sha256: f0403d91becf94bbe92ff90104b8f04de940b5032408cfc567e6a1369385fffc
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.2.1"
+  date_time_format:
+    dependency: transitive
+    description:
+      name: date_time_format
+      sha256: dc47de14c95a7511e98ca429e1ebfd98c339badb496c9f2aaf56a70d07c7c0bf
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   desktop_drop:
     dependency: "direct main"
     description:
@@ -505,6 +545,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  rxdart:
+    dependency: transitive
+    description:
+      name: rxdart
+      sha256: "0c7c0cedd93788d996e33041ffecda924cc54389199cde4e6a34b440f50044cb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.27.7"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -598,6 +646,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.0"
+  tachyon:
+    dependency: transitive
+    description:
+      name: tachyon
+      sha256: "63a8dd9bf1e5b074f6bf5b29436556e9ddc81599a38c1cc4a01b3582c27576bc"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.2"
   term_glyph:
     dependency: transitive
     description:
@@ -614,6 +670,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.1"
+  trace:
+    dependency: "direct main"
+    description:
+      name: trace
+      sha256: "0b78393dcf265db9a60378503eeee70c099f40ca85d2b89aec6349f8a9756b28"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.4-prerelease"
   tuple:
     dependency: "direct main"
     description:

@@ -16,7 +16,7 @@ abstract class PlatformUtils {
   /// Configs will be written to the user's config path. If there is already a
   /// file with the name `.${kConfigDir}_$name` in the user's home path, that
   /// file will be used instead.
-  static const String kConfigDir = 'flutter';
+  static const String kConfigDir = 'desktop_adb_file_browser';
 
   /// Environment variable specified in the XDG Base Directory
   /// [specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)

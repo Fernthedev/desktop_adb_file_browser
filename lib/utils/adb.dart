@@ -11,6 +11,7 @@ import 'package:path/path.dart';
 import 'package:path/path.dart' as host_path;
 
 import 'package:path_provider/path_provider.dart';
+import 'package:trace/trace.dart';
 
 typedef DownloadProgressCallback = void Function(int current, int total);
 
@@ -34,8 +35,8 @@ abstract class Adb {
     var downloadPath = await _getDownloadPath();
     await downloadPath.create();
 
-    debugPrint("Downloading to ${downloadPath.absolute}");
-    debugPrint("Downloading from $adbFinalURL");
+    Trace.verbose("Downloading to ${downloadPath.absolute}");
+    Trace.verbose("Downloading from $adbFinalURL");
     var rs = await Dio().get<List<int>>(adbFinalURL,
         options: Options(
             responseType: ResponseType.bytes), // set responseType to `stream`
@@ -53,7 +54,7 @@ abstract class Adb {
     _adbCurrentPath = (await _getADBInstalledExecPath()).path;
     if (!Platform.isWindows) {
       // ignore: avoid_print
-      print("Setting as executable for non-windows platforms");
+      Trace.info("Setting as executable for non-windows platforms");
       await Process.run("chmod", ["+x", _adbCurrentPath!]);
     }
   }
@@ -98,7 +99,7 @@ abstract class Adb {
     }
 
     // ignore: avoid_print
-    print("Using adb in $_adbCurrentPath");
+    Trace.info("Using adb in $_adbCurrentPath");
 
     return _adbCurrentPath!;
   }
@@ -110,12 +111,12 @@ abstract class Adb {
     var adbPath = await _locateAdbPath();
 
     // ignore: avoid_print
-    print("Running adb command: \"$adbPath ${newArgs.join(" ")}\"");
+    Trace.info("Running adb command: \"$adbPath ${newArgs.join(" ")}\"");
 
     var process = await Process.run(adbPath, newArgs, runInShell: true);
     if (process.stderr != null && process.stderr.toString().isNotEmpty) {
       final error = process.stderr;
-      debugPrint("Error $error");
+      Trace.verbose("Error $error");
       debugPrintStack();
       throw error.toString();
     }

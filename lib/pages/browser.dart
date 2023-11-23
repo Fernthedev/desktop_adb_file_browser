@@ -454,6 +454,8 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   }
 
   void _onNavigate(String newPath) {
+    if (!context.mounted) return;
+
     Trace.verbose("Loading $newPath");
     // final token = ServicesBinding.rootIsolateToken;
     // var future = compute((message) {

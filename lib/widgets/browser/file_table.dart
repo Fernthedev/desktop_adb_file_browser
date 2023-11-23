@@ -271,7 +271,7 @@ class _DataRowState extends State<DataRow> {
       e.friendlyFileName,
       overflow: TextOverflow.ellipsis,
     );
-    
+
     return Wrap(
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
@@ -354,9 +354,9 @@ class _DataRowState extends State<DataRow> {
 
                   // False positive
                   // ignore: use_build_context_synchronously
+                  fileData.browser.refresh();
                   if (!context.mounted) return;
                   Navigator.of(context).pop();
-                  fileData.browser.refresh();
                 },
               ),
             ],

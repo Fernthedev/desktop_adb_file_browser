@@ -156,10 +156,10 @@ abstract class Adb {
   static String fixPath(String path, {bool addQuotes = true}) {
     if (!path.startsWith("/")) path = "/$path";
 
-    if (!addQuotes) {
-      return path;
+    if (addQuotes) {
+      path = "\"$path\"";
     }
-    return "\"$path\"";
+    return path;
 
     // return path
     //     .replaceAll('\\', '/')
@@ -324,8 +324,8 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
 
   static Future<String> moveFile(
       String? serialName, String source, String dest) async {
-    source = fixPath(source, addQuotes: false);
-    dest = fixPath(dest, addQuotes: false);
+    source = fixPath(source, addQuotes: true);
+    dest = fixPath(dest, addQuotes: true);
     var result = await runAdbCommand(serialName, ["shell", "mv", source, dest]);
 
     return normalizeOutput(result.stdout);

@@ -1,4 +1,3 @@
-import 'package:desktop_adb_file_browser/pages/adb_check.dart';
 import 'package:desktop_adb_file_browser/pages/browser.dart';
 import 'package:desktop_adb_file_browser/pages/devices.dart';
 import 'package:desktop_adb_file_browser/pages/logger.dart';
@@ -10,11 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:routemaster/routemaster.dart';
 
 final routes = RouteMap(routes: {
-  '/': (_) => const MaterialPage(
-      key: ValueKey("adbcheck"),
-      child: ADBCheck(
-        redirectPage: '/devices',
-      )),
+  '/': (_) => const Redirect('/devices'),
 
   '/devices': (_) =>
       const MaterialPage(key: ValueKey("devices"), child: DevicesPage()),

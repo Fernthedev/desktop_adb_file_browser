@@ -1,7 +1,7 @@
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:dio/dio.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:routemaster/routemaster.dart';
 
 class ADBCheck extends StatefulWidget {
   const ADBCheck({super.key, required this.redirectPage});
@@ -16,23 +16,7 @@ class _ADBCheckState extends State<ADBCheck> {
   @override
   void initState() {
     super.initState();
-    _showADBDownload(context);
-  }
-
-  Future<void> _showADBDownload(BuildContext context) async {
-    try {
-      await Adb.runAdbCommand(null, ["start-server"]);
-    } catch (e) {
-      if (context.mounted) {
-        await showDialog(
-          builder: (context) => const ADBDownloadDialog(),
-          context: context,
-          barrierDismissible: false,
-        );
-      }
-    }
-    if (!mounted) return;
-    Routemaster.of(context).replace(widget.redirectPage);
+    checkAndPromptADB(context);
   }
 
   @override
@@ -57,37 +41,87 @@ class _ADBDownloadDialogState extends State<ADBDownloadDialog> {
   int? current;
   int? total;
   CancelToken cancelToken = CancelToken();
+  Error? _error;
 
   @override
   Widget build(BuildContext context) {
-    if (current == null || total == null) return _initialDownloadDialog();
+    if (current == null || total == null) return _promptDownloadState();
+    if (_error != null) return _errorState();
 
-    return AlertDialog(
-        title: const Text("Downloading ADB"),
-        content: LinearProgressIndicator(
-          value: current!.toDouble() / total!.toDouble(),
-        ));
+    return _loadingState();
   }
 
-  Widget _initialDownloadDialog() {
+  AlertDialog _loadingState() {
+    return AlertDialog(
+      title: const Text("Downloading ADB"),
+      content: LinearProgressIndicator(
+        value: current!.toDouble() / total!.toDouble(),
+      ),
+    );
+  }
+
+  Widget _promptDownloadState() {
     return AlertDialog(
       title: const Text("ADB not found"),
-      content: const Text("Do you want to download ABD?"),
-      actions: [
-        TextButton(
-            onPressed: () async {
-              await Adb.downloadADB((c, t) {
-                setState(() {
-                  current = c;
-                  total = t;
-                });
-              }, cancelToken);
+      content: const Text("Do you want to download ADB?"),
+      actions: [TextButton(onPressed: _download, child: const Text("Ok"))],
+    );
+  }
 
-              if (!mounted) return;
-              Navigator.of(context, rootNavigator: true).pop();
-            },
-            child: const Text("Ok"))
-      ],
+  Widget _errorState() {
+    String messages = "Do you wish to continue anyways?";
+
+    if (_error != null) {
+      messages += "\nMessage: $_error";
+    }
+
+    return AlertDialog(
+      icon: const Icon(FluentIcons.error_circle_48_regular),
+      title: const Text("Suffered error downloading"),
+      content: Text(messages),
+      actions: [TextButton(onPressed: _continue, child: const Text("Ok"))],
+    );
+  }
+
+  void _download() async {
+    try {
+      await Adb.downloadADB((c, t) {
+        setState(() {
+          current = c;
+          total = t;
+        });
+      }, cancelToken);
+
+      if (!mounted) return;
+      _continue();
+    } catch (e) {
+      // ignore: avoid_print
+      print("Suffered error while downloading!\n$e");
+      if (e is Error) {
+        setState(() {
+          _error = e;
+        });
+      }
+    }
+  }
+
+  void _continue() {
+    Navigator.of(context).pop();
+  }
+}
+
+Future<void> checkAndPromptADB(BuildContext context) async {
+  try {
+    await Adb.runAdbCommand(null, ["start-server"]);
+  } catch (e) {
+    if (!context.mounted) {
+      return;
+    }
+
+    await showDialog(
+      builder: (context) => const ADBDownloadDialog(),
+      context: context,
+      barrierDismissible: false,
     );
   }
 }

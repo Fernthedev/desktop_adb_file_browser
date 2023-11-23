@@ -22,24 +22,8 @@ abstract class Adb {
       "https://dl.google.com/android/repository/platform-tools-latest-";
 
   static const String _adbTempFolder = "adb-platform-tools";
-
   static String? _adbCurrentPath;
 
-  static Future<Directory> _getDownloadPath() async {
-    try {
-      return Directory(hostPath.join(
-          (await getApplicationSupportDirectory()).path, _adbTempFolder));
-    } on MissingPlatformDirectoryException catch (_) {
-    } on UnimplementedError catch (_) {}
-
-    return Directory(
-        hostPath.join(await PlatformUtils.configPath(_adbTempFolder)));
-  }
-
-  static Future<File> _getADBDownloadPath() async {
-    var downloadPath = await _getDownloadPath();
-    return File(hostPath.join(downloadPath.path, "platform-tools", "adb"));
-  }
 
   static Future<void> downloadADB(
       DownloadProgressCallback c, CancelToken cancelToken) async {
@@ -67,26 +51,52 @@ abstract class Adb {
     final archive = ZipDecoder().decodeBuffer(InputStream(stream));
 
     extractArchiveToDisk(archive, downloadPath.path);
-    _adbCurrentPath = (await _getADBDownloadPath()).path;
+    _adbCurrentPath = (await _getADBInstalledExecPath()).path;
     await Process.run("chmod", ["+x", _adbCurrentPath!]);
   }
 
-  static Future<String> _getAdbPath() async {
+
+  static Future<Directory> _getDownloadPath() async {
+    try {
+      return Directory(hostPath.join(
+          (await getApplicationSupportDirectory()).path, _adbTempFolder));
+    } on MissingPlatformDirectoryException catch (_) {
+    } on UnimplementedError catch (_) {}
+
+    return Directory(
+        hostPath.join(await PlatformUtils.configPath(_adbTempFolder)));
+  }
+
+  static Future<File> _getADBInstalledExecPath() async {
+    var downloadPath = await _getDownloadPath();
+
+    var adbExecName = Platform.isWindows ? "adb.exe" : "adb";
+
+    var adbFile =
+        File(hostPath.join(downloadPath.path, "platform-tools", adbExecName));
+
+    return adbFile;
+  }
+
+  static Future<String> _locateAdbPath() async {
     if (_adbCurrentPath != null) {
       return _adbCurrentPath!;
     }
 
-    var downloadPath = await _getDownloadPath();
+    var downloadPath = await _getADBInstalledExecPath();
     if (await downloadPath.exists()) {
-      _adbCurrentPath = (await _getADBDownloadPath()).path;
+      _adbCurrentPath = downloadPath.path;
     } else if (Platform.isWindows) {
+      // Use adb in path
       _adbCurrentPath = "adb.exe";
     } else {
       // Use adb in path
-    
+
       _adbCurrentPath = "adb";
     }
 
+    // ignore: avoid_print
+    print("Using adb in $_adbCurrentPath");
 
     return _adbCurrentPath!;
   }
@@ -95,8 +105,12 @@ abstract class Adb {
       String? serial, List<String> args) async {
     var newArgs = serial != null ? ["-s", serial, ...args] : args;
 
-    var process =
-        await Process.run(await _getAdbPath(), newArgs, runInShell: true);
+    var adbPath = await _locateAdbPath();
+
+    // ignore: avoid_print
+    print("Running adb command: \"$adbPath ${newArgs.join(" ")}\"");
+
+    var process = await Process.run(adbPath, newArgs, runInShell: true);
     if (process.stderr != null && process.stderr.toString().isNotEmpty) {
       final error = process.stderr;
       debugPrint("Error $error");
@@ -113,7 +127,8 @@ abstract class Adb {
       String? serial, List<String> args) async {
     var newArgs = serial != null ? ["-s", serial, ...args] : args;
 
-    return await Process.start(await _getAdbPath(), newArgs, runInShell: true);
+    return await Process.start(await _locateAdbPath(), newArgs,
+        runInShell: true);
   }
 
   static String normalizeOutput(String output) {

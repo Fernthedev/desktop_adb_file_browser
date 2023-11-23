@@ -1,3 +1,4 @@
+import 'package:desktop_adb_file_browser/pages/adb_check.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/device_card.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -14,11 +15,20 @@ class DevicesPage extends StatefulWidget {
 }
 
 class _DevicesPageState extends State<DevicesPage> {
-  Future<List<Device>> _deviceListFuture = Adb.getDevices();
-  //Future.delayed(const Duration(seconds: 2), Adb.getDevices);
+  Future<List<Device>>? _deviceListFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Check if ADB is installed
+    checkAndPromptADB(context).then((value) => _refreshDevices());
+  }
 
   void _refreshDevices() {
-    _deviceListFuture = Adb.getDevices();
+    setState(() {
+      _deviceListFuture = Adb.getDevices();
+    });
   }
 
   @override
@@ -49,7 +59,6 @@ class _DevicesPageState extends State<DevicesPage> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _refreshDevices();
-          setState(() {});
         },
         tooltip: 'Refresh',
         // TODO: Animate easeInOut spin
@@ -111,7 +120,7 @@ class _DevicesPageState extends State<DevicesPage> {
 
     await showDialog<void>(
       context: context,
-      barrierDismissible: true, // user must tap button!
+      barrierDismissible: true,
       builder: (BuildContext context) => WirelessConnectDialog(
           ipController: ipController, portController: portController),
     );

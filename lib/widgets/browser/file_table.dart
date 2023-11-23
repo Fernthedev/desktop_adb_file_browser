@@ -55,7 +55,7 @@ class _FileDataTableState extends State<FileDataTable> {
     return ListView.separated(
       // + 1 for the header row
       controller: widget.scrollController,
-      shrinkWrap: true,
+      // shrinkWrap: true,
       addAutomaticKeepAlives: true,
       itemCount: sortedFileData!.length + 1,
       separatorBuilder: (c, index) => const Divider(height: 1),
@@ -243,29 +243,33 @@ class _DataRowState extends State<DataRow> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-            child: InkWell(
-          onLongPress: () {
-            setState(() {
-              editable = !editable;
-              _renameDialog(widget.file);
-            });
-          },
-          onTap: () => widget.file.navigateToDir(),
-          child: _nameCell(widget.file),
-        )),
-        Expanded(child: _dateCell(widget.file)),
-        Expanded(child: _fileSizeCell(widget.file)),
-        Expanded(child: _actionsCell(widget.file)),
-      ],
+    return InkWell(
+      onLongPress: () {
+        setState(() {
+          editable = !editable;
+          _renameDialog(widget.file);
+        });
+      },
+      onTap: () => widget.file.navigateToDir(),
+      child: SizedBox(
+        height: 40,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: _nameCell(widget.file)),
+            Expanded(child: _dateCell(widget.file)),
+            Expanded(child: _fileSizeCell(widget.file)),
+            Expanded(child: _actionsCell(widget.file)),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _nameCell(FileBrowserMetadata e) {
     Widget text = Text(e.friendlyFileName);
     return Wrap(
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8.0),

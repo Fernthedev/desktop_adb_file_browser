@@ -458,20 +458,13 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     setState(() {
       _fileListingFuture =
           Adb.getFilesInDirectory(widget.serial, newPath).then((list) async {
-        if (list == null) {
-          return null;
-        }
-
         var entries = list.map((e) async {
-          var dateTime = await Adb.getFileModifiedDate(widget.serial, e);
-          var size = await Adb.getFileSize(widget.serial, e);
-
           return FileBrowserMetadata(
             browser: widget._fileBrowser,
-            modifiedTime: dateTime,
-            fileSize: size,
-            fullFilePath: e,
-            isDirectory: e.endsWith("/"),
+            modifiedTime: e.date,
+            fileSize: e.size,
+            fullFilePath: e.path,
+            isDirectory: e.path.endsWith("/"),
             onWatch: _watchFile,
             serial: widget.serial,
           );

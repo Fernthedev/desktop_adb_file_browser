@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:archive/archive_io.dart';
 import 'package:async/async.dart';
 import 'package:desktop_adb_file_browser/utils/platform.dart';
+import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
@@ -16,14 +17,18 @@ import 'package:trace/trace.dart';
 typedef DownloadProgressCallback = void Function(int current, int total);
 
 abstract class Adb {
-  static Context get hostPath => host_path.context;
+  static const String _adbTempFolder = "adb-platform-tools";
+  static String? _adbCurrentPath;
+
+  static final _fileListingRegex =
+      RegExp(r"([\w-]+) *(\d+) *(\w+) *(\w+) *(\d+) *([\d-]+) *([\d:]+) *(.*)");
+
   static final Context adbPathContext = Context(style: Style.posix);
 
   static const String adbDownloadURL =
       "https://dl.google.com/android/repository/platform-tools-latest-";
 
-  static const String _adbTempFolder = "adb-platform-tools";
-  static String? _adbCurrentPath;
+  static Context get hostPath => host_path.context;
 
   static Future<void> downloadADB(
       DownloadProgressCallback c, CancelToken cancelToken) async {
@@ -189,12 +194,92 @@ abstract class Adb {
     return parsedPaths;
   }
 
-  static Future<List<String>?> getFilesInDirectory(
+  //
+  static List<FileListingData> parsePathsWithMoreData(
+      String str, String path, bool onlyNames) {
+    // Remove unnecessary padding that ADB adds to get purely the paths
+    var rawPaths = str.split("\n");
+    /*
+total 1002
+drwxrwx--x 10 u0_a140 sdcard_rw   3488 2023-11-03 21:18 .
+drwxrwx--x  4 u0_a140 sdcard_rw   3488 2023-11-03 21:09 ..
+-rw-rw----  1 u0_a140 sdcard_rw    953 2023-11-01 10:44 AvatarData.dat
+-rw-rw----  1 u0_a140 sdcard_rw    953 2023-11-01 10:44 AvatarData.dat.bak
+-rw-rw----  1 u0_a140 sdcard_rw    953 2023-11-01 10:44 AvatarData.dat.tmp
+-rw-rw----  1 u0_a140 sdcard_rw     24 2023-11-03 21:09 LocalDailyLeaderboards.dat
+-rw-rw----  1 u0_a140 sdcard_rw     24 2023-11-03 21:09 LocalLeaderboards.dat
+-rw-rw----  1 u0_a140 sdcard_rw  13424 2023-11-03 21:18 PlayerData.dat
+-rw-rw----  1 u0_a140 sdcard_rw  13424 2023-11-03 21:16 PlayerData.dat.bak
+drwxrwx--x  4 u0_a140 sdcard_rw   3488 2023-11-01 10:45 Unity
+drwxrwx--x  5 u0_a140 sdcard_rw   3488 2023-11-01 10:44 il2cpp
+drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-03 18:51 libs
+drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 libs_old
+drwxrwx--x  3 u0_a140 sdcard_rw   3488 2023-11-01 10:45 lldb
+drwxrwx--x  3 u0_a140 sdcard_rw   3488 2023-11-03 21:09 logs
+drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-03 21:09 mods
+drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
+-rw-rw----  1 u0_a140 sdcard_rw   1547 2023-11-03 21:09 settings.cfg
+-rw-rw----  1 u0_a140 sdcard_rw   1548 2023-11-01 10:44 settings.cfg.bak
+-rw-rw----  1 u0_a140 sdcard_rw   1547 2023-11-03 21:09 settings.cfg.tmp
+-rw-rw----  1 u0_a140 sdcard_rw 288566 2023-11-03 20:54 tombstone_00
+-rw-rw----  1 u0_a140 sdcard_rw 332903 2023-11-03 20:54 tombstone_01
+-rw-rw----  1 u0_a140 sdcard_rw 289307 2023-11-03 20:51 tombstone_02
+-rw-rw----  1 u0_a140 sdcard_rw   8440 2023-11-01 10:44 videoplayer.player
+
+     */
+
+    var parsedPaths = rawPaths.sublist(1, rawPaths.length - 1).map((entry) {
+      var matches = _fileListingRegex.firstMatch(entry)!;
+
+      var permission = matches[1]!;
+      var user = matches[3]!;
+      var size = int.parse(matches[5]!);
+      var date = matches[6]!;
+      var hour24 = matches[7]!;
+      var fileName = matches[8]!;
+
+      var dateTime = DateTime.parse("$date $hour24");
+
+      var pathEntry =
+          onlyNames ? fileName : adbPathContext.join(path, fileName);
+
+      // https://regex101.com/r/80ZN8E/1
+      // group 1 -> permission
+      // group 2 -> user id?
+      // group 3 -> user name
+      // group 4 -> user group
+      // group 5 -> size
+      // group 6 -> date
+      // group 7 -> 24 hour time
+      // group 8 -> file name
+
+      return FileListingData(
+        date: dateTime,
+        path: pathEntry,
+        permission: permission,
+        size: size,
+        user: user,
+      );
+    }).toList(growable: false);
+
+    return parsedPaths;
+  }
+
+  static Future<List<String>> getFileNamesInDirectory(
       String? serialName, String path) async {
     var result =
         await runAdbCommand(serialName, ["shell", "ls -p -a ${fixPath(path)}"]);
 
     return parsePaths(
+        normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false);
+  }
+
+  static Future<List<FileListingData>> getFilesInDirectory(
+      String? serialName, String path) async {
+    var result =
+        await runAdbCommand(serialName, ["shell", "ls -pLla ${fixPath(path)}"]);
+
+    return parsePathsWithMoreData(
         normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false);
   }
 
@@ -331,13 +416,30 @@ abstract class Adb {
   }
 }
 
+@immutable
 class Device {
-  String serialName;
-  String? deviceManufacturer;
-  String modelName;
+  final String serialName;
+  final String? deviceManufacturer;
+  final String modelName;
 
   Device(
       {required this.serialName,
       this.deviceManufacturer,
       required this.modelName});
+}
+
+@immutable
+class FileListingData {
+  final String permission;
+  final String user;
+  final int size;
+  final DateTime date;
+  final String path;
+
+  FileListingData(
+      {required this.permission,
+      required this.user,
+      required this.size,
+      required this.date,
+      required this.path});
 }

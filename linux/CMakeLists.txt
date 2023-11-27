@@ -8,7 +8,6 @@ set(BINARY_NAME "desktop_adb_file_browser")
 # The unique GTK application identifier for this application. See:
 # https://wiki.gnome.org/HowDoI/ChooseApplicationID
 set(APPLICATION_ID "com.example.desktop_adb_file_browser")
-set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 # Explicitly opt in to modern CMake behaviors to avoid warnings with recent
 # versions of CMake.

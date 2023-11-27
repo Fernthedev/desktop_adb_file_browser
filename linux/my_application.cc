@@ -1,5 +1,7 @@
 #include "my_application.h"
 
+#include "pigeon.hpp"
+
 #include <flutter_linux/flutter_linux.h>
 #ifdef GDK_WINDOWING_X11
 #include <gdk/gdkx.h>

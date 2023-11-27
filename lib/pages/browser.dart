@@ -417,16 +417,6 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
         IconButton(
           splashRadius: 20,
           icon: const Icon(
-            FluentIcons.folder_arrow_up_20_regular,
-          ),
-          onPressed: () {
-            widget._fileBrowser.navigateToDirectory(
-                Adb.adbPathContext.dirname(widget._fileBrowser.currentPath));
-          },
-        ),
-        IconButton(
-          splashRadius: 20,
-          icon: const Icon(
             FluentIcons.arrow_left_20_regular,
           ),
           onPressed: () {
@@ -440,6 +430,16 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
           ),
           onPressed: () {
             widget._fileBrowser.forward();
+          },
+        ),
+        IconButton(
+          splashRadius: 20,
+          icon: const Icon(
+            FluentIcons.folder_arrow_up_20_regular,
+          ),
+          onPressed: () {
+            widget._fileBrowser.navigateToDirectory(
+                Adb.adbPathContext.dirname(widget._fileBrowser.currentPath));
           },
         ),
         IconButton(

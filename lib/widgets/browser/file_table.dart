@@ -239,7 +239,6 @@ class DataRow extends StatefulWidget {
 
 class _DataRowState extends State<DataRow> {
   bool downloading = false;
-  bool editable = false;
   final MenuController _menuController = MenuController();
 
   @override
@@ -248,12 +247,7 @@ class _DataRowState extends State<DataRow> {
       fileData: widget.file,
       menuController: _menuController,
       child: InkWell(
-        onLongPress: () {
-          setState(() {
-            editable = !editable;
-            _renameDialog(widget.file);
-          });
-        },
+        // onLongPress: _renameDialog,
         onTap: () => widget.file.navigateToDir(),
         child: SizedBox(
           height: 40,
@@ -316,65 +310,11 @@ class _DataRowState extends State<DataRow> {
     );
   }
 
-  Future<void> _renameDialog(FileBrowserMetadata fileDataWrapper) async {
-    var fileData = fileDataWrapper.fileData;
-    String path = fileData.fullFilePath;
+  Future<void> _renameDialog() async {
+    var fileData = widget.file;
     await showDialog<void>(
         context: context,
-        builder: ((context) {
-          TextEditingController controller =
-              TextEditingController(text: fileDataWrapper.friendlyFileName);
-
-          return AlertDialog(
-            title: const Text("Rename"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Renaming: $path"),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextFormField(
-                    controller: controller,
-                    validator: _validateNewName,
-                  ),
-                )
-              ],
-            ),
-            actions: [
-              TextButton(
-                child: const Text('Cancel'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: const Text('Ok'),
-                onPressed: () async {
-                  await fileDataWrapper.renameFile(controller.text);
-
-                  // False positive
-                  // ignore: use_build_context_synchronously
-                  fileData.browser.refresh();
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        }));
-    setState(() {
-      editable = false;
-    });
-  }
-
-  String? _validateNewName(String? newName) {
-    if (newName == null || newName.isEmpty) {
-      return "New name cannot be empty";
-    }
-
-    if (newName.contains("/")) return "Cannot contain slashes";
-
-    return null;
+        builder: ((context) => _RenameFileDialog(file: fileData)));
   }
 }
 
@@ -414,6 +354,14 @@ class _ActionsMenu extends StatelessWidget {
         onPressed: fileData.saveFileToDesktop,
         child: const Text("Download"),
       ),
+      MenuItemButton(
+        leadingIcon: const Icon(
+          Icons.edit,
+          size: 24,
+        ),
+        onPressed: () => _renameDialog(context),
+        child: const Text("Rename"),
+      ),
     ];
 
     if (isFile) {
@@ -443,5 +391,74 @@ class _ActionsMenu extends StatelessWidget {
       menuController: menuController,
       child: child,
     );
+  }
+
+  Future<void> _renameDialog(BuildContext context) async {
+    await showDialog<void>(
+        context: context,
+        builder: ((context) => _RenameFileDialog(file: fileData)));
+  }
+}
+
+class _RenameFileDialog extends StatelessWidget {
+  _RenameFileDialog({super.key, required this.file})
+      : controller = TextEditingController(text: file.friendlyFileName);
+
+  final FileBrowserMetadata file;
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Rename"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text("Renaming: ${file.friendlyFileName}"),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextFormField(
+              controller: controller,
+              canRequestFocus: true,
+              autofocus: true,
+              onFieldSubmitted: (s) => _submitRename(context),
+              validator: _validateNewName,
+            ),
+          )
+        ],
+      ),
+      actions: [
+        TextButton(
+          child: const Text('Cancel'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          child: const Text('Ok'),
+          onPressed:() => _submitRename(context),
+        ),
+      ],
+    );
+  }
+
+  String? _validateNewName(String? newName) {
+    if (newName == null || newName.isEmpty) {
+      return "New name cannot be empty";
+    }
+
+    if (newName.contains("/")) return "Cannot contain slashes";
+
+    return null;
+  }
+
+  void _submitRename(BuildContext context) async {
+    await file.renameFile(controller.text);
+
+            // False positive
+            // ignore: use_build_context_synchronously
+            file.browser.refresh();
+            if (!context.mounted) return;
+            Navigator.of(context).pop();
   }
 }

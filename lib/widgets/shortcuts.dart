@@ -70,7 +70,6 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
             Expanded(
               flex: 2,
               child: ListView.builder(
-                controller: AdjustableScrollController(),
                 // shrinkWrap: true,
                 itemBuilder: (context, index) =>
                     _shortcutTile(context, index, map),
@@ -130,6 +129,8 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
     return ListTile(
       title: Text(name),
       subtitle: Text(path),
+      key: ValueKey(path),
+      visualDensity: VisualDensity.compact,
       onTap: () {
         if (widget.onTap != null) widget.onTap!(path);
       },

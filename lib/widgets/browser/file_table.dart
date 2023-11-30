@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:desktop_adb_file_browser/utils/file_sort.dart';
+import 'package:desktop_adb_file_browser/widgets/adaptive/menu_context.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:desktop_adb_file_browser/widgets/conditional.dart';
 import 'package:filesize/filesize.dart';
@@ -170,7 +171,6 @@ class TableHeaderRow extends StatelessWidget {
             selected: selectedSort == SortingMethod.fileSize,
             ascending: ascending,
             onSort: () => onSort(SortingMethod.fileSize, !ascending)),
-        const HeaderCell(label: "Actions"),
       ],
     );
   }
@@ -240,27 +240,31 @@ class DataRow extends StatefulWidget {
 class _DataRowState extends State<DataRow> {
   bool downloading = false;
   bool editable = false;
+  final MenuController _menuController = MenuController();
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onLongPress: () {
-        setState(() {
-          editable = !editable;
-          _renameDialog(widget.file);
-        });
-      },
-      onTap: () => widget.file.navigateToDir(),
-      child: SizedBox(
-        height: 40,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: _nameCell(widget.file)),
-            Expanded(child: _dateCell(widget.file)),
-            Expanded(child: _fileSizeCell(widget.file)),
-            Expanded(child: _actionsCell(widget.file)),
-          ],
+    return _ActionsMenu(
+      fileData: widget.file,
+      menuController: _menuController,
+      child: InkWell(
+        onLongPress: () {
+          setState(() {
+            editable = !editable;
+            _renameDialog(widget.file);
+          });
+        },
+        onTap: () => widget.file.navigateToDir(),
+        child: SizedBox(
+          height: 40,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _nameCell(widget.file)),
+              Expanded(child: _dateCell(widget.file)),
+              Expanded(child: _fileSizeCell(widget.file)),
+            ],
+          ),
         ),
       ),
     );
@@ -310,10 +314,6 @@ class _DataRowState extends State<DataRow> {
       style: Theme.of(context).textTheme.titleSmall,
       textAlign: TextAlign.left,
     );
-  }
-
-  Widget _actionsCell(FileBrowserMetadata e) {
-    return _ActionsCell(fileData: e);
   }
 
   Future<void> _renameDialog(FileBrowserMetadata fileDataWrapper) async {
@@ -378,101 +378,70 @@ class _DataRowState extends State<DataRow> {
   }
 }
 
-class _ActionsCell extends StatefulWidget {
-  const _ActionsCell({
+class _ActionsMenu extends StatelessWidget {
+  const _ActionsMenu({
     super.key,
     required this.fileData,
+    required this.child,
+    required this.menuController,
   });
 
   final FileBrowserMetadata fileData;
+  final Widget child;
+  final MenuController menuController;
 
-  @override
-  State<_ActionsCell> createState() => _ActionsCellState();
-}
-
-class _ActionsCellState extends State<_ActionsCell> {
   @override
   Widget build(BuildContext context) {
     const tooltipDuration = Duration(milliseconds: 500);
 
-    final actions = <Widget>[
-      // icons
-      ConditionalWidget(
-        size: null,
-        show: !widget.fileData.fileData.isDirectory,
-        child: () {
-          return Tooltip(
-            message: "Watch changes (desktop -> device)",
-            waitDuration: tooltipDuration,
-            child: IconButton(
-              icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
-              onPressed: () async {
-                await widget.fileData.watchFile();
-              },
-              splashRadius: FileDataTable._iconSplashRadius,
-            ),
-          );
-        },
-      ),
-      ConditionalWidget(
-          show: !widget.fileData.fileData.isDirectory,
-          size: null,
-          child: () => Tooltip(
-                message: "Open (temp)",
-                waitDuration: tooltipDuration,
-                child: IconButton(
-                  icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                  onPressed: widget.fileData.openTempFile,
-                  splashRadius: FileDataTable._iconSplashRadius,
-                ),
-              )),
-      Tooltip(
-        waitDuration: tooltipDuration,
-        message: "Download",
-        child: IconButton(
-          icon: const Icon(Icons.download_rounded, size: 24),
-          onPressed: () async {
-            await widget.fileData.saveFileToDesktop();
-          },
-          enableFeedback: false,
-          splashRadius: FileDataTable._iconSplashRadius,
+    final isFile = !fileData.fileData.isDirectory;
+    final isDir = fileData.fileData.isDirectory;
+
+    var menus = [
+      MenuItemButton(
+        leadingIcon: const Icon(
+          Icons.copy,
         ),
+        // TODO: Add user feedback when this occurs
+        onPressed: fileData.copyPathToClipboard,
+        child: const Text("Copy to clipboard"),
       ),
-
-      Tooltip(
-        message: "Copy to clipboard",
-        waitDuration: tooltipDuration,
-        child: IconButton(
-          // TODO: Add user feedback when this occurs
-          icon: const Icon(Icons.copy),
-          onPressed: widget.fileData.copyPathToClipboard,
-          splashRadius: FileDataTable._iconSplashRadius,
+      MenuItemButton(
+        leadingIcon: const Icon(
+          Icons.download_rounded,
+          size: 24,
         ),
+        onPressed: fileData.saveFileToDesktop,
+        child: const Text("Download"),
       ),
+    ];
 
-      Tooltip(
-        message: "Delete",
-        waitDuration: tooltipDuration,
-        child: IconButton(
-          icon: const Icon(Icons.delete_forever),
-          onPressed: () => widget.fileData.removeFileDialog(context),
-          splashRadius: FileDataTable._iconSplashRadius,
-        ),
-      ),
-    ].reversed.toList(growable: false);
+    if (isFile) {
+      final fileActions = [
+        MenuItemButton(
+            leadingIcon: const Icon(FluentIcons.glasses_24_filled, size: 24),
+            onPressed: fileData.watchFile,
+            child: const Text("Watch changes (desktop -> device)")),
+        MenuItemButton(
+            leadingIcon: const Icon(FluentIcons.open_24_filled, size: 24),
+            onPressed: fileData.openTempFile,
+            child: const Text("Open (temp)")),
+      ];
 
-    //download indicator
-    // TODO: Center
-    var downloadingIndicator = ConditionalWidget(
-      size: 20,
-      show: false,
-      child: () => const CircularProgressIndicator.adaptive(
-        value: null,
-      ),
-    );
+      menus += fileActions;
+    }
 
-    return Wrap(
-      children: actions + [downloadingIndicator],
+    // Make delete last
+    menus.add(MenuItemButton(
+      leadingIcon: const Icon(Icons.delete_forever),
+      onPressed: () => fileData.removeFileDialog(context),
+      child: const Text("Delete"),
+    ));
+
+    return AdaptiveContextualMenu(
+      menuChildren: menus,
+      menuController: menuController,
+      child: child,
     );
   }
 }

@@ -8,6 +8,8 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+const minCellWidth = 30.0;
+
 class FileDataTable extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
@@ -34,6 +36,8 @@ class _FileDataTableState extends State<FileDataTable> {
   SortingMethod sort = sortDefault;
   bool ascending = ascendingDefault;
   List<FileBrowserMetadata>? sortedFileData;
+
+  final columnSizes = <double?>[null, null, null, null];
 
   final _headerRowKey = UniqueKey();
 
@@ -67,17 +71,27 @@ class _FileDataTableState extends State<FileDataTable> {
             onSort: _onSort,
             ascending: ascending,
             selectedSort: sort,
+            columnSizes: columnSizes,
+            onWidthChanged: _updateColumnWidth,
           );
         }
 
         // Data rows
         final file = sortedFileData![index - 1];
         return DataRow(
+          key: ValueKey(file.fullFilePath),
           file: file,
-          key: ValueKey(file.friendlyFileName),
+          columnSizes: columnSizes,
         );
       },
     );
+  }
+
+  void _updateColumnWidth((int, double) value) {
+    final (i, width) = value;
+    setState(() {
+      columnSizes[i] = width;
+    });
   }
 
   void _onSort(SortingMethod s, bool a) async {
@@ -141,38 +155,83 @@ class TableHeaderRow extends StatelessWidget {
   final Function(SortingMethod, bool) onSort;
   final bool ascending;
   final SortingMethod selectedSort;
+  final List<double?> columnSizes;
 
-  const TableHeaderRow(
-      {super.key,
-      required this.onSort,
-      required this.ascending,
-      required this.selectedSort});
+  final ValueChanged<(int, double)> onWidthChanged;
+
+  const TableHeaderRow({
+    super.key,
+    required this.onSort,
+    required this.ascending,
+    required this.selectedSort,
+    required this.columnSizes,
+    required this.onWidthChanged,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final widgetInRow = [
+      HeaderCell(
+          label: "Name",
+          selected: selectedSort == SortingMethod.name,
+          ascending: ascending,
+          onSort: () => onSort(SortingMethod.name, !ascending)),
+      HeaderCell(
+          label: "Modified Date",
+          numeric: true,
+          selected: selectedSort == SortingMethod.date,
+          ascending: ascending,
+          onSort: () => onSort(SortingMethod.date, !ascending)),
+      HeaderCell(
+          label: "Size",
+          numeric: true,
+          selected: selectedSort == SortingMethod.fileSize,
+          ascending: ascending,
+          onSort: () => onSort(SortingMethod.fileSize, !ascending)),
+      const HeaderCell(label: "Actions"),
+    ];
+
+    final sizedWidgets =
+        widgetInRow.indexed.map(_resizeAndFitCell).toList(growable: false);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        HeaderCell(
-            label: "Name",
-            selected: selectedSort == SortingMethod.name,
-            ascending: ascending,
-            onSort: () => onSort(SortingMethod.name, !ascending)),
-        HeaderCell(
-            label: "Modified Date",
-            numeric: true,
-            selected: selectedSort == SortingMethod.date,
-            ascending: ascending,
-            onSort: () => onSort(SortingMethod.date, !ascending)),
-        HeaderCell(
-            label: "Size",
-            numeric: true,
-            selected: selectedSort == SortingMethod.fileSize,
-            ascending: ascending,
-            onSort: () => onSort(SortingMethod.fileSize, !ascending)),
-        const HeaderCell(label: "Actions"),
-      ],
+      children: sizedWidgets,
     );
+  }
+
+  Widget _resizeAndFitCell(pair) {
+    final (i, x) = pair;
+    final width = columnSizes[i];
+
+    final containerKey = GlobalKey();
+
+    var wrapped = GestureDetector(
+      onHorizontalDragUpdate: (details) {
+        var currentWidth =
+            width ?? containerKey.currentContext?.size?.width ?? 100;
+        double newWidth = currentWidth + details.primaryDelta!;
+        if (newWidth > minCellWidth) {
+          onWidthChanged((i, newWidth));
+        }
+      },
+      child: x,
+    );
+
+    var container = switch (width) {
+      null => Expanded(
+          key: containerKey,
+          flex: 1,
+          child: wrapped,
+        ),
+      _ => SizedBox(
+          key: containerKey,
+          width: width,
+          child: wrapped,
+        )
+    };
+
+    return container;
   }
 }
 
@@ -198,27 +257,38 @@ class HeaderCell extends StatelessWidget {
         ? FluentIcons.arrow_up_24_regular
         : FluentIcons.arrow_down_24_regular;
 
-    return Expanded(
-      child: InkWell(
-        onTap: onSort,
-        child: Container(
-          padding: const EdgeInsets.all(8.0),
-          alignment: Alignment.centerLeft,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-              ),
-              Visibility(
-                visible: selected,
-                child: Icon(
-                  arrowIcon,
-                  size: 20,
-                ),
-              )
-            ],
+    var dividerColor = Theme.of(context).dividerColor;
+
+    return InkWell(
+      onTap: onSort,
+      child: Container(
+        padding: const EdgeInsets.all(8.0),
+        alignment: Alignment.centerLeft,
+        decoration: BoxDecoration(
+          border: Border(
+            left: BorderSide(
+              color: dividerColor,
+            ),
+            right: BorderSide(
+              color: dividerColor,
+            ),
           ),
+          // borderRadius: BorderRadius.horizontal()
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+            ),
+            Visibility(
+              visible: selected,
+              child: Icon(
+                arrowIcon,
+                size: 20,
+              ),
+            )
+          ],
         ),
       ),
     );
@@ -227,10 +297,12 @@ class HeaderCell extends StatelessWidget {
 
 class DataRow extends StatefulWidget {
   final FileBrowserMetadata file;
+  final List<double?> columnSizes;
 
   const DataRow({
     super.key,
     required this.file,
+    required this.columnSizes,
   });
 
   @override
@@ -243,6 +315,30 @@ class _DataRowState extends State<DataRow> {
 
   @override
   Widget build(BuildContext context) {
+    final cells = [
+      _nameCell(widget.file),
+      _dateCell(widget.file),
+      _fileSizeCell(widget.file),
+      _actionsCell(widget.file),
+    ];
+
+    final sizedCells = cells.indexed.map((pair) {
+      final (i, x) = pair;
+
+      final width = widget.columnSizes[i];
+
+      if (width == null) {
+        return Expanded(
+          child: x,
+        );
+      }
+
+      return SizedBox(
+        width: width,
+        child: x,
+      );
+    }).toList(growable: false);
+
     return InkWell(
       onLongPress: () {
         setState(() {
@@ -255,12 +351,7 @@ class _DataRowState extends State<DataRow> {
         height: 40,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: _nameCell(widget.file)),
-            Expanded(child: _dateCell(widget.file)),
-            Expanded(child: _fileSizeCell(widget.file)),
-            Expanded(child: _actionsCell(widget.file)),
-          ],
+          children: sizedCells,
         ),
       ),
     );

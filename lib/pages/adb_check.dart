@@ -65,7 +65,13 @@ class _ADBDownloadDialogState extends State<ADBDownloadDialog> {
     return AlertDialog(
       title: const Text("ADB not found"),
       content: const Text("Do you want to download ADB?"),
-      actions: [TextButton(onPressed: _download, child: const Text("Ok"))],
+      actions: [
+        TextButton(
+          autofocus: true,
+          onPressed: _download,
+          child: const Text("Ok"),
+        )
+      ],
     );
   }
 
@@ -81,7 +87,11 @@ class _ADBDownloadDialogState extends State<ADBDownloadDialog> {
       title: const Text("Suffered error downloading"),
       content: Text(messages),
       actions: [
-        TextButton(onPressed: _continue, child: const Text("Continue anyways"))
+        TextButton(
+          autofocus: true,
+          onPressed: _continue,
+          child: const Text("Continue anyways"),
+        )
       ],
     );
   }

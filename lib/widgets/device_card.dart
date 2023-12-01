@@ -68,6 +68,7 @@ class DeviceCard extends StatelessWidget {
             },
           ),
           TextButton(
+            autofocus: true,
             child: const Text('Ok'),
             onPressed: () {
               Adb.enableWireless(device.serialName);

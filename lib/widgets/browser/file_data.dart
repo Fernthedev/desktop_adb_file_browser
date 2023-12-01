@@ -145,6 +145,7 @@ class _RemoveFileDialog extends StatelessWidget {
       ),
       actions: [
         TextButton(
+          autofocus: true,
           child: const Text('Cancel'),
           onPressed: () {
             Navigator.of(context).pop();

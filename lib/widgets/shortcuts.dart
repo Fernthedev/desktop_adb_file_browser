@@ -1,4 +1,3 @@
-import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:desktop_adb_file_browser/utils/file_sort.dart';
 import 'package:desktop_adb_file_browser/widgets/adaptive/menu_context.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
-import 'package:desktop_adb_file_browser/widgets/conditional.dart';
 import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
@@ -320,7 +319,6 @@ class _DataRowState extends State<DataRow> {
 
 class _ActionsMenu extends StatelessWidget {
   const _ActionsMenu({
-    super.key,
     required this.fileData,
     required this.child,
     required this.menuController,
@@ -401,7 +399,7 @@ class _ActionsMenu extends StatelessWidget {
 }
 
 class _RenameFileDialog extends StatelessWidget {
-  _RenameFileDialog({super.key, required this.file})
+  _RenameFileDialog({required this.file})
       : controller = TextEditingController(text: file.friendlyFileName);
 
   final FileBrowserMetadata file;

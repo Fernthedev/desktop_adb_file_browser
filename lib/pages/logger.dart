@@ -145,13 +145,13 @@ class _LogPageState extends State<LogPage> {
               content: Text(error),
               actions: [
                 TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text("Back")),
+                FilledButton(
                   autofocus: true,
                   onPressed: _queueSave,
                   child: const Text("Save"),
-                ),
-                TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text("Back"))
+                )
               ],
             ));
   }

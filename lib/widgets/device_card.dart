@@ -67,7 +67,7 @@ class DeviceCard extends StatelessWidget {
               Navigator.of(context).pop();
             },
           ),
-          TextButton(
+          FilledButton(
             autofocus: true,
             child: const Text('Ok'),
             onPressed: () {

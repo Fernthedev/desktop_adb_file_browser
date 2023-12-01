@@ -151,7 +151,7 @@ class _RemoveFileDialog extends StatelessWidget {
             Navigator.of(context).pop();
           },
         ),
-        TextButton(
+        FilledButton(
             child: const Text('Ok'),
             onPressed: () async {
               if (isFile) {
@@ -204,7 +204,7 @@ class _RenameFileDialog extends StatelessWidget {
             Navigator.of(context).pop();
           },
         ),
-        TextButton(
+        FilledButton(
           child: const Text('Ok'),
           onPressed: () => _submitRename(context),
         ),

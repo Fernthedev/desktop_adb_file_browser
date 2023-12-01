@@ -515,29 +515,22 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
               Navigator.of(context).pop();
             },
           ),
-          TextButton(
+          FilledButton(
             child: const Text('Ok'),
-            onPressed: () {
+            onPressed: () async {
               var path = Adb.adbPathContext.join(
                   widget._fileBrowser.currentPath, fileNameController.text);
 
-              Future task;
+              Future task = switch (fileCreation.value) {
+                FileCreation.File => Adb.createFile(widget.serial, path),
+                FileCreation.Folder => Adb.createDirectory(widget.serial, path)
+              };
 
-              switch (fileCreation.value) {
-                case FileCreation.File:
-                  task = Adb.createFile(widget.serial, path);
+              await task;
 
-                  break;
-                case FileCreation.Folder:
-                  task = Adb.createDirectory(widget.serial, path);
-                  break;
-              }
-
-              task.then((_) {
-                _refresh();
-
-                Navigator.of(context).pop();
-              });
+              _refresh();
+              if (!context.mounted) return;
+              Navigator.of(context).pop();
             },
           ),
         ],

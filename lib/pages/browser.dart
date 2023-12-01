@@ -616,7 +616,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
               child: FileCardWidget(
             key: ValueKey(file),
             isCard: true,
-            fileWrapper: file,
+            fileData: file,
           ));
         });
   }

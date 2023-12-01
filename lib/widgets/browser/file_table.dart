@@ -1,4 +1,3 @@
-import 'dart:async';
 
 import 'package:desktop_adb_file_browser/utils/file_sort.dart';
 import 'package:desktop_adb_file_browser/widgets/adaptive/menu_context.dart';
@@ -9,8 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class FileDataTable extends StatefulWidget {
-  static const double _iconSplashRadius = 20;
-
   final List<FileBrowserMetadata> originalFileData;
   final ScrollController scrollController;
   const FileDataTable({
@@ -119,8 +116,8 @@ class _FileDataTableState extends State<FileDataTable> {
   }
 
   int _sortByDate(FileBrowserMetadata a, FileBrowserMetadata b) {
-    var modifiedTime1 = a.fileData.modifiedTime;
-    var modifiedTime2 = b.fileData.modifiedTime;
+    var modifiedTime1 = a.modifiedTime;
+    var modifiedTime2 = b.modifiedTime;
     if (modifiedTime1 == null || modifiedTime2 == null) {
       return 0;
     }
@@ -128,8 +125,8 @@ class _FileDataTableState extends State<FileDataTable> {
   }
 
   int _sortBySize(FileBrowserMetadata a, FileBrowserMetadata b) {
-    var modifiedSize1 = a.fileData.fileSize;
-    var modifiedSize2 = b.fileData.fileSize;
+    var modifiedSize1 = a.fileSize;
+    var modifiedSize2 = b.fileSize;
     if (modifiedSize1 == null || modifiedSize2 == null) {
       return 0;
     }
@@ -287,7 +284,7 @@ class _DataRowState extends State<DataRow> {
   Widget _dateCell(FileBrowserMetadata e) {
     String text = "...";
 
-    var date = e.fileData.modifiedTime?.toLocal();
+    var date = e.modifiedTime?.toLocal();
 
     if (date != null) {
       text = defaultDateFormat.format(date);
@@ -300,7 +297,7 @@ class _DataRowState extends State<DataRow> {
   }
 
   Widget _fileSizeCell(FileBrowserMetadata e) {
-    var fileSize = e.fileData.fileSize;
+    var fileSize = e.fileSize;
     final text = fileSize != null ? filesize(fileSize) : "...";
     return Text(
       text,
@@ -323,8 +320,7 @@ class _ActionsMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isFile = !fileData.fileData.isDirectory;
-    final isDir = fileData.fileData.isDirectory;
+    final isFile = !fileData.isDirectory;
 
     var menus = [
       MenuItemButton(

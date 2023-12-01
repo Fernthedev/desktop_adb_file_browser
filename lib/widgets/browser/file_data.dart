@@ -16,7 +16,7 @@ typedef WatchFileCallback = Future<void> Function(
     String source, String savePath);
 
 @immutable
-class FileBrowserMetadata with FileDataState {
+class FileBrowserMetadata {
   final DateTime? modifiedTime;
   final int? fileSize;
   final String fullFilePath;
@@ -34,46 +34,37 @@ class FileBrowserMetadata with FileDataState {
     required this.serial,
     required this.onWatch,
   });
-
-  @override
-  // TODO: implement fileData
-  FileBrowserMetadata get fileData => this;
 }
 
-mixin FileDataState {
-  FileBrowserMetadata get fileData;
-
+extension FileDataState on FileBrowserMetadata {
   /// Just the file name
-  String get friendlyFileName =>
-      Adb.adbPathContext.basename(fileData.fullFilePath);
+  String get friendlyFileName => Adb.adbPathContext.basename(fullFilePath);
 
   Future<void> copyPathToClipboard() {
-    return FlutterClipboard.copy(fileData.fullFilePath);
+    return FlutterClipboard.copy(fullFilePath);
   }
 
   IconData getIcon() {
-    return fileData.isDirectory
-        ? Icons.folder
-        : FluentIcons.document_48_regular;
+    return isDirectory ? Icons.folder : FluentIcons.document_48_regular;
   }
 
   void navigateToDir() {
-    if (!fileData.isDirectory) {
+    if (!isDirectory) {
       return;
     }
 
-    fileData.browser.navigateToDirectory(fileData.fullFilePath);
+    browser.navigateToDirectory(fullFilePath);
   }
 
   Future<void> openTempFile() async {
-    String questPath = fileData.fullFilePath;
+    String questPath = fullFilePath;
     String fileName = friendlyFileName;
 
     var temp = await getTemporaryDirectory();
     var randomName = "${Random().nextInt(10000)}$fileName";
 
     var dest = Adb.hostPath.join(temp.path, randomName);
-    await Adb.downloadFile(fileData.serial, questPath, dest);
+    await Adb.downloadFile(serial, questPath, dest);
 
     StreamSubscription? subscription;
     subscription = Watcher(dest).events.listen((event) async {
@@ -82,7 +73,7 @@ mixin FileDataState {
       }
 
       if (event.type == ChangeType.MODIFY) {
-        await Adb.uploadFile(fileData.serial, dest, questPath);
+        await Adb.uploadFile(serial, dest, questPath);
       }
     });
 
@@ -92,25 +83,23 @@ mixin FileDataState {
   Future<void> renameFileDialog(BuildContext context) async {
     await showDialog<void>(
         context: context,
-        builder: ((context) => _RenameFileDialog(file: fileData)));
+        builder: ((context) => _RenameFileDialog(file: this)));
   }
 
   Future<void> removeFileDialog(BuildContext context) async {
     await showDialog<void>(
         context: context,
-        builder: ((context) => _RemoveFileDialog(
-              file: fileData,
-            )));
+        builder: ((context) => _RemoveFileDialog(file: this)));
   }
 
   Future<String?> saveFileToDesktop() async {
-    String source = fileData.fullFilePath;
+    String source = fullFilePath;
 
     final savePath = await getSaveLocation(suggestedName: friendlyFileName);
 
     if (savePath == null) return null;
 
-    await Adb.downloadFile(fileData.serial, source, savePath.path);
+    await Adb.downloadFile(serial, source, savePath.path);
     return savePath.path;
   }
 
@@ -119,13 +108,13 @@ mixin FileDataState {
     if (savePath == null) {
       return;
     }
-    return fileData.onWatch(fileData.fullFilePath, savePath);
+    return onWatch(fullFilePath, savePath);
   }
 
   /// return true if modified
   Future<bool> renameFile(String newName) async {
-    String source = fileData.fullFilePath;
-    var task = Adb.moveFile(fileData.serial, source,
+    String source = fullFilePath;
+    var task = Adb.moveFile(serial, source,
         Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
 
     await task;
@@ -136,7 +125,6 @@ mixin FileDataState {
 
 class _RemoveFileDialog extends StatelessWidget {
   const _RemoveFileDialog({
-    super.key,
     required this.file,
   });
   final FileBrowserMetadata file;

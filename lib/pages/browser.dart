@@ -109,11 +109,20 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
                 _fileActions()
               ],
             ),
-            leading: IconButton(
-              icon: const Icon(FluentIcons.chevron_left_24_filled),
-              onPressed: () {
-                Routemaster.of(context).history.back();
-              },
+            leading: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Ink(
+                decoration: ShapeDecoration(
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                  shape: const CircleBorder(),
+                ),
+                child: IconButton(
+                  icon: const Icon(FluentIcons.cube_24_regular),
+                  onPressed: () {
+                    Routemaster.of(context).history.back();
+                  },
+                ),
+              ),
             ),
             actions: [
               //

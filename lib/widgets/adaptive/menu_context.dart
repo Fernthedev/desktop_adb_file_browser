@@ -17,46 +17,21 @@ class AdaptiveContextualMenu extends StatelessWidget {
   final FocusNode? focusNode;
   final MenuController? menuController;
 
-  // bool _menuWasEnabled = false;
-
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _disableContextMenu();
-  // }
-
-  // Future<void> _disableContextMenu() async {
-  //   if (!kIsWeb) {
-  //     // Does nothing on non-web platforms.
-  //     return;
-  //   }
-  //   _menuWasEnabled = BrowserContextMenu.enabled;
-  //   if (_menuWasEnabled) {
-  //     await BrowserContextMenu.disableContextMenu();
-  //   }
-  // }
-
-  // void _reenableContextMenu() {
-  //   if (!kIsWeb) {
-  //     // Does nothing on non-web platforms.
-  //     return;
-  //   }
-  //   if (_menuWasEnabled && !BrowserContextMenu.enabled) {
-  //     BrowserContextMenu.enableContextMenu();
-  //   }
-  // }
-
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTapDown: _handleTapDown,
-      onSecondaryTapDown: _handleSecondaryTapDown,
-      child: MenuAnchor(
-        controller: menuController,
-        anchorTapClosesMenu: true,
-        menuChildren: menuChildren,
-        childFocusNode: focusNode,
-        child: child,
+    return Focus(
+      canRequestFocus: false,
+      onKeyEvent: _onKeyEvent,
+      child: GestureDetector(
+        onTapDown: _handleTapDown,
+        onSecondaryTapDown: _handleSecondaryTapDown,
+        child: MenuAnchor(
+          consumeOutsideTap: false,
+          controller: menuController,
+          menuChildren: menuChildren,
+          childFocusNode: focusNode,
+          child: child,
+        ),
       ),
     );
   }
@@ -85,5 +60,18 @@ class AdaptiveContextualMenu extends StatelessWidget {
           menuController?.open(position: details.localPosition);
         }
     }
+  }
+
+  KeyEventResult _onKeyEvent(FocusNode node, KeyEvent event) {
+    if (node.hasFocus) {
+      final isCtrl = HardwareKeyboard.instance.logicalKeysPressed
+          .contains(LogicalKeyboardKey.controlLeft) || HardwareKeyboard.instance.logicalKeysPressed
+              .contains(LogicalKeyboardKey.controlRight);
+      if (event.logicalKey == LogicalKeyboardKey.enter && isCtrl) {
+        menuController?.open();
+      }
+    }
+
+    return KeyEventResult.ignored;
   }
 }

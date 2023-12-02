@@ -1,4 +1,3 @@
-
 import 'package:desktop_adb_file_browser/utils/file_sort.dart';
 import 'package:desktop_adb_file_browser/widgets/adaptive/menu_context.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
@@ -49,32 +48,48 @@ class _FileDataTableState extends State<FileDataTable> {
       );
     }
 
-    return ListView.separated(
-      // + 1 for the header row
-      controller: widget.scrollController,
-      // shrinkWrap: true,
-      addAutomaticKeepAlives: true,
-      itemCount: sortedFileData!.length + 1,
-      separatorBuilder: (c, index) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          // Header row
-          return TableHeaderRow(
-            key: _headerRowKey,
-            onSort: _onSort,
-            ascending: ascending,
-            selectedSort: sort,
-          );
-        }
+    return FocusTraversalGroup(
+      descendantsAreFocusable: true,
+      descendantsAreTraversable: true,
+      child: ListView.separated(
+        // improve list reorder performance
+        findChildIndexCallback: _childIndexFinder,
+        controller: widget.scrollController,
+        cacheExtent: 1,
+        // shrinkWrap: true,
+        // addAutomaticKeepAlives: true,
+        // + 1 for the header row
+        itemCount: sortedFileData!.length + 1,
+        separatorBuilder: (c, index) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            // Header row
+            return TableHeaderRow(
+              key: _headerRowKey,
+              onSort: _onSort,
+              ascending: ascending,
+              selectedSort: sort,
+            );
+          }
 
-        // Data rows
-        final file = sortedFileData![index - 1];
-        return DataRow(
-          file: file,
-          key: ValueKey(file.friendlyFileName),
-        );
-      },
+          // Data rows
+          final file = sortedFileData![index - 1];
+          return DataRow(
+            key: ValueKey(file.friendlyFileName),
+            file: file,
+          );
+        },
+      ),
     );
+  }
+
+  int? _childIndexFinder(key) {
+    // if key is header row, just return 0
+    if (key is! ValueKey || key == _headerRowKey) {
+      return 0;
+    }
+
+    return sortedFileData?.indexWhere((e) => e.friendlyFileName == key.value);
   }
 
   void _onSort(SortingMethod s, bool a) async {
@@ -236,15 +251,28 @@ class DataRow extends StatefulWidget {
 class _DataRowState extends State<DataRow> {
   bool downloading = false;
   final MenuController _menuController = MenuController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    // if (_menuController.isOpen) {
+    //   _menuController.close();
+    // }
+    _focusNode.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return _ActionsMenu(
+      childFocusNode: _focusNode,
       fileData: widget.file,
       menuController: _menuController,
       child: InkWell(
+        focusNode: _focusNode,
         // onLongPress: _renameDialog,
-        onTap: () => widget.file.navigateToDir(),
+        onTap: widget.file.navigateToDir,
         child: SizedBox(
           height: 40,
           child: Row(
@@ -312,11 +340,13 @@ class _ActionsMenu extends StatelessWidget {
     required this.fileData,
     required this.child,
     required this.menuController,
+    required this.childFocusNode,
   });
 
   final FileBrowserMetadata fileData;
   final Widget child;
   final MenuController menuController;
+  final FocusNode childFocusNode;
 
   @override
   Widget build(BuildContext context) {
@@ -329,6 +359,7 @@ class _ActionsMenu extends StatelessWidget {
         ),
         // TODO: Add user feedback when this occurs
         onPressed: fileData.copyPathToClipboard,
+        autoFocus: true,
         child: const Text("Copy to clipboard"),
       ),
       MenuItemButton(
@@ -374,8 +405,8 @@ class _ActionsMenu extends StatelessWidget {
     return AdaptiveContextualMenu(
       menuChildren: menus,
       menuController: menuController,
+      focusNode: childFocusNode,
       child: child,
     );
   }
 }
-

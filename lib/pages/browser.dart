@@ -57,11 +57,6 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   void initState() {
     super.initState();
 
-    _filterController.addListener(() {
-      // update our search
-      setState(() {});
-    });
-
     _addressController.text =
         Adb.fixPath(widget.initialAddress, addQuotes: false);
 
@@ -271,6 +266,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
           return GridTile(
               child: FileCardWidget(
             key: ValueKey(file),
+            onWatch: () => _watchFile(file),
             isCard: true,
             fileWrapper: file,
           ));
@@ -285,6 +281,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
       alignment: Alignment.topCenter,
       child: FileDataTable(
         key: ValueKey(files),
+        onWatch: _watchFile,
         originalFileData: files,
       ),
     );
@@ -366,7 +363,6 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             fileSize: e.size,
             fullFilePath: e.path,
             isDirectory: e.path.endsWith("/"),
-            onWatch: _watchFile,
             serial: widget.serial,
           );
         }).toList(growable: false));
@@ -376,7 +372,14 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     });
   }
 
-  Future<void> _watchFile(String source, String savePath) async {
+  Future<void> _watchFile(FileBrowserMetadata fileData) async {
+    String? savePath = await fileData.saveFileToDesktop();
+    if (savePath == null) {
+      return;
+    }
+
+    var source = fileData.fullFilePath;
+
     onWatchAdd.invoke(Tuple2(savePath, source));
   }
 }

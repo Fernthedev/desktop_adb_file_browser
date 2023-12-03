@@ -7,6 +7,7 @@ class FileCardWidget extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
   final FileBrowserMetadata fileWrapper;
+  final void Function() onWatch;
 
   final bool isCard;
 
@@ -14,6 +15,7 @@ class FileCardWidget extends StatefulWidget {
     super.key,
     required this.fileWrapper,
     required this.isCard,
+    required this.onWatch,
   });
 
   @override
@@ -60,7 +62,7 @@ class _FileCardWidgetState extends State<FileCardWidget> {
                     : IconButton(
                         icon:
                             const Icon(FluentIcons.glasses_24_filled, size: 24),
-                        onPressed: widget.fileWrapper.watchFile,
+                        onPressed: () => widget.onWatch(),
                         splashRadius: FileCardWidget._iconSplashRadius,
                         tooltip: "Watch",
                       ),

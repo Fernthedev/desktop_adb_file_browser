@@ -13,9 +13,12 @@ class FileDataTable extends StatefulWidget {
 
   final List<FileBrowserMetadata> originalFileData;
   final ScrollController? scrollController;
+  final void Function(FileBrowserMetadata) onWatch;
+
   const FileDataTable({
     super.key,
     required this.originalFileData,
+    required this.onWatch,
     this.scrollController,
   });
 
@@ -81,8 +84,9 @@ class _FileDataTableState extends State<FileDataTable> {
         // Data rows
         final file = sortedFileData![index - 1];
         return DataRow(
-          file: file,
           key: ValueKey(file.friendlyFileName),
+          onWatch: () => widget.onWatch(file),
+          file: file,
         );
       },
     );
@@ -150,11 +154,12 @@ class TableHeaderRow extends StatelessWidget {
   final bool ascending;
   final SortingMethod selectedSort;
 
-  const TableHeaderRow(
-      {super.key,
-      required this.onSort,
-      required this.ascending,
-      required this.selectedSort});
+  const TableHeaderRow({
+    super.key,
+    required this.onSort,
+    required this.ascending,
+    required this.selectedSort,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -235,10 +240,12 @@ class HeaderCell extends StatelessWidget {
 
 class DataRow extends StatefulWidget {
   final FileBrowserMetadata file;
+  final void Function() onWatch;
 
   const DataRow({
     super.key,
     required this.file,
+    required this.onWatch,
   });
 
   @override
@@ -321,7 +328,10 @@ class _DataRowState extends State<DataRow> {
   }
 
   Widget _actionsCell(FileBrowserMetadata e) {
-    return _ActionsCell(fileData: e);
+    return _ActionsCell(
+      fileData: e,
+      onWatch: widget.onWatch,
+    );
   }
 
   Future<void> _renameDialog(FileBrowserMetadata fileDataWrapper) async {
@@ -386,19 +396,16 @@ class _DataRowState extends State<DataRow> {
   }
 }
 
-class _ActionsCell extends StatefulWidget {
+class _ActionsCell extends StatelessWidget {
   const _ActionsCell({
     super.key,
     required this.fileData,
+    required this.onWatch,
   });
 
   final FileBrowserMetadata fileData;
+  final void Function() onWatch;
 
-  @override
-  State<_ActionsCell> createState() => _ActionsCellState();
-}
-
-class _ActionsCellState extends State<_ActionsCell> {
   @override
   Widget build(BuildContext context) {
     const tooltipDuration = Duration(milliseconds: 500);
@@ -407,30 +414,28 @@ class _ActionsCellState extends State<_ActionsCell> {
       // icons
       ConditionalWidget(
         size: null,
-        show: !widget.fileData.fileData.isDirectory,
+        show: !fileData.fileData.isDirectory,
         child: () {
           return Tooltip(
             message: "Watch changes (desktop -> device)",
             waitDuration: tooltipDuration,
             child: IconButton(
               icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
-              onPressed: () async {
-                await widget.fileData.watchFile();
-              },
+              onPressed: onWatch,
               splashRadius: FileDataTable._iconSplashRadius,
             ),
           );
         },
       ),
       ConditionalWidget(
-          show: !widget.fileData.fileData.isDirectory,
+          show: !fileData.fileData.isDirectory,
           size: null,
           child: () => Tooltip(
                 message: "Open (temp)",
                 waitDuration: tooltipDuration,
                 child: IconButton(
                   icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                  onPressed: widget.fileData.openTempFile,
+                  onPressed: fileData.openTempFile,
                   splashRadius: FileDataTable._iconSplashRadius,
                 ),
               )),
@@ -439,9 +444,7 @@ class _ActionsCellState extends State<_ActionsCell> {
         message: "Download",
         child: IconButton(
           icon: const Icon(Icons.download_rounded, size: 24),
-          onPressed: () async {
-            await widget.fileData.saveFileToDesktop();
-          },
+          onPressed: fileData.saveFileToDesktop,
           enableFeedback: false,
           splashRadius: FileDataTable._iconSplashRadius,
         ),
@@ -453,7 +456,7 @@ class _ActionsCellState extends State<_ActionsCell> {
         child: IconButton(
           // TODO: Add user feedback when this occurs
           icon: const Icon(Icons.copy),
-          onPressed: widget.fileData.copyPathToClipboard,
+          onPressed: fileData.copyPathToClipboard,
           splashRadius: FileDataTable._iconSplashRadius,
         ),
       ),
@@ -463,7 +466,7 @@ class _ActionsCellState extends State<_ActionsCell> {
         waitDuration: tooltipDuration,
         child: IconButton(
           icon: const Icon(Icons.delete_forever),
-          onPressed: () => widget.fileData.removeFileDialog(context),
+          onPressed: () => fileData.removeFileDialog(context),
           splashRadius: FileDataTable._iconSplashRadius,
         ),
       ),

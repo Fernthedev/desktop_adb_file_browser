@@ -13,7 +13,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:watcher/watcher.dart';
 
 typedef WatchFileCallback = Future<void> Function(
-    String source, String savePath);
+    FileBrowserMetadata fileData);
 
 @immutable
 class FileBrowserMetadata with FileDataState {
@@ -23,7 +23,6 @@ class FileBrowserMetadata with FileDataState {
   final bool isDirectory;
   final FileBrowser browser;
   final String serial;
-  final WatchFileCallback onWatch;
 
   const FileBrowserMetadata({
     required this.fullFilePath,
@@ -32,7 +31,6 @@ class FileBrowserMetadata with FileDataState {
     required this.modifiedTime,
     required this.fileSize,
     required this.serial,
-    required this.onWatch,
   });
 
   @override
@@ -140,13 +138,6 @@ mixin FileDataState {
     return savePath.path;
   }
 
-  Future<void> watchFile() async {
-    String? savePath = await saveFileToDesktop();
-    if (savePath == null) {
-      return;
-    }
-    return fileData.onWatch(fileData.fullFilePath, savePath);
-  }
 
   /// return true if modified
   Future<bool> renameFile(String newName) async {

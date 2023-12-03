@@ -719,7 +719,7 @@ class _NewFileDialogState extends State<NewFileDialog> {
       },
     );
 
-    var confirmButton = TextButton(
+    var confirmButton = FilledButton(
       child: const Text('Ok'),
       onPressed: () {
         var path = Adb.adbPathContext

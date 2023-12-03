@@ -116,18 +116,7 @@ class _LogPageState extends State<LogPage> {
         padding: const EdgeInsets.all(8.0),
         child: Visibility(
           visible: showLogs,
-          replacement: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(8.0),
-                  child: CircularProgressIndicator(),
-                ),
-                Text("Reading from logcat")
-              ],
-            ),
-          ),
+          replacement: _loadingSpinner(),
           child: Container(
             color: Theme.of(context).colorScheme.background,
             child: buildList(),
@@ -135,6 +124,21 @@ class _LogPageState extends State<LogPage> {
         ),
       ),
     );
+  }
+
+  Widget _loadingSpinner() {
+    return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Padding(
+                padding: EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
+              ),
+              Text("Reading from logcat")
+            ],
+          ),
+        );
   }
 
   Future<AlertDialog?> _showError(String error) {
@@ -166,6 +170,8 @@ class _LogPageState extends State<LogPage> {
             key: ValueKey(index),
           )),
       itemCount: logs.length,
+      findChildIndexCallback: (key) => (key as ValueKey).value,
+      prototypeItem: const SelectableText(""),
     );
   }
 

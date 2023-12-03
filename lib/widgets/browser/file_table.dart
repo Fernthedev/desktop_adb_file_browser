@@ -7,11 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class FileDataTable extends StatefulWidget {
-  final List<FileBrowserMetadata> originalFileData;
+  final List<FileBrowserMetadata> files;
   final ScrollController? scrollController;
+  final void Function(FileBrowserMetadata) onWatch;
+
   const FileDataTable({
     super.key,
-    required this.originalFileData,
+    required this.files,
+    required this.onWatch,
     this.scrollController,
   });
 
@@ -43,7 +46,7 @@ class _FileDataTableState extends State<FileDataTable> {
   @override
   void didUpdateWidget(covariant FileDataTable oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.originalFileData != widget.originalFileData) {
+    if (oldWidget.files != widget.files) {
       _onSort(sort, ascending);
     }
   }
@@ -84,6 +87,7 @@ class _FileDataTableState extends State<FileDataTable> {
           final file = sortedFileData![index - 1];
           return DataRow(
             key: ValueKey(file.friendlyFileName),
+            onWatch: () => widget.onWatch(file),
             file: file,
           );
         },
@@ -121,7 +125,7 @@ class _FileDataTableState extends State<FileDataTable> {
       SortingMethod.fileSize => _sortBySize,
     };
 
-    var tempSorted = widget.originalFileData.toList(growable: false);
+    var tempSorted = widget.files.toList(growable: false);
     // Reverse
     if (!ascending) {
       var oldSortMethod = sortMethod;
@@ -162,11 +166,12 @@ class TableHeaderRow extends StatelessWidget {
   final bool ascending;
   final SortingMethod selectedSort;
 
-  const TableHeaderRow(
-      {super.key,
-      required this.onSort,
-      required this.ascending,
-      required this.selectedSort});
+  const TableHeaderRow({
+    super.key,
+    required this.onSort,
+    required this.ascending,
+    required this.selectedSort,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -246,10 +251,12 @@ class HeaderCell extends StatelessWidget {
 
 class DataRow extends StatefulWidget {
   final FileBrowserMetadata file;
+  final void Function() onWatch;
 
   const DataRow({
     super.key,
     required this.file,
+    required this.onWatch,
   });
 
   @override
@@ -277,6 +284,7 @@ class _DataRowState extends State<DataRow> {
       childFocusNode: _focusNode,
       fileData: widget.file,
       menuController: _menuController,
+      onWatch: widget.onWatch,
       child: InkWell(
         focusNode: _focusNode,
         // onLongPress: _renameDialog,
@@ -349,12 +357,14 @@ class _ActionsMenu extends StatelessWidget {
     required this.child,
     required this.menuController,
     required this.childFocusNode,
+    required this.onWatch,
   });
 
   final FileBrowserMetadata fileData;
   final Widget child;
   final MenuController menuController;
   final FocusNode childFocusNode;
+  final void Function() onWatch;
 
   @override
   Widget build(BuildContext context) {
@@ -392,7 +402,7 @@ class _ActionsMenu extends StatelessWidget {
       final fileActions = [
         MenuItemButton(
             leadingIcon: const Icon(FluentIcons.glasses_24_filled, size: 24),
-            onPressed: fileData.watchFile,
+            onPressed: onWatch,
             child: const Text("Watch changes (desktop -> device)")),
         MenuItemButton(
             leadingIcon: const Icon(FluentIcons.open_24_filled, size: 24),

@@ -272,7 +272,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
               child: FileCardWidget(
             key: ValueKey(file),
             isCard: true,
-            fileWrapper: file,
+            fileData: file,
           ));
         });
   }
@@ -305,8 +305,8 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
           child: TabBarView(
             children: [
               ShortcutsListWidget(
-                currentPath: widget._fileBrowser.currentPath,
-                onTap: widget._fileBrowser.navigateToDirectory,
+                currentPath: _fileBrowser.currentPath,
+                onTap: _fileBrowser.navigateToDirectory,
               ),
               FileWatcherList(serial: widget.serial, onUpdate: onWatchAdd)
             ],
@@ -337,7 +337,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             FluentIcons.arrow_left_20_regular,
           ),
           onPressed: () {
-            widget._fileBrowser.back();
+            _fileBrowser.back();
           },
         ),
         IconButton(
@@ -346,7 +346,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             FluentIcons.arrow_right_20_regular,
           ),
           onPressed: () {
-            widget._fileBrowser.forward();
+            _fileBrowser.forward();
           },
         ),
         IconButton(
@@ -355,8 +355,8 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             FluentIcons.folder_arrow_up_20_regular,
           ),
           onPressed: () {
-            widget._fileBrowser.navigateToDirectory(
-                Adb.adbPathContext.dirname(widget._fileBrowser.currentPath));
+            _fileBrowser.navigateToDirectory(
+                Adb.adbPathContext.dirname(_fileBrowser.currentPath));
           },
         ),
         IconButton(
@@ -385,7 +385,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
 
     var filesFuture = future.then((list) => list.map((e) {
           return FileBrowserMetadata(
-            browser: widget._fileBrowser,
+            browser: _fileBrowser,
             modifiedTime: e.date,
             fileSize: e.size,
             fullFilePath: e.path,
@@ -401,7 +401,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   }
 
   void _refresh() {
-    _onNavigate(widget._fileBrowser.currentPath);
+    _onNavigate(_fileBrowser.currentPath);
   }
 
   Future<void> _showNewFileDialog() async {
@@ -412,43 +412,9 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     await showDialog<void>(
       context: context,
       barrierDismissible: true, // user must tap button!
-      builder: (BuildContext context) => AlertDialog(
-        title: const Text('Create new file'),
-        content: NewFileDialog(
-          fileNameController: fileNameController,
-          fileCreation: fileCreation,
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          FilledButton(
-            child: const Text('Ok'),
-            onPressed: () async {
-              var path = Adb.adbPathContext.join(
-                  widget._fileBrowser.currentPath, fileNameController.text);
-
-              Future task = switch (fileCreation.value) {
-                FileCreation.File => Adb.createFile(widget.serial, path),
-                FileCreation.Folder => Adb.createDirectory(widget.serial, path)
-              };
-
-              await task;
-
-              _refresh();
-              if (!context.mounted) return;
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
-      ),
+      builder: (BuildContext context) =>
+          NewFileDialog(fileBrowser: _fileBrowser, serial: widget.serial),
     );
-
-    fileNameController.dispose();
-    fileCreation.dispose();
   }
 
   void _uploadFiles(Iterable<String> paths) async {
@@ -497,36 +463,6 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
 
     await Future.delayed(const Duration(seconds: 4));
     snackBar.close();
-  }
-
-  void _onNavigate(String newPath) {
-    if (!context.mounted) return;
-
-    Trace.verbose("Loading $newPath");
-    // final token = ServicesBinding.rootIsolateToken;
-    // var future = compute((message) {
-    //   // why is this necessary?
-    //   BackgroundIsolateBinaryMessenger.ensureInitialized(message.item3!);
-
-    //   return Adb.getFilesInDirectory(message.item1, message.item2);
-    // }, Tuple3(widget.serial, newPath, token));
-    var future = Adb.getFilesInDirectory(widget.serial, newPath);
-
-    var filesFuture = future.then((list) => list.map((e) {
-          return FileBrowserMetadata(
-            browser: _fileBrowser,
-            modifiedTime: e.date,
-            fileSize: e.size,
-            fullFilePath: e.path,
-            isDirectory: e.path.endsWith("/"),
-            onWatch: _watchFile,
-            serial: widget.serial,
-          );
-        }).toList(growable: false));
-
-    setState(() {
-      _fileListingFuture = filesFuture;
-    });
   }
 
   Future<void> _watchFile(String source, String savePath) async {

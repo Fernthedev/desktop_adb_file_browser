@@ -13,6 +13,7 @@ import 'package:path/path.dart' as host_path;
 
 import 'package:path_provider/path_provider.dart';
 import 'package:trace/trace.dart';
+import 'package:tuple/tuple.dart';
 
 typedef DownloadProgressCallback = void Function(int current, int total);
 
@@ -303,15 +304,15 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
         .toList(growable: false);
   }
 
-  static Future<Stream<String>> logcat(String? serialName) async {
+  static Future<(Process, Stream<String>)> logcat(String? serialName) async {
     await runAdbCommand(serialName, ["logcat", "-c"]); // flush
 
     var result = await startAdbCommand(serialName, ["logcat"]);
 
-    return StreamGroup.mergeBroadcast([
+    return (result, StreamGroup.mergeBroadcast([
       result.stderr.transform(utf8.decoder),
       result.stdout.transform(utf8.decoder),
-    ]);
+    ]));
     // .transform(const LineSplitter());
   }
 

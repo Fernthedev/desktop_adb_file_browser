@@ -12,18 +12,22 @@ import 'package:trace/trace.dart';
 import '../utils/scroll.dart';
 
 class LogPage extends StatefulWidget {
-  LogPage({super.key, required String serial}) : logFuture = Adb.logcat(serial);
+  LogPage({super.key, required this.serial});
 
-  final Future<Stream<String>> logFuture;
-  final scrollController = AdjustableScrollController();
+  final String serial;
 
   @override
   State<LogPage> createState() => _LogPageState();
 }
 
 class _LogPageState extends State<LogPage> {
-  final List<String> logs = [];
-  bool showLogs = false;
+  final List<String> _logs = [];
+  final UniqueKey _listKey = UniqueKey();
+  final _scrollController = AdjustableScrollController();
+
+  late final Future<(Process, Stream<String>)> _logFuture =
+      Adb.logcat(widget.serial);
+  bool _showLogs = false;
   StreamSubscription<String>? _streamSubscription;
 
   // Since Dart can't keep up fast enough with logcat when spammed,
@@ -35,14 +39,15 @@ class _LogPageState extends State<LogPage> {
   @override
   void initState() {
     super.initState();
-    widget.logFuture.then((stream) {
+    _logFuture.then((values) {
+      final (process, stream) = values;
       try {
         _streamSubscription = stream.listen((event) {
           setState(() {
             var newLogs = event
                 .split(PlatformUtils.platformFileEnding)
                 .where((element) => element.trim().isNotEmpty);
-            logs.addAll(newLogs);
+            _logs.addAll(newLogs);
 
             if (waitForSave) {
               var timeSinceSend = DateTime.now().difference(lastStreamSend);
@@ -77,6 +82,10 @@ class _LogPageState extends State<LogPage> {
   void dispose() {
     super.dispose();
     _streamSubscription?.cancel();
+    _logFuture.then((value) {
+      final (process, _) = value;
+      process.kill();
+    });
   }
 
   @override
@@ -106,16 +115,16 @@ class _LogPageState extends State<LogPage> {
           Padding(
               padding: const EdgeInsets.all(8.0),
               child: Switch(
-                  value: showLogs,
+                  value: _showLogs,
                   onChanged: (v) => setState(() {
-                        showLogs = v;
+                        _showLogs = v;
                       })))
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Visibility(
-          visible: showLogs,
+          visible: _showLogs,
           replacement: _loadingSpinner(),
           child: Container(
             color: Theme.of(context).colorScheme.background,
@@ -128,17 +137,17 @@ class _LogPageState extends State<LogPage> {
 
   Widget _loadingSpinner() {
     return const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(),
-              ),
-              Text("Reading from logcat")
-            ],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(),
           ),
-        );
+          Text("Reading from logcat")
+        ],
+      ),
+    );
   }
 
   Future<AlertDialog?> _showError(String error) {
@@ -162,14 +171,14 @@ class _LogPageState extends State<LogPage> {
     }
 
     return ListView.builder(
-      key: ValueKey(logs.length),
+      key: _listKey,
       shrinkWrap: true,
-      controller: widget.scrollController,
+      controller: _scrollController,
       itemBuilder: ((context, index) => SelectableText(
-            logs[index],
+            _logs[index],
             key: ValueKey(index),
           )),
-      itemCount: logs.length,
+      itemCount: _logs.length,
       findChildIndexCallback: (key) => (key as ValueKey).value,
       prototypeItem: const SelectableText(""),
     );
@@ -188,7 +197,7 @@ class _LogPageState extends State<LogPage> {
     var file = File(path.path);
     var writer = file.openWrite();
 
-    writer.writeAll(logs, PlatformUtils.platformFileEnding);
+    writer.writeAll(_logs, PlatformUtils.platformFileEnding);
     await writer.flush();
     await writer.close();
 

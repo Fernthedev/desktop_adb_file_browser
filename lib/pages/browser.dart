@@ -298,125 +298,6 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
         (element) => element.fullFilePath.toLowerCase().contains(filter));
   }
 
-  Column _leftPanel() {
-    return Column(
-      children: [
-        Expanded(
-          child: TabBarView(
-            children: [
-              ShortcutsListWidget(
-                currentPath: _fileBrowser.currentPath,
-                onTap: _fileBrowser.navigateToDirectory,
-              ),
-              FileWatcherList(serial: widget.serial, onUpdate: onWatchAdd)
-            ],
-          ),
-        ),
-        const TabBar(tabs: [
-          Tab(
-              icon: Icon(
-            FluentIcons.bookmark_20_filled,
-            size: 20,
-          )),
-          Tab(
-              icon: Icon(
-            FluentIcons.glasses_20_filled,
-            size: 20,
-          ))
-        ]),
-      ],
-    );
-  }
-
-  Wrap _navigationActions() {
-    return Wrap(
-      children: [
-        IconButton(
-          splashRadius: 20,
-          icon: const Icon(
-            FluentIcons.arrow_left_20_regular,
-          ),
-          onPressed: () {
-            _fileBrowser.back();
-          },
-        ),
-        IconButton(
-          splashRadius: 20,
-          icon: const Icon(
-            FluentIcons.arrow_right_20_regular,
-          ),
-          onPressed: () {
-            _fileBrowser.forward();
-          },
-        ),
-        IconButton(
-          splashRadius: 20,
-          icon: const Icon(
-            FluentIcons.folder_arrow_up_20_regular,
-          ),
-          onPressed: () {
-            _fileBrowser.navigateToDirectory(
-                Adb.adbPathContext.dirname(_fileBrowser.currentPath));
-          },
-        ),
-        IconButton(
-          splashRadius: 20,
-          icon: const Icon(FluentIcons.arrow_clockwise_20_regular),
-          onPressed: () {
-            _refresh();
-          },
-        ),
-      ],
-    );
-  }
-
-  void _onNavigate(String newPath) {
-    if (!context.mounted) return;
-
-    Trace.verbose("Loading $newPath");
-    // final token = ServicesBinding.rootIsolateToken;
-    // var future = compute((message) {
-    //   // why is this necessary?
-    //   BackgroundIsolateBinaryMessenger.ensureInitialized(message.item3!);
-
-    //   return Adb.getFilesInDirectory(message.item1, message.item2);
-    // }, Tuple3(widget.serial, newPath, token));
-    var future = Adb.getFilesInDirectory(widget.serial, newPath);
-
-    var filesFuture = future.then((list) => list.map((e) {
-          return FileBrowserMetadata(
-            browser: _fileBrowser,
-            modifiedTime: e.date,
-            fileSize: e.size,
-            fullFilePath: e.path,
-            isDirectory: e.path.endsWith("/"),
-            onWatch: _watchFile,
-            serial: widget.serial,
-          );
-        }).toList(growable: false));
-
-    setState(() {
-      _fileListingFuture = filesFuture;
-    });
-  }
-
-  void _refresh() {
-    _onNavigate(_fileBrowser.currentPath);
-  }
-
-  Future<void> _showNewFileDialog() async {
-    final TextEditingController fileNameController = TextEditingController();
-    final ValueNotifier<FileCreation> fileCreation =
-        ValueNotifier(FileCreation.File);
-
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: true, // user must tap button!
-      builder: (BuildContext context) =>
-          NewFileDialog(fileBrowser: _fileBrowser, serial: widget.serial),
-    );
-  }
-
   void _uploadFiles(Iterable<String> paths) async {
     Trace.verbose("Uploading $paths");
     var tasks = paths.map((path) {
@@ -463,6 +344,36 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
 
     await Future.delayed(const Duration(seconds: 4));
     snackBar.close();
+  }
+
+  void _onNavigate(String newPath) {
+    if (!context.mounted) return;
+
+    Trace.verbose("Loading $newPath");
+    // final token = ServicesBinding.rootIsolateToken;
+    // var future = compute((message) {
+    //   // why is this necessary?
+    //   BackgroundIsolateBinaryMessenger.ensureInitialized(message.item3!);
+
+    //   return Adb.getFilesInDirectory(message.item1, message.item2);
+    // }, Tuple3(widget.serial, newPath, token));
+    var future = Adb.getFilesInDirectory(widget.serial, newPath);
+
+    var filesFuture = future.then((list) => list.map((e) {
+          return FileBrowserMetadata(
+            browser: _fileBrowser,
+            modifiedTime: e.date,
+            fileSize: e.size,
+            fullFilePath: e.path,
+            isDirectory: e.path.endsWith("/"),
+            onWatch: _watchFile,
+            serial: widget.serial,
+          );
+        }).toList(growable: false));
+
+    setState(() {
+      _fileListingFuture = filesFuture;
+    });
   }
 
   Future<void> _watchFile(String source, String savePath) async {

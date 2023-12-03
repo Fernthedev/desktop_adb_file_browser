@@ -8,11 +8,11 @@ import 'package:intl/intl.dart';
 
 class FileDataTable extends StatefulWidget {
   final List<FileBrowserMetadata> originalFileData;
-  final ScrollController scrollController;
+  final ScrollController? scrollController;
   const FileDataTable({
     super.key,
     required this.originalFileData,
-    required this.scrollController,
+    this.scrollController,
   });
 
   @override
@@ -38,6 +38,14 @@ class _FileDataTableState extends State<FileDataTable> {
     super.initState();
 
     _onSort(sort, ascending);
+  }
+
+  @override
+  void didUpdateWidget(covariant FileDataTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.originalFileData != widget.originalFileData) {
+      _onSort(sort, ascending);
+    }
   }
 
   @override

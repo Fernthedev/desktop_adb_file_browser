@@ -41,9 +41,8 @@ enum FileCreation { File, Folder }
 // TODO: Add download progress snackbar (similar to upload progress)
 // TODO: Make snackbar progress animation ease exponential because it looks
 // TODO: File details page
-// TODO: Modularize widget into smaller widgets
 class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
-  bool list = true;
+  bool _viewAsListMode = true;
   bool _dragging = false;
   late Future<List<FileBrowserMetadata>?> _fileListingFuture;
 
@@ -88,10 +87,10 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   @override
   Widget build(BuildContext context) {
     var listViewButton = IconButton(
-      icon: Icon(list ? Icons.list : Icons.grid_3x3),
+      icon: Icon(_viewAsListMode ? Icons.list : Icons.grid_3x3),
       onPressed: () {
         setState(() {
-          list = !list;
+          _viewAsListMode = !_viewAsListMode;
         });
       },
     );
@@ -221,10 +220,15 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
         if (snapshot.hasData &&
             snapshot.data != null &&
             snapshot.connectionState == ConnectionState.done) {
-          var filteredList =
-              _filteredFiles(snapshot.data!).toList(growable: false);
+          var list = snapshot.data!;
 
-          return list ? _viewAsList(filteredList) : _viewAsGrid(filteredList);
+          return _FilteredListContainer(
+            files: list,
+            key: ValueKey(list),
+            filterController: _filterController,
+            builder: (context, filteredFiles) =>
+                _viewAsListMode ? _viewAsList(filteredFiles) : _viewAsGrid(filteredFiles),
+          );
         }
 
         // Loading
@@ -245,6 +249,17 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _viewAsList(List<FileBrowserMetadata> files) {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: FileDataTable(
+        key: ValueKey(files),
+        onWatch: _watchFile,
+        files: files,
+      ),
     );
   }
 
@@ -271,28 +286,6 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             fileWrapper: file,
           ));
         });
-  }
-
-  Widget _viewAsList(List<FileBrowserMetadata> files) {
-    // var isDir = file.endsWith("/");
-
-    Trace.verbose("Viewing");
-    return Align(
-      alignment: Alignment.topCenter,
-      child: FileDataTable(
-        key: ValueKey(files),
-        onWatch: _watchFile,
-        originalFileData: files,
-      ),
-    );
-  }
-
-  Iterable<FileBrowserMetadata> _filteredFiles(
-      Iterable<FileBrowserMetadata> files) {
-    var filter = _filterController.text.toLowerCase();
-    if (filter.isEmpty) return files;
-    return files.where(
-        (element) => element.fullFilePath.toLowerCase().contains(filter));
   }
 
   void _uploadFiles(Iterable<String> paths) async {
@@ -381,6 +374,72 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     var source = fileData.fullFilePath;
 
     onWatchAdd.invoke(Tuple2(savePath, source));
+  }
+}
+
+class _FilteredListContainer extends StatefulWidget {
+  const _FilteredListContainer({
+    super.key,
+    required this.filterController,
+    required this.files,
+    required this.builder,
+  });
+
+  final TextEditingController filterController;
+  final List<FileBrowserMetadata> files;
+
+  final Widget Function(
+      BuildContext context, List<FileBrowserMetadata> filteredFiles) builder;
+
+  @override
+  State<_FilteredListContainer> createState() => _FilteredListContainerState();
+}
+
+class _FilteredListContainerState extends State<_FilteredListContainer> {
+  List<FileBrowserMetadata> _filteredFiles = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    widget.filterController.addListener(_doFilterFiles);
+
+    _doFilterFiles();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FilteredListContainer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.files != widget.files) {
+      _doFilterFiles();
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    widget.filterController.removeListener(_doFilterFiles);
+  }
+
+  void _doFilterFiles() {
+    var filter = widget.filterController.text.toLowerCase();
+
+    var filteredFiles = filter.isEmpty
+        ? widget.files
+        : widget.files
+            .where((element) =>
+                element.fullFilePath.toLowerCase().contains(filter))
+            .toList(growable: false);
+
+    setState(() {
+      _filteredFiles = filteredFiles;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(context, _filteredFiles);
   }
 }
 

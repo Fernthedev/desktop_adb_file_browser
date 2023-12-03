@@ -11,13 +11,13 @@ import 'package:intl/intl.dart';
 class FileDataTable extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
-  final List<FileBrowserMetadata> originalFileData;
+  final List<FileBrowserMetadata> files;
   final ScrollController? scrollController;
   final void Function(FileBrowserMetadata) onWatch;
 
   const FileDataTable({
     super.key,
-    required this.originalFileData,
+    required this.files,
     required this.onWatch,
     this.scrollController,
   });
@@ -50,7 +50,7 @@ class _FileDataTableState extends State<FileDataTable> {
   @override
   void didUpdateWidget(covariant FileDataTable oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.originalFileData != widget.originalFileData) {
+    if (oldWidget.files != widget.files) {
       _onSort(sort, ascending);
     }
   }
@@ -113,7 +113,7 @@ class _FileDataTableState extends State<FileDataTable> {
       SortingMethod.fileSize => _sortBySize,
     };
 
-    var tempSorted = widget.originalFileData.toList(growable: false);
+    var tempSorted = widget.files.toList(growable: false);
     // Reverse
     if (!ascending) {
       var oldSortMethod = sortMethod;

@@ -377,7 +377,8 @@ class _ActionsMenu extends StatelessWidget {
         ),
         // TODO: Add user feedback when this occurs
         onPressed: fileData.copyPathToClipboard,
-        autoFocus: true,
+        // TODO: Wait for autoFocus PR to merge https://github.com/flutter/flutter/pull/139396
+        // autoFocus: true,
         child: const Text("Copy to clipboard"),
       ),
       MenuItemButton(

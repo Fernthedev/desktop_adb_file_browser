@@ -6,14 +6,14 @@ import 'package:flutter/material.dart';
 class FileCardWidget extends StatefulWidget {
   static const double _iconSplashRadius = 20;
 
-  final FileBrowserMetadata fileWrapper;
+  final FileBrowserMetadata fileData;
   final void Function() onWatch;
 
   final bool isCard;
 
   const FileCardWidget({
     super.key,
-    required this.fileWrapper,
+    required this.fileData,
     required this.isCard,
     required this.onWatch,
   });
@@ -27,7 +27,7 @@ class _FileCardWidgetState extends State<FileCardWidget> {
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: widget.fileWrapper.navigateToDir,
+        onTap: widget.fileData.navigateToDir,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -37,11 +37,11 @@ class _FileCardWidgetState extends State<FileCardWidget> {
               fit: FlexFit.loose,
               child: ListTile(
                 title: Icon(
-                  widget.fileWrapper.getIcon(),
+                  widget.fileData.getIcon(),
                   size: 16 * 3.0,
                 ),
                 subtitle: Text(
-                  widget.fileWrapper.friendlyFileName,
+                  widget.fileData.friendlyFileName,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -49,13 +49,13 @@ class _FileCardWidgetState extends State<FileCardWidget> {
             Wrap(
               clipBehavior: Clip.antiAlias,
               children: [
-                widget.fileWrapper.fileData.isDirectory
+                widget.fileData.isDirectory
                     ? const Icon(null)
                     : IconButton(
                         icon: const Icon(Icons.download_rounded),
-                        onPressed: widget.fileWrapper.saveFileToDesktop,
+                        onPressed: widget.fileData.saveFileToDesktop,
                       ),
-                widget.fileWrapper.fileData.isDirectory
+                widget.fileData.isDirectory
                     ? const Icon(
                         null, // 16 + iconSize
                       )
@@ -66,20 +66,20 @@ class _FileCardWidgetState extends State<FileCardWidget> {
                         splashRadius: FileCardWidget._iconSplashRadius,
                         tooltip: "Watch",
                       ),
-                widget.fileWrapper.fileData.isDirectory
+                widget.fileData.isDirectory
                     ? const Icon(null)
                     : IconButton(
                         icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                        onPressed: widget.fileWrapper.openTempFile,
+                        onPressed: widget.fileData.openTempFile,
                         splashRadius: FileCardWidget._iconSplashRadius,
                         tooltip: "Open (temp)",
                       ),
                 IconButton(
                     icon: const Icon(Icons.copy),
-                    onPressed: widget.fileWrapper.copyPathToClipboard),
+                    onPressed: widget.fileData.copyPathToClipboard),
                 IconButton(
                   icon: const Icon(Icons.delete_forever),
-                  onPressed: () => widget.fileWrapper.removeFileDialog(context),
+                  onPressed: () => widget.fileData.removeFileDialog(context),
                   splashRadius: FileCardWidget._iconSplashRadius,
                   tooltip: "Delete",
                 ),

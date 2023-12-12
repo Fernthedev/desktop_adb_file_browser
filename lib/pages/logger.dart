@@ -157,10 +157,14 @@ class _LogPageState extends State<LogPage> {
               title: const Text("Error while streaming logcat"),
               content: Text(error),
               actions: [
-                TextButton(onPressed: _queueSave, child: const Text("Save")),
                 TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text("Back"))
+                    child: const Text("Back")),
+                FilledButton(
+                  autofocus: true,
+                  onPressed: _queueSave,
+                  child: const Text("Save"),
+                )
               ],
             ));
   }

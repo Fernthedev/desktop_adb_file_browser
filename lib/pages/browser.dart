@@ -283,7 +283,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             key: ValueKey(file),
             onWatch: () => _watchFile(file),
             isCard: true,
-            fileWrapper: file,
+            fileData: file,
           ));
         });
   }
@@ -692,7 +692,7 @@ class _NewFileDialogState extends State<NewFileDialog> {
       },
     );
 
-    var confirmButton = TextButton(
+    var confirmButton = FilledButton(
       child: const Text('Ok'),
       onPressed: () {
         var path = Adb.adbPathContext

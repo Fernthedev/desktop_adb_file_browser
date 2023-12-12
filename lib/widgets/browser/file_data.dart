@@ -16,7 +16,7 @@ typedef WatchFileCallback = Future<void> Function(
     FileBrowserMetadata fileData);
 
 @immutable
-class FileBrowserMetadata with FileDataState {
+class FileBrowserMetadata {
   final DateTime? modifiedTime;
   final int? fileSize;
   final String fullFilePath;
@@ -32,46 +32,37 @@ class FileBrowserMetadata with FileDataState {
     required this.fileSize,
     required this.serial,
   });
-
-  @override
-  // TODO: implement fileData
-  FileBrowserMetadata get fileData => this;
 }
 
-mixin FileDataState {
-  FileBrowserMetadata get fileData;
-
+extension FileDataState on FileBrowserMetadata {
   /// Just the file name
-  String get friendlyFileName =>
-      Adb.adbPathContext.basename(fileData.fullFilePath);
+  String get friendlyFileName => Adb.adbPathContext.basename(fullFilePath);
 
   Future<void> copyPathToClipboard() {
-    return FlutterClipboard.copy(fileData.fullFilePath);
+    return FlutterClipboard.copy(fullFilePath);
   }
 
   IconData getIcon() {
-    return fileData.isDirectory
-        ? Icons.folder
-        : FluentIcons.document_48_regular;
+    return isDirectory ? Icons.folder : FluentIcons.document_48_regular;
   }
 
   void navigateToDir() {
-    if (!fileData.isDirectory) {
+    if (!isDirectory) {
       return;
     }
 
-    fileData.browser.navigateToDirectory(fileData.fullFilePath);
+    browser.navigateToDirectory(fullFilePath);
   }
 
   Future<void> openTempFile() async {
-    String questPath = fileData.fullFilePath;
+    String questPath = fullFilePath;
     String fileName = friendlyFileName;
 
     var temp = await getTemporaryDirectory();
     var randomName = "${Random().nextInt(10000)}$fileName";
 
     var dest = Adb.hostPath.join(temp.path, randomName);
-    await Adb.downloadFile(fileData.serial, questPath, dest);
+    await Adb.downloadFile(serial, questPath, dest);
 
     StreamSubscription? subscription;
     subscription = Watcher(dest).events.listen((event) async {
@@ -80,73 +71,155 @@ mixin FileDataState {
       }
 
       if (event.type == ChangeType.MODIFY) {
-        await Adb.uploadFile(fileData.serial, dest, questPath);
+        await Adb.uploadFile(serial, dest, questPath);
       }
     });
 
     OpenFile.open(dest);
   }
 
-  Future<void> removeFileDialog(BuildContext context) async {
-    String path = fileData.fullFilePath;
-    bool file = !fileData.isDirectory;
+  Future<void> renameFileDialog(BuildContext context) async {
     await showDialog<void>(
         context: context,
-        builder: ((context) => AlertDialog(
-              title: const Text("Confirm?"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                      "Are you sure you want to delete this file/folder?"),
-                  Text(path)
-                ],
-              ),
-              actions: [
-                TextButton(
-                  child: const Text('Cancel'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                TextButton(
-                    child: const Text('Ok'),
-                    onPressed: () async {
-                      if (file) {
-                        await Adb.removeFile(fileData.serial, path);
-                      } else {
-                        await Adb.removeDirectory(fileData.serial, path);
-                      }
+        builder: ((context) => _RenameFileDialog(file: this)));
+  }
 
-                      fileData.browser.refresh();
-                      if (context.mounted) {
-                        Navigator.of(context).pop();
-                      }
-                    }),
-              ],
-            )));
+  Future<void> removeFileDialog(BuildContext context) async {
+    await showDialog<void>(
+        context: context,
+        builder: ((context) => _RemoveFileDialog(file: this)));
   }
 
   Future<String?> saveFileToDesktop() async {
-    String source = fileData.fullFilePath;
+    String source = fullFilePath;
 
     final savePath = await getSaveLocation(suggestedName: friendlyFileName);
 
     if (savePath == null) return null;
 
-    await Adb.downloadFile(fileData.serial, source, savePath.path);
+    await Adb.downloadFile(serial, source, savePath.path);
     return savePath.path;
   }
 
 
   /// return true if modified
   Future<bool> renameFile(String newName) async {
-    String source = fileData.fullFilePath;
-    var task = Adb.moveFile(fileData.serial, source,
+    String source = fullFilePath;
+    var task = Adb.moveFile(serial, source,
         Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
 
     await task;
 
     return newName != friendlyFileName;
+  }
+}
+
+class _RemoveFileDialog extends StatelessWidget {
+  const _RemoveFileDialog({
+    required this.file,
+  });
+  final FileBrowserMetadata file;
+
+  @override
+  Widget build(BuildContext context) {
+    final path = file.fullFilePath;
+    final isFile = !file.isDirectory;
+
+    return AlertDialog(
+      title: const Text("Confirm?"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text("Are you sure you want to delete this file/folder?"),
+          Text(path)
+        ],
+      ),
+      actions: [
+        TextButton(
+          autofocus: true,
+          child: const Text('Cancel'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        FilledButton(
+            child: const Text('Ok'),
+            onPressed: () async {
+              if (isFile) {
+                await Adb.removeFile(file.serial, path);
+              } else {
+                await Adb.removeDirectory(file.serial, path);
+              }
+
+              file.browser.refresh();
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            }),
+      ],
+    );
+  }
+}
+
+class _RenameFileDialog extends StatelessWidget {
+  _RenameFileDialog({required this.file})
+      : controller = TextEditingController(text: file.friendlyFileName);
+
+  final FileBrowserMetadata file;
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Rename"),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text("Renaming: ${file.friendlyFileName}"),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextFormField(
+              controller: controller,
+              canRequestFocus: true,
+              autofocus: true,
+              onFieldSubmitted: (s) => _submitRename(context),
+              validator: _validateNewName,
+            ),
+          )
+        ],
+      ),
+      actions: [
+        TextButton(
+          child: const Text('Cancel'),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        FilledButton(
+          child: const Text('Ok'),
+          onPressed: () => _submitRename(context),
+        ),
+      ],
+    );
+  }
+
+  String? _validateNewName(String? newName) {
+    if (newName == null || newName.isEmpty) {
+      return "New name cannot be empty";
+    }
+
+    if (newName.contains("/")) return "Cannot contain slashes";
+
+    return null;
+  }
+
+  void _submitRename(BuildContext context) async {
+    await file.renameFile(controller.text);
+
+    // False positive
+    // ignore: use_build_context_synchronously
+    file.browser.refresh();
+    if (!context.mounted) return;
+    Navigator.of(context).pop();
   }
 }

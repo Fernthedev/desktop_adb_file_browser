@@ -1,16 +1,12 @@
-import 'dart:async';
-
 import 'package:desktop_adb_file_browser/utils/file_sort.dart';
+import 'package:desktop_adb_file_browser/widgets/adaptive/menu_context.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
-import 'package:desktop_adb_file_browser/widgets/conditional.dart';
 import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class FileDataTable extends StatefulWidget {
-  static const double _iconSplashRadius = 20;
-
   final List<FileBrowserMetadata> files;
   final ScrollController? scrollController;
   final void Function(FileBrowserMetadata) onWatch;
@@ -63,33 +59,49 @@ class _FileDataTableState extends State<FileDataTable> {
       );
     }
 
-    return ListView.separated(
-      // + 1 for the header row
-      controller: widget.scrollController,
-      // shrinkWrap: true,
-      addAutomaticKeepAlives: true,
-      itemCount: sortedFileData!.length + 1,
-      separatorBuilder: (c, index) => const Divider(height: 1),
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          // Header row
-          return TableHeaderRow(
-            key: _headerRowKey,
-            onSort: _onSort,
-            ascending: ascending,
-            selectedSort: sort,
-          );
-        }
+    return FocusTraversalGroup(
+      descendantsAreFocusable: true,
+      descendantsAreTraversable: true,
+      child: ListView.separated(
+        // improve list reorder performance
+        findChildIndexCallback: _childIndexFinder,
+        controller: widget.scrollController,
+        cacheExtent: 1,
+        // shrinkWrap: true,
+        // addAutomaticKeepAlives: true,
+        // + 1 for the header row
+        itemCount: sortedFileData!.length + 1,
+        separatorBuilder: (c, index) => const Divider(height: 1),
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            // Header row
+            return TableHeaderRow(
+              key: _headerRowKey,
+              onSort: _onSort,
+              ascending: ascending,
+              selectedSort: sort,
+            );
+          }
 
-        // Data rows
-        final file = sortedFileData![index - 1];
-        return DataRow(
-          key: ValueKey(file.friendlyFileName),
-          onWatch: () => widget.onWatch(file),
-          file: file,
-        );
-      },
+          // Data rows
+          final file = sortedFileData![index - 1];
+          return DataRow(
+            key: ValueKey(file.friendlyFileName),
+            onWatch: () => widget.onWatch(file),
+            file: file,
+          );
+        },
+      ),
     );
+  }
+
+  int? _childIndexFinder(key) {
+    // if key is header row, just return 0
+    if (key is! ValueKey || key == _headerRowKey) {
+      return 0;
+    }
+
+    return sortedFileData?.indexWhere((e) => e.friendlyFileName == key.value);
   }
 
   void _onSort(SortingMethod s, bool a) async {
@@ -131,8 +143,8 @@ class _FileDataTableState extends State<FileDataTable> {
   }
 
   int _sortByDate(FileBrowserMetadata a, FileBrowserMetadata b) {
-    var modifiedTime1 = a.fileData.modifiedTime;
-    var modifiedTime2 = b.fileData.modifiedTime;
+    var modifiedTime1 = a.modifiedTime;
+    var modifiedTime2 = b.modifiedTime;
     if (modifiedTime1 == null || modifiedTime2 == null) {
       return 0;
     }
@@ -140,8 +152,8 @@ class _FileDataTableState extends State<FileDataTable> {
   }
 
   int _sortBySize(FileBrowserMetadata a, FileBrowserMetadata b) {
-    var modifiedSize1 = a.fileData.fileSize;
-    var modifiedSize2 = b.fileData.fileSize;
+    var modifiedSize1 = a.fileSize;
+    var modifiedSize2 = b.fileSize;
     if (modifiedSize1 == null || modifiedSize2 == null) {
       return 0;
     }
@@ -183,7 +195,6 @@ class TableHeaderRow extends StatelessWidget {
             selected: selectedSort == SortingMethod.fileSize,
             ascending: ascending,
             onSort: () => onSort(SortingMethod.fileSize, !ascending)),
-        const HeaderCell(label: "Actions"),
       ],
     );
   }
@@ -254,28 +265,40 @@ class DataRow extends StatefulWidget {
 
 class _DataRowState extends State<DataRow> {
   bool downloading = false;
-  bool editable = false;
+  final MenuController _menuController = MenuController();
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    super.dispose();
+
+    // if (_menuController.isOpen) {
+    //   _menuController.close();
+    // }
+    _focusNode.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onLongPress: () {
-        setState(() {
-          editable = !editable;
-          _renameDialog(widget.file);
-        });
-      },
-      onTap: () => widget.file.navigateToDir(),
-      child: SizedBox(
-        height: 40,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: _nameCell(widget.file)),
-            Expanded(child: _dateCell(widget.file)),
-            Expanded(child: _fileSizeCell(widget.file)),
-            Expanded(child: _actionsCell(widget.file)),
-          ],
+    return _ActionsMenu(
+      childFocusNode: _focusNode,
+      fileData: widget.file,
+      menuController: _menuController,
+      onWatch: widget.onWatch,
+      child: InkWell(
+        focusNode: _focusNode,
+        // onLongPress: _renameDialog,
+        onTap: widget.file.navigateToDir,
+        child: SizedBox(
+          height: 40,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: _nameCell(widget.file)),
+              Expanded(child: _dateCell(widget.file)),
+              Expanded(child: _fileSizeCell(widget.file)),
+            ],
+          ),
         ),
       ),
     );
@@ -305,7 +328,7 @@ class _DataRowState extends State<DataRow> {
   Widget _dateCell(FileBrowserMetadata e) {
     String text = "...";
 
-    var date = e.fileData.modifiedTime?.toLocal();
+    var date = e.modifiedTime?.toLocal();
 
     if (date != null) {
       text = defaultDateFormat.format(date);
@@ -318,7 +341,7 @@ class _DataRowState extends State<DataRow> {
   }
 
   Widget _fileSizeCell(FileBrowserMetadata e) {
-    var fileSize = e.fileData.fileSize;
+    var fileSize = e.fileSize;
     final text = fileSize != null ? filesize(fileSize) : "...";
     return Text(
       text,
@@ -326,164 +349,83 @@ class _DataRowState extends State<DataRow> {
       textAlign: TextAlign.left,
     );
   }
-
-  Widget _actionsCell(FileBrowserMetadata e) {
-    return _ActionsCell(
-      fileData: e,
-      onWatch: widget.onWatch,
-    );
-  }
-
-  Future<void> _renameDialog(FileBrowserMetadata fileDataWrapper) async {
-    var fileData = fileDataWrapper.fileData;
-    String path = fileData.fullFilePath;
-    await showDialog<void>(
-        context: context,
-        builder: ((context) {
-          TextEditingController controller =
-              TextEditingController(text: fileDataWrapper.friendlyFileName);
-
-          return AlertDialog(
-            title: const Text("Rename"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Renaming: $path"),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: TextFormField(
-                    controller: controller,
-                    validator: _validateNewName,
-                  ),
-                )
-              ],
-            ),
-            actions: [
-              TextButton(
-                child: const Text('Cancel'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              TextButton(
-                child: const Text('Ok'),
-                onPressed: () async {
-                  await fileDataWrapper.renameFile(controller.text);
-
-                  // False positive
-                  // ignore: use_build_context_synchronously
-                  fileData.browser.refresh();
-                  if (!context.mounted) return;
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          );
-        }));
-    setState(() {
-      editable = false;
-    });
-  }
-
-  String? _validateNewName(String? newName) {
-    if (newName == null || newName.isEmpty) {
-      return "New name cannot be empty";
-    }
-
-    if (newName.contains("/")) return "Cannot contain slashes";
-
-    return null;
-  }
 }
 
-class _ActionsCell extends StatelessWidget {
-  const _ActionsCell({
-    super.key,
+class _ActionsMenu extends StatelessWidget {
+  const _ActionsMenu({
     required this.fileData,
+    required this.child,
+    required this.menuController,
+    required this.childFocusNode,
     required this.onWatch,
   });
 
   final FileBrowserMetadata fileData;
+  final Widget child;
+  final MenuController menuController;
+  final FocusNode childFocusNode;
   final void Function() onWatch;
 
   @override
   Widget build(BuildContext context) {
-    const tooltipDuration = Duration(milliseconds: 500);
+    final isFile = !fileData.isDirectory;
 
-    final actions = <Widget>[
-      // icons
-      ConditionalWidget(
-        size: null,
-        show: !fileData.fileData.isDirectory,
-        child: () {
-          return Tooltip(
-            message: "Watch changes (desktop -> device)",
-            waitDuration: tooltipDuration,
-            child: IconButton(
-              icon: const Icon(FluentIcons.glasses_24_filled, size: 24),
-              onPressed: onWatch,
-              splashRadius: FileDataTable._iconSplashRadius,
-            ),
-          );
-        },
-      ),
-      ConditionalWidget(
-          show: !fileData.fileData.isDirectory,
-          size: null,
-          child: () => Tooltip(
-                message: "Open (temp)",
-                waitDuration: tooltipDuration,
-                child: IconButton(
-                  icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                  onPressed: fileData.openTempFile,
-                  splashRadius: FileDataTable._iconSplashRadius,
-                ),
-              )),
-      Tooltip(
-        waitDuration: tooltipDuration,
-        message: "Download",
-        child: IconButton(
-          icon: const Icon(Icons.download_rounded, size: 24),
-          onPressed: fileData.saveFileToDesktop,
-          enableFeedback: false,
-          splashRadius: FileDataTable._iconSplashRadius,
+    var menus = [
+      MenuItemButton(
+        leadingIcon: const Icon(
+          Icons.copy,
         ),
+        // TODO: Add user feedback when this occurs
+        onPressed: fileData.copyPathToClipboard,
+        // TODO: Wait for autoFocus PR to merge https://github.com/flutter/flutter/pull/139396
+        // autoFocus: true,
+        child: const Text("Copy to clipboard"),
       ),
-
-      Tooltip(
-        message: "Copy to clipboard",
-        waitDuration: tooltipDuration,
-        child: IconButton(
-          // TODO: Add user feedback when this occurs
-          icon: const Icon(Icons.copy),
-          onPressed: fileData.copyPathToClipboard,
-          splashRadius: FileDataTable._iconSplashRadius,
+      MenuItemButton(
+        leadingIcon: const Icon(
+          Icons.download_rounded,
+          size: 24,
         ),
+        onPressed: fileData.saveFileToDesktop,
+        child: const Text("Download"),
       ),
-
-      Tooltip(
-        message: "Delete",
-        waitDuration: tooltipDuration,
-        child: IconButton(
-          icon: const Icon(Icons.delete_forever),
-          onPressed: () => fileData.removeFileDialog(context),
-          splashRadius: FileDataTable._iconSplashRadius,
+      MenuItemButton(
+        leadingIcon: const Icon(
+          Icons.edit,
+          size: 24,
         ),
+        onPressed: () => fileData.renameFileDialog(context),
+        child: const Text("Rename"),
       ),
-    ].reversed.toList(growable: false);
+    ];
 
-    //download indicator
-    // TODO: Center
-    var downloadingIndicator = ConditionalWidget(
-      size: 20,
-      show: false,
-      child: () => const CircularProgressIndicator.adaptive(
-        value: null,
-      ),
-    );
+    if (isFile) {
+      final fileActions = [
+        MenuItemButton(
+            leadingIcon: const Icon(FluentIcons.glasses_24_filled, size: 24),
+            onPressed: onWatch,
+            child: const Text("Watch changes (desktop -> device)")),
+        MenuItemButton(
+            leadingIcon: const Icon(FluentIcons.open_24_filled, size: 24),
+            onPressed: fileData.openTempFile,
+            child: const Text("Open (temp)")),
+      ];
 
-    return Wrap(
-      children: actions + [downloadingIndicator],
+      menus += fileActions;
+    }
+
+    // Make delete last
+    menus.add(MenuItemButton(
+      leadingIcon: const Icon(Icons.delete_forever),
+      onPressed: () => fileData.removeFileDialog(context),
+      child: const Text("Delete"),
+    ));
+
+    return AdaptiveContextualMenu(
+      menuChildren: menus,
+      menuController: menuController,
+      focusNode: childFocusNode,
+      child: child,
     );
   }
 }

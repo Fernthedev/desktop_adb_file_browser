@@ -56,13 +56,13 @@ dependencies:
   # macos_ui: ^2.0.2
   flutter_breadcrumb: ^1.0.1
   version: ^3.0.2
-  intl: ^0.18.1
+  intl: ^0.19.0
   trace: ^0.0.4-prerelease
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  pigeon: ^14.0.0
+  pigeon: ^15.0.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

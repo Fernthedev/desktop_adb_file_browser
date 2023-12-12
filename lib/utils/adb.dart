@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:archive/archive_io.dart';
 import 'package:async/async.dart';
 import 'package:desktop_adb_file_browser/utils/platform.dart';
-import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:path/path.dart';
@@ -423,7 +422,7 @@ class Device {
   final String? deviceManufacturer;
   final String modelName;
 
-  Device(
+  const Device(
       {required this.serialName,
       this.deviceManufacturer,
       required this.modelName});
@@ -437,7 +436,7 @@ class FileListingData {
   final DateTime date;
   final String path;
 
-  FileListingData(
+  const FileListingData(
       {required this.permission,
       required this.user,
       required this.size,

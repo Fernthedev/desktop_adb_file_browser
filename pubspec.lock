@@ -5,18 +5,18 @@ packages:
     dependency: transitive
     description:
       name: _fe_analyzer_shared
-      sha256: "36a321c3d2cbe01cbcb3540a87b8843846e0206df3e691fa7b23e19e78de6d49"
+      sha256: eb376e9acf6938204f90eb3b1f00b578640d3188b4c8a8ec054f9f479af8d051
       url: "https://pub.dev"
     source: hosted
-    version: "65.0.0"
+    version: "64.0.0"
   analyzer:
     dependency: transitive
     description:
       name: analyzer
-      sha256: dfe03b90ec022450e22513b5e5ca1f01c0c01de9c3fba2f7fd233cb57a6b9a07
+      sha256: "69f54f967773f6c26c7dcb13e93d7ccee8b17a641689da39e878d5cf13b06893"
       url: "https://pub.dev"
     source: hosted
-    version: "6.3.0"
+    version: "6.2.0"
   analyzer_plugin:
     dependency: transitive
     description:
@@ -29,10 +29,10 @@ packages:
     dependency: transitive
     description:
       name: ansix
-      sha256: "461b39e89bf74da9bb68bdfbbad267c49b2e5d0bf5c3f88c300510e55c44c5ad"
+      sha256: b0761b5a133341c6e5440ecdd763f0362f67f06a7cfb8f29a1b5b1f70c489e9e
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.1"
+    version: "0.2.3"
   archive:
     dependency: "direct main"
     description:
@@ -517,10 +517,10 @@ packages:
     dependency: "direct dev"
     description:
       name: pigeon
-      sha256: "4d73d2649a005cc2cb0578c3c56b396a1c427879a4953fe03f45d74167042cf3"
+      sha256: "8b493169c8907f1e5cad5c349c5a409d8843bf738c0c7ac63f8756c8d4ab0b34"
       url: "https://pub.dev"
     source: hosted
-    version: "14.0.1"
+    version: "15.0.0"
   platform:
     dependency: transitive
     description:
@@ -690,10 +690,10 @@ packages:
     dependency: "direct main"
     description:
       name: trace
-      sha256: "77c8c7c27449970b0b5fcdc347cf818e56ca186a91ea1df2786f91581da93e3a"
+      sha256: "0b78393dcf265db9a60378503eeee70c099f40ca85d2b89aec6349f8a9756b28"
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.6-prerelease"
+    version: "0.0.4-prerelease"
   tuple:
     dependency: "direct main"
     description:

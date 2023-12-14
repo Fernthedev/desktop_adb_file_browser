@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
 
 class DevicesPage extends StatefulWidget {
-  const DevicesPage({super.key});
+  const DevicesPage({super.key, required this.serialSelector});
+
+  final ValueNotifier<String?> serialSelector;
 
   static const String title = "Devices";
 

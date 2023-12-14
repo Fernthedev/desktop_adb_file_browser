@@ -9,10 +9,10 @@ import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:trace/trace.dart';
 
-import '../utils/scroll.dart';
+import '../../utils/scroll.dart';
 
 class LogPage extends StatefulWidget {
-  LogPage({super.key, required this.serial});
+  const LogPage({super.key, required this.serial});
 
   final String serial;
 

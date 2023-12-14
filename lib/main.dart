@@ -1,6 +1,6 @@
-import 'package:desktop_adb_file_browser/pages/browser.dart';
-import 'package:desktop_adb_file_browser/pages/devices.dart';
-import 'package:desktop_adb_file_browser/pages/logger.dart';
+import 'package:desktop_adb_file_browser/pages/main/browser.dart';
+import 'package:desktop_adb_file_browser/pages/main/devices.dart';
+import 'package:desktop_adb_file_browser/pages/main/logger.dart';
 import 'package:desktop_adb_file_browser/src/pigeon_impl.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';

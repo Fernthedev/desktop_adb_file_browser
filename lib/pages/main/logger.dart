@@ -39,43 +39,45 @@ class _LogPageState extends State<LogPage> {
   @override
   void initState() {
     super.initState();
-    _logFuture.then((values) {
-      final (process, stream) = values;
-      try {
-        _streamSubscription = stream.listen((event) {
-          setState(() {
-            var newLogs = event
-                .split(PlatformUtils.platformFileEnding)
-                .where((element) => element.trim().isNotEmpty);
-            _logs.addAll(newLogs);
-
-            if (waitForSave) {
-              var timeSinceSend = DateTime.now().difference(lastStreamSend);
-              if (timeSinceSend.inMilliseconds > 30) {
-                _saveLog();
-                waitForSave = false;
-              }
-            }
-
-            lastStreamSend = DateTime.now();
-          });
-        });
-        _streamSubscription?.onError((e) {
-          Trace.verbose(e);
-          _showError(e);
-        });
-        _streamSubscription?.onDone(() {
-          Trace.verbose("Done");
-        });
-      } catch (e) {
-        Trace.verbose(e.toString());
-        _showError(e.toString());
-      }
-    }).onError((error, stackTrace) {
+    _logFuture.then(_handleLogFuture).onError((error, stackTrace) {
       Trace.verbose("Error $error");
       Trace.verbose(stackTrace.toString());
       _showError(error.toString());
     });
+  }
+
+  FutureOr<Null> _handleLogFuture(values) {
+    final (process, stream) = values;
+    try {
+      _streamSubscription = stream.listen((event) {
+        setState(() {
+          var newLogs = event
+              .split(PlatformUtils.platformFileEnding)
+              .where((element) => element.trim().isNotEmpty);
+          _logs.addAll(newLogs);
+
+          if (waitForSave) {
+            var timeSinceSend = DateTime.now().difference(lastStreamSend);
+            if (timeSinceSend.inMilliseconds > 30) {
+              _saveLog();
+              waitForSave = false;
+            }
+          }
+
+          lastStreamSend = DateTime.now();
+        });
+      });
+      _streamSubscription?.onError((e) {
+        Trace.verbose(e);
+        _showError(e);
+      });
+      _streamSubscription?.onDone(() {
+        Trace.verbose("Done");
+      });
+    } catch (e) {
+      Trace.verbose(e.toString());
+      _showError(e.toString());
+    }
   }
 
   @override
@@ -90,18 +92,24 @@ class _LogPageState extends State<LogPage> {
 
   @override
   Widget build(BuildContext context) {
+    var exitButton = IconButton(
+      icon: const Icon(
+        FluentIcons.arrow_left_24_filled,
+        size: 24,
+      ),
+      onPressed: () {
+        Routemaster.of(context).history.back();
+      },
+    );
+
+
+    var conditionalExitButton = Routemaster.of(context).history.canGoBack ? exitButton : null;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Logcat"),
-        leading: IconButton(
-          icon: const Icon(
-            FluentIcons.arrow_left_24_filled,
-            size: 24,
-          ),
-          onPressed: () {
-            Routemaster.of(context).history.back();
-          },
-        ),
+        leading: conditionalExitButton,
+        automaticallyImplyLeading: true,
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),

@@ -111,6 +111,9 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
       ),
     );
 
+    var conditionalExitButton =
+        Routemaster.of(context).history.canGoBack ? exitButton : null;
+
     return Focus(
       autofocus: true,
       canRequestFocus: false,
@@ -122,7 +125,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
         length: 2,
         child: Scaffold(
           appBar: AppBar(
-            elevation: 0.8,
+            elevation: 2.8,
             // Here we take the value from the MyHomePage object that was created by
             // the App.build method, and use it to set our appbar title.
             title: _AppBarActions(
@@ -131,7 +134,8 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
               serial: widget.serial,
               onUpload: _uploadFiles,
             ),
-            leading: exitButton,
+            leading: conditionalExitButton,
+            automaticallyImplyLeading: true,
             actions: [listViewButton],
           ),
           body: _buildBody(context),
@@ -226,8 +230,9 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             files: list,
             key: ValueKey(list),
             filterController: _filterController,
-            builder: (context, filteredFiles) =>
-                _viewAsListMode ? _viewAsList(filteredFiles) : _viewAsGrid(filteredFiles),
+            builder: (context, filteredFiles) => _viewAsListMode
+                ? _viewAsList(filteredFiles)
+                : _viewAsGrid(filteredFiles),
           );
         }
 

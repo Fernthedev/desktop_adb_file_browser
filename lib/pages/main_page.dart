@@ -1,6 +1,7 @@
 import 'package:desktop_adb_file_browser/pages/main/browser.dart';
 import 'package:desktop_adb_file_browser/pages/main/devices.dart';
 import 'package:desktop_adb_file_browser/pages/main/logger.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 
@@ -15,6 +16,9 @@ enum _Page {
   final IconData icon;
 }
 
+_Page _pageForIndex(int v) =>
+    _Page.values.firstWhere((element) => element.index == v);
+
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -27,21 +31,50 @@ class _MainPageState extends State<MainPage> {
   final ValueNotifier<String?> _selectedDevice = ValueNotifier<String?>(null);
 
   @override
+  void initState() {
+    super.initState();
+    _selectedDevice.addListener(_onDeviceSelect);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _selectedDevice.removeListener(_onDeviceSelect);
+    _selectedDevice.dispose();
+  }
+
+  void _onDeviceSelect() {
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-    var dests = _Page.values
-        .map((x) => NavigationRailDestination(
-              icon: Icon(x.icon),
-              label: Text(x.name),
-            ))
-        .toList();
+    var dests = [
+      NavigationRailDestination(
+        icon: Icon(_Page.devices.icon),
+        label: Text(_Page.devices.name),
+      ),
+      NavigationRailDestination(
+        icon: Icon(_Page.browser.icon),
+        label: Text(_Page.browser.name),
+        disabled: _selectedDevice.value == null,
+      ),
+      NavigationRailDestination(
+        icon: Icon(_Page.logger.icon),
+        label: Text(_Page.logger.name),
+        disabled: _selectedDevice.value == null,
+      ),
+    ];
 
     return Scaffold(
       body: Row(children: [
         NavigationRail(
+            backgroundColor: Theme.of(context).colorScheme.surface.darken(2),
+            labelType: NavigationRailLabelType.selected,
             selectedIndex: _currentPage.index,
             destinations: dests,
             onDestinationSelected: (v) =>
-                setState(() => _currentPage = v as _Page)),
+                setState(() => _currentPage = _pageForIndex(v))),
         Expanded(
           child: _buildCurrentPage(_currentPage),
         )
@@ -50,10 +83,14 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget _buildCurrentPage(_Page p) => switch (p) {
-        _Page.devices => DevicesPage(key: const ValueKey("devices"), _selectedDevice),
+        _Page.devices => DevicesPage(
+            key: const ValueKey("devices"),
+            serialSelector: _selectedDevice,
+            canNavigate: false,
+          ),
         _Page.browser => DeviceBrowserPage(
             key: const ValueKey("browser"),
-            initialAddress: "/",
+            initialAddress: "/sdcard/",
             serial: _selectedDevice.value!,
           ),
         _Page.logger => LogPage(

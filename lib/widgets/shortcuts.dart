@@ -72,6 +72,7 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
                 // shrinkWrap: true,
                 itemBuilder: (context, index) =>
                     _shortcutTile(context, index, map),
+                findChildIndexCallback: (k) => (k as ValueKey<int>).value,
                 itemCount: map.length,
               ),
             ),
@@ -95,11 +96,11 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
             key: ValueKey(widget.currentPath),
             controller: textController,
             decoration: const InputDecoration(
-              border: UnderlineInputBorder(
-                  borderRadius: BorderRadius.all(Radius.circular(2))),
-              filled: true,
-              labelText: 'Bookmark name',
-            ),
+                border: UnderlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(2))),
+                filled: true,
+                labelText: 'Bookmark name',
+                labelStyle: TextStyle(fontSize: 14)),
             onSubmitted: addShortcut,
           ),
         ),
@@ -125,23 +126,30 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
     final name = map.keys.toList(growable: false)[index];
     final path = map[name]!;
 
+    var deleteButton = IconButton(
+      iconSize: 20,
+      splashRadius: 24,
+      icon: const Icon(FluentIcons.delete_20_filled),
+      onPressed: () {
+        map.remove(name);
+        _updateMap(map);
+      },
+    );
     return ListTile(
-      title: Text(name),
-      subtitle: Text(path),
-      key: ValueKey(path),
+      key: ValueKey(index),
       visualDensity: VisualDensity.compact,
+      minVerticalPadding: 1,
+      title: Wrap(
+        alignment: WrapAlignment.spaceBetween,
+        children: [Text(name), deleteButton],
+      ),
+      subtitle: Text(
+        path,
+        overflow: TextOverflow.ellipsis,
+      ),
       onTap: () {
         if (widget.onTap != null) widget.onTap!(path);
       },
-      trailing: IconButton(
-        iconSize: 20,
-        splashRadius: 24,
-        icon: const Icon(FluentIcons.delete_20_filled),
-        onPressed: () {
-          map.remove(name);
-          _updateMap(map);
-        },
-      ),
     );
   }
 

@@ -1,6 +1,7 @@
-import 'package:desktop_adb_file_browser/pages/browser.dart';
-import 'package:desktop_adb_file_browser/pages/devices.dart';
-import 'package:desktop_adb_file_browser/pages/logger.dart';
+import 'package:desktop_adb_file_browser/pages/main/browser.dart';
+import 'package:desktop_adb_file_browser/pages/main/devices.dart';
+import 'package:desktop_adb_file_browser/pages/main/logger.dart';
+import 'package:desktop_adb_file_browser/pages/main_page.dart';
 import 'package:desktop_adb_file_browser/src/pigeon_impl.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
@@ -13,10 +14,16 @@ import 'package:trace/trace.dart';
 import 'package:path/path.dart' as path;
 
 final routes = RouteMap(routes: {
-  '/': (_) => const Redirect('/devices'),
+  '/': (_) => const MaterialPage(
+        key: ValueKey("main"),
+        child: MainPage(),
+      ),
 
-  '/devices': (_) =>
-      const MaterialPage(key: ValueKey("devices"), child: DevicesPage()),
+  '/devices': (_) => const MaterialPage(
+      key: ValueKey("devices"),
+      child: DevicesPage(
+        canNavigate: true,
+      )),
 
   '/browser/:device/:path': (info) => MaterialPage(
       key: const ValueKey("browser"),
@@ -45,6 +52,8 @@ void main() async {
     yield LicenseEntryWithLineBreaks(['google_fonts'], license);
   });
 
+  WidgetsFlutterBinding.ensureInitialized();
+
   final ConsoleLogger logger = ConsoleLogger(
     filter: DefaultLogFilter(
       LogLevel.verbose,
@@ -68,7 +77,6 @@ void main() async {
   } catch (e) {
     Trace.error("Suffered error while setting up file logger: $e");
   }
-  WidgetsFlutterBinding.ensureInitialized();
   final token = ServicesBinding.rootIsolateToken;
   BackgroundIsolateBinaryMessenger.ensureInitialized(token!);
 

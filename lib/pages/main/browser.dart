@@ -8,7 +8,7 @@ import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_table.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_widget.dart';
-import 'package:desktop_adb_file_browser/widgets/browser/upload_file.dart';
+import 'package:desktop_adb_file_browser/widgets/progress_snackbar.dart';
 import 'package:desktop_adb_file_browser/widgets/shortcuts.dart';
 import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
@@ -111,18 +111,21 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
       ),
     );
 
+    var conditionalExitButton =
+        Routemaster.of(context).history.canGoBack ? exitButton : null;
+
     return Focus(
       autofocus: true,
       canRequestFocus: false,
       descendantsAreFocusable: true,
       skipTraversal: true,
-      onKey: _onKeyHandler,
+      onKeyEvent: _onKeyHandler,
       child: DefaultTabController(
         initialIndex: 0,
         length: 2,
         child: Scaffold(
           appBar: AppBar(
-            elevation: 0.8,
+            elevation: 2.8,
             // Here we take the value from the MyHomePage object that was created by
             // the App.build method, and use it to set our appbar title.
             title: _AppBarActions(
@@ -131,10 +134,11 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
               serial: widget.serial,
               onUpload: _uploadFiles,
             ),
-            leading: exitButton,
+            leading: conditionalExitButton,
+            automaticallyImplyLeading: true,
             actions: [listViewButton],
           ),
-          body: _buildBody(context),
+          body: _buildBody(),
           bottomNavigationBar: SizedBox(
             height: Theme.of(context).buttonTheme.height,
             child: _PathBreadCumbs(
@@ -147,7 +151,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     );
   }
 
-  MultiSplitViewTheme _buildBody(BuildContext context) {
+  MultiSplitViewTheme _buildBody() {
     return MultiSplitViewTheme(
       data: MultiSplitViewThemeData(dividerThickness: 5.5),
       child: MultiSplitView(
@@ -158,7 +162,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             serial: widget.serial,
             onWatchAdd: onWatchAdd,
           ),
-          Center(child: _fileListContainer(context))
+          Center(child: _fileListContainer())
         ],
         dividerBuilder:
             (axis, index, resizable, dragging, highlighted, themeData) =>
@@ -185,7 +189,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     return KeyEventResult.ignored;
   }
 
-  DropTarget _fileListContainer(BuildContext context) {
+  DropTarget _fileListContainer() {
     return DropTarget(
       onDragDone: (detail) => _uploadFiles(detail.files.map((e) => e.path)),
       onDragEntered: (detail) {
@@ -226,8 +230,9 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             files: list,
             key: ValueKey(list),
             filterController: _filterController,
-            builder: (context, filteredFiles) =>
-                _viewAsListMode ? _viewAsList(filteredFiles) : _viewAsGrid(filteredFiles),
+            builder: (context, filteredFiles) => _viewAsListMode
+                ? _viewAsList(filteredFiles)
+                : _viewAsGrid(filteredFiles),
           );
         }
 
@@ -300,22 +305,16 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
       return Adb.uploadFile(widget.serial, path, dest);
     });
 
-    // this is so scuffed
-    // I do this to automatically update the snack bar progress
-    var tasksDone = 0;
-    var notifier = ValueNotifier<double>(0);
-
-    Future.forEach(tasks, (e) async {
-      tasksDone++;
-      notifier.value = tasksDone / tasks.length;
-    });
-
     // Snack bar
     var snackBar = ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: UploadingFilesWidget(
-          progressIndications: notifier,
-          taskAmount: tasks.length,
+        content: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ProgressSnackbar(
+            futures: tasks,
+            stringBuilder: (futureCount, futureRemaining) =>
+                "Uploading files! ${(futureCount - futureRemaining) / futureCount * 100}%",
+          ),
         ),
         duration: const Duration(days: 365), // year old snackbar
         width: 680.0, // Width of the SnackBar.

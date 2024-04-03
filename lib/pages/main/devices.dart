@@ -1,4 +1,5 @@
 import 'package:desktop_adb_file_browser/pages/adb_check.dart';
+import 'package:desktop_adb_file_browser/routes.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/device_card.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -6,9 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
 
 class DevicesPage extends StatefulWidget {
-  const DevicesPage({super.key});
+  const DevicesPage(
+      {super.key, this.serialSelector, required this.canNavigate});
 
-  static const String title = "Devices";
+  final ValueNotifier<String?>? serialSelector;
+  final bool canNavigate;
 
   @override
   State<DevicesPage> createState() => _DevicesPageState();
@@ -43,7 +46,7 @@ class _DevicesPageState extends State<DevicesPage> {
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: const Text(DevicesPage.title),
+        title: const Text("Devices"),
         automaticallyImplyLeading: Routemaster.of(context).history.canGoBack,
         actions: [
           IconButton(
@@ -53,9 +56,10 @@ class _DevicesPageState extends State<DevicesPage> {
         ],
       ),
       body: Center(
-          // Center is a layout widget. It takes a single child and positions it
-          // in the middle of the parent.
-          child: _loadDevices()),
+        // Center is a layout widget. It takes a single child and positions it
+        // in the middle of the parent.
+        child: _loadDevices(),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _refreshDevices();
@@ -110,8 +114,22 @@ class _DevicesPageState extends State<DevicesPage> {
 
     return ListView(
         padding: const EdgeInsets.all(4.0),
-        children:
-            devices.map((e) => DeviceCard(device: e)).toList(growable: false));
+        children: devices
+            .map((e) => DeviceCard(
+                  device: e,
+                  onTap: _onDeviceSelect,
+                  showLogButton: widget.canNavigate,
+                  selected: widget.serialSelector?.value == e.serialName,
+                ))
+            .toList(growable: false));
+  }
+
+  void _onDeviceSelect(Device device) {
+    widget.serialSelector?.value = device.serialName;
+
+    if (widget.canNavigate) {
+      Routes.browse(context, device.serialName);
+    }
   }
 
   Future<void> _connectDialog() async {

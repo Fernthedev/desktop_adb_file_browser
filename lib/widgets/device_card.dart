@@ -8,17 +8,51 @@ class DeviceCard extends StatelessWidget {
   const DeviceCard({
     super.key,
     required this.device,
+    required this.onTap,
+    this.selected,
+    this.showLogButton = true,
   });
 
   final Device device;
+  final void Function(Device device) onTap;
+  final bool showLogButton;
+  final bool? selected;
 
   @override
   Widget build(BuildContext context) {
+    var logButton = Visibility(
+      visible: showLogButton,
+      child: IconButton(
+          onPressed: () => Routes.log(context, device.serialName),
+          icon: const Icon(
+            FluentIcons.notepad_24_filled,
+            size: 24,
+          )),
+    );
+
+    var wirelessButton = IconButton(
+        onPressed: () => _enableWireless(context),
+        icon: const Icon(
+          FluentIcons.wifi_1_24_filled,
+          size: 24,
+        ));
+
+    const deviceIcon = Icon(
+      FluentIcons.phone_24_regular,
+      size: 24 * 1.6,
+    );
+
+    const checkMark = Icon(FluentIcons.checkmark_24_regular, size: 24 * 1.6);
+
+    final leading = selected ?? false
+        ? const Wrap(children: <Widget>[checkMark, deviceIcon])
+        : deviceIcon;
+
     return ListTile(
-      leading: const Icon(
-        FluentIcons.phone_24_regular,
-        size: 24 * 1.6,
-      ),
+      selected: selected ?? false,
+      leading: leading,
+      isThreeLine: true,
+      onTap: () => onTap(device),
       title: Text(device.modelName),
       subtitle: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,24 +65,9 @@ class DeviceCard extends StatelessWidget {
           ),
         ],
       ),
-      onTap: () => Routes.browse(context, device.serialName),
-      isThreeLine: true,
       trailing: Wrap(
         crossAxisAlignment: WrapCrossAlignment.end,
-        children: [
-          IconButton(
-              onPressed: () => Routes.log(context, device.serialName),
-              icon: const Icon(
-                FluentIcons.notepad_24_filled,
-                size: 24,
-              )),
-          IconButton(
-              onPressed: () => _enableWireless(context),
-              icon: const Icon(
-                FluentIcons.wifi_1_24_filled,
-                size: 24,
-              ))
-        ],
+        children: [logButton, wirelessButton],
       ),
     );
   }

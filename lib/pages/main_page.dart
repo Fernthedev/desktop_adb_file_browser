@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 enum _Page {
   devices("Devices", FluentIcons.phone_48_regular),
   browser("Browser", FluentIcons.folder_48_regular),
-  logger("Logger", FluentIcons.note_48_regular);
+  logger("Logger", FluentIcons.code_block_48_regular);
 
   const _Page(this.name, this.icon);
 
@@ -70,6 +70,8 @@ class _MainPageState extends State<MainPage> {
       body: Row(children: [
         NavigationRail(
             backgroundColor: Theme.of(context).colorScheme.surface.darken(2),
+            indicatorShape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             labelType: NavigationRailLabelType.selected,
             selectedIndex: _currentPage.index,
             destinations: dests,

@@ -333,7 +333,7 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
 
   static Future<String> downloadFile(
       String? serialName, String source, String destination) async {
-    var result = await runAdbCommand(null, [
+    var result = await runAdbCommand(serialName, [
       "pull",
       fixPath(source, addQuotes: false),
       destination,

@@ -47,6 +47,15 @@ class _MainPageState extends State<MainPage> {
     setState(() {});
   }
 
+  Widget addDisabledTooltip(Widget widget) {
+    if (_selectedDevice.value != null) return widget;
+
+    return Tooltip(
+      message: "No device selected",
+      child: widget,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     var dests = [
@@ -55,12 +64,12 @@ class _MainPageState extends State<MainPage> {
         label: Text(_Page.devices.name),
       ),
       NavigationRailDestination(
-        icon: Icon(_Page.browser.icon),
+        icon: addDisabledTooltip(Icon(_Page.browser.icon)),
         label: Text(_Page.browser.name),
         disabled: _selectedDevice.value == null,
       ),
       NavigationRailDestination(
-        icon: Icon(_Page.logger.icon),
+        icon: addDisabledTooltip(Icon(_Page.logger.icon)),
         label: Text(_Page.logger.name),
         disabled: _selectedDevice.value == null,
       ),

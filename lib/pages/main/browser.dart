@@ -789,14 +789,20 @@ class _ShortcutsColumn extends StatelessWidget {
         ),
         const TabBar(tabs: [
           Tab(
-              icon: Icon(
-            FluentIcons.bookmark_20_filled,
-            size: 20,
+              icon: Tooltip(
+            message: "Bookmarks",
+            child: Icon(
+              FluentIcons.bookmark_20_filled,
+              size: 20,
+            ),
           )),
           Tab(
-              icon: Icon(
-            FluentIcons.glasses_20_filled,
-            size: 20,
+              icon: Tooltip(
+            message: "Watched files",
+            child: Icon(
+              FluentIcons.glasses_20_filled,
+              size: 20,
+            ),
           ))
         ]),
       ],

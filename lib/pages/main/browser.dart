@@ -8,7 +8,7 @@ import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_table.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_widget.dart';
-import 'package:desktop_adb_file_browser/widgets/browser/upload_file.dart';
+import 'package:desktop_adb_file_browser/widgets/progress_snackbar.dart';
 import 'package:desktop_adb_file_browser/widgets/shortcuts.dart';
 import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
@@ -305,22 +305,16 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
       return Adb.uploadFile(widget.serial, path, dest);
     });
 
-    // this is so scuffed
-    // I do this to automatically update the snack bar progress
-    var tasksDone = 0;
-    var notifier = ValueNotifier<double>(0);
-
-    Future.forEach(tasks, (e) async {
-      tasksDone++;
-      notifier.value = tasksDone / tasks.length;
-    });
-
     // Snack bar
     var snackBar = ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: UploadingFilesWidget(
-          progressIndications: notifier,
-          taskAmount: tasks.length,
+        content: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: ProgressSnackbar(
+            futures: tasks,
+            stringBuilder: (futureCount, futureRemaining) =>
+                "Uploading files! ${(futureCount - futureRemaining) / futureCount * 100}%",
+          ),
         ),
         duration: const Duration(days: 365), // year old snackbar
         width: 680.0, // Width of the SnackBar.
@@ -338,7 +332,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     _fileBrowser.refresh(); // update UI
 
     await Future.delayed(const Duration(seconds: 4));
-    snackBar.close();
+    // snackBar.close();
   }
 
   void _onNavigate(String newPath) {

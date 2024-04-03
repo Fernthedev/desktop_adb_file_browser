@@ -46,7 +46,7 @@ class _LogPageState extends State<LogPage> {
     });
   }
 
-  FutureOr<Null> _handleLogFuture(values) {
+  FutureOr<Null> _handleLogFuture((Process, Stream<String>) values) {
     final (process, stream) = values;
     try {
       _streamSubscription = stream.listen((event) {

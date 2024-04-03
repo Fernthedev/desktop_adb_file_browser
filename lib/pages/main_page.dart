@@ -69,14 +69,16 @@ class _MainPageState extends State<MainPage> {
     return Scaffold(
       body: Row(children: [
         NavigationRail(
-            backgroundColor: Theme.of(context).colorScheme.surface.darken(2),
-            indicatorShape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            labelType: NavigationRailLabelType.selected,
-            selectedIndex: _currentPage.index,
-            destinations: dests,
-            onDestinationSelected: (v) =>
-                setState(() => _currentPage = _pageForIndex(v))),
+          backgroundColor: Theme.of(context).colorScheme.surface.darken(2),
+          indicatorShape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          labelType: NavigationRailLabelType.selected,
+          selectedIndex: _currentPage.index,
+          destinations: dests,
+          onDestinationSelected: (v) => setState(
+            () => _currentPage = _pageForIndex(v),
+          ),
+        ),
         Expanded(
           child: _buildCurrentPage(_currentPage),
         )

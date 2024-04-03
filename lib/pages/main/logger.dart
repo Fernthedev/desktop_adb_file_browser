@@ -102,32 +102,43 @@ class _LogPageState extends State<LogPage> {
       },
     );
 
+    var conditionalExitButton =
+        Routemaster.of(context).history.canGoBack ? exitButton : null;
 
-    var conditionalExitButton = Routemaster.of(context).history.canGoBack ? exitButton : null;
-
+    var visibilityAction = Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Wrap(
+          alignment: WrapAlignment.spaceAround,
+          children: [
+            const Text(
+              "Show logs",
+              style: TextStyle(fontSize: 25),
+            ),
+            const SizedBox(
+              width: 10,
+            ),
+            Switch(
+                value: _showLogs,
+                onChanged: (v) => setState(() {
+                      _showLogs = v;
+                    })),
+          ],
+        ));
+    var saveAction = Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: IconButton(
+          onPressed: _queueSave,
+          icon: const Icon(
+            FluentIcons.save_28_regular,
+            size: 28,
+          )),
+    );
     return Scaffold(
       appBar: AppBar(
         title: const Text("Logcat"),
         leading: conditionalExitButton,
         automaticallyImplyLeading: true,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: IconButton(
-                onPressed: _queueSave,
-                icon: const Icon(
-                  FluentIcons.save_28_regular,
-                  size: 28,
-                )),
-          ),
-          Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Switch(
-                  value: _showLogs,
-                  onChanged: (v) => setState(() {
-                        _showLogs = v;
-                      })))
-        ],
+        actions: [saveAction, visibilityAction],
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -185,7 +196,7 @@ class _LogPageState extends State<LogPage> {
     return ListView.builder(
       key: _listKey,
       shrinkWrap: true,
-      controller: _scrollController,
+      // controller: _scrollController,
       itemBuilder: ((context, index) => SelectableText(
             _logs[index],
             key: ValueKey(index),

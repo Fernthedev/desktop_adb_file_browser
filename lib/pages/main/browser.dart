@@ -332,7 +332,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     _fileBrowser.refresh(); // update UI
 
     await Future.delayed(const Duration(seconds: 4));
-    // snackBar.close();
+    snackBar.close();
   }
 
   void _onNavigate(String newPath) {

@@ -37,15 +37,20 @@ class DeviceCard extends StatelessWidget {
           size: 24,
         ));
 
-    const icon = Icon(
+    const deviceIcon = Icon(
       FluentIcons.phone_24_regular,
       size: 24 * 1.6,
     );
 
+    const checkMark = Icon(FluentIcons.checkmark_24_regular, size: 24 * 1.6);
+
+    final leading = selected ?? false
+        ? const Wrap(children: <Widget>[checkMark, deviceIcon])
+        : deviceIcon;
 
     return ListTile(
       selected: selected ?? false,
-      leading: icon,
+      leading: leading,
       isThreeLine: true,
       onTap: () => onTap(device),
       title: Text(device.modelName),

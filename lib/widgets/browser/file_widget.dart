@@ -50,12 +50,6 @@ class _FileCardWidgetState extends State<FileCardWidget> {
               clipBehavior: Clip.antiAlias,
               children: [
                 widget.fileData.isDirectory
-                    ? const Icon(null)
-                    : IconButton(
-                        icon: const Icon(Icons.download_rounded),
-                        onPressed: widget.fileData.saveFileToDesktop,
-                      ),
-                widget.fileData.isDirectory
                     ? const Icon(
                         null, // 16 + iconSize
                       )
@@ -74,6 +68,10 @@ class _FileCardWidgetState extends State<FileCardWidget> {
                         splashRadius: FileCardWidget._iconSplashRadius,
                         tooltip: "Open (temp)",
                       ),
+                IconButton(
+                  icon: const Icon(Icons.download_rounded),
+                  onPressed: widget.fileData.saveFileToDesktop,
+                ),
                 IconButton(
                     icon: const Icon(Icons.copy),
                     onPressed: widget.fileData.copyPathToClipboard),

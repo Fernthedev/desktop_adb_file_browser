@@ -119,7 +119,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
       canRequestFocus: false,
       descendantsAreFocusable: true,
       skipTraversal: true,
-      onKey: _onKeyHandler,
+      onKeyEvent: _onKeyHandler,
       child: DefaultTabController(
         initialIndex: 0,
         length: 2,
@@ -138,7 +138,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             automaticallyImplyLeading: true,
             actions: [listViewButton],
           ),
-          body: _buildBody(context),
+          body: _buildBody(),
           bottomNavigationBar: SizedBox(
             height: Theme.of(context).buttonTheme.height,
             child: _PathBreadCumbs(
@@ -151,7 +151,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     );
   }
 
-  MultiSplitViewTheme _buildBody(BuildContext context) {
+  MultiSplitViewTheme _buildBody() {
     return MultiSplitViewTheme(
       data: MultiSplitViewThemeData(dividerThickness: 5.5),
       child: MultiSplitView(
@@ -162,7 +162,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             serial: widget.serial,
             onWatchAdd: onWatchAdd,
           ),
-          Center(child: _fileListContainer(context))
+          Center(child: _fileListContainer())
         ],
         dividerBuilder:
             (axis, index, resizable, dragging, highlighted, themeData) =>
@@ -189,7 +189,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     return KeyEventResult.ignored;
   }
 
-  DropTarget _fileListContainer(BuildContext context) {
+  DropTarget _fileListContainer() {
     return DropTarget(
       onDragDone: (detail) => _uploadFiles(detail.files.map((e) => e.path)),
       onDragEntered: (detail) {

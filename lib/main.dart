@@ -52,6 +52,8 @@ void main() async {
     yield LicenseEntryWithLineBreaks(['google_fonts'], license);
   });
 
+  WidgetsFlutterBinding.ensureInitialized();
+
   final ConsoleLogger logger = ConsoleLogger(
     filter: DefaultLogFilter(
       LogLevel.verbose,
@@ -75,7 +77,6 @@ void main() async {
   } catch (e) {
     Trace.error("Suffered error while setting up file logger: $e");
   }
-  WidgetsFlutterBinding.ensureInitialized();
   final token = ServicesBinding.rootIsolateToken;
   BackgroundIsolateBinaryMessenger.ensureInitialized(token!);
 

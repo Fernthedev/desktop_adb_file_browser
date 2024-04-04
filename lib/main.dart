@@ -7,6 +7,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:trace/trace.dart';
@@ -80,9 +81,9 @@ void main() async {
   final token = ServicesBinding.rootIsolateToken;
   BackgroundIsolateBinaryMessenger.ensureInitialized(token!);
 
-  runApp(const MyApp());
   Trace.verbose("Pigeon");
   native2flutter = Native2FlutterImpl();
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {

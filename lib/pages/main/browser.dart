@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
-import 'package:desktop_adb_file_browser/utils/file_browser.dart';
+import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';

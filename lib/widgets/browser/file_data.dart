@@ -3,31 +3,28 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:clipboard/clipboard.dart';
+import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
-import 'package:desktop_adb_file_browser/utils/file_browser.dart';
+import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:watcher/watcher.dart';
 
-typedef WatchFileCallback = Future<void> Function(
-    FileBrowserMetadata fileData);
+typedef WatchFileCallback = Future<void> Function(FileBrowserMetadata fileData);
 
 @immutable
 class FileBrowserMetadata {
   final DateTime? modifiedTime;
   final int? fileSize;
   final String fullFilePath;
-  final bool isDirectory;
-  final FileBrowser browser;
-  final String serial;
+  final String? serial;
 
   const FileBrowserMetadata({
     required this.fullFilePath,
-    required this.isDirectory,
-    required this.browser,
     required this.modifiedTime,
     required this.fileSize,
     required this.serial,
@@ -35,6 +32,8 @@ class FileBrowserMetadata {
 }
 
 extension FileDataState on FileBrowserMetadata {
+  bool get isDirectory => fullFilePath.endsWith("/");
+
   /// Just the file name
   String get friendlyFileName => Adb.adbPathContext.basename(fullFilePath);
 
@@ -44,14 +43,6 @@ extension FileDataState on FileBrowserMetadata {
 
   IconData getIcon() {
     return isDirectory ? Icons.folder : FluentIcons.document_48_regular;
-  }
-
-  void navigateToDir() {
-    if (!isDirectory) {
-      return;
-    }
-
-    browser.navigateToDirectory(fullFilePath);
   }
 
   Future<void> openTempFile() async {
@@ -101,7 +92,6 @@ extension FileDataState on FileBrowserMetadata {
     return savePath.path;
   }
 
-
   /// return true if modified
   Future<bool> renameFile(String newName) async {
     String source = fullFilePath;
@@ -114,15 +104,16 @@ extension FileDataState on FileBrowserMetadata {
   }
 }
 
-class _RemoveFileDialog extends StatelessWidget {
+class _RemoveFileDialog extends ConsumerWidget {
+  final FileBrowserMetadata file;
+
   const _RemoveFileDialog({
     required this.file,
   });
-  final FileBrowserMetadata file;
 
   @override
-  Widget build(BuildContext context) {
-    final path = file.fullFilePath;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final serial = file.serial;
     final isFile = !file.isDirectory;
 
     return AlertDialog(
@@ -131,7 +122,7 @@ class _RemoveFileDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Text("Are you sure you want to delete this file/folder?"),
-          Text(path)
+          Text(file.friendlyFileName)
         ],
       ),
       actions: [
@@ -146,12 +137,14 @@ class _RemoveFileDialog extends StatelessWidget {
             child: const Text('Ok'),
             onPressed: () async {
               if (isFile) {
-                await Adb.removeFile(file.serial, path);
+                await Adb.removeFile(serial, file.fullFilePath);
               } else {
-                await Adb.removeDirectory(file.serial, path);
+                await Adb.removeDirectory(serial, file.fullFilePath);
               }
 
-              file.browser.refresh();
+              // refresh
+              ref.invalidate(fileBrowserProvider);
+
               if (context.mounted) {
                 Navigator.of(context).pop();
               }
@@ -161,7 +154,7 @@ class _RemoveFileDialog extends StatelessWidget {
   }
 }
 
-class _RenameFileDialog extends StatelessWidget {
+class _RenameFileDialog extends ConsumerWidget {
   _RenameFileDialog({required this.file})
       : controller = TextEditingController(text: file.friendlyFileName);
 
@@ -169,7 +162,7 @@ class _RenameFileDialog extends StatelessWidget {
   final TextEditingController controller;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return AlertDialog(
       title: const Text("Rename"),
       content: Column(
@@ -182,7 +175,7 @@ class _RenameFileDialog extends StatelessWidget {
               controller: controller,
               canRequestFocus: true,
               autofocus: true,
-              onFieldSubmitted: (s) => _submitRename(context),
+              onFieldSubmitted: (s) => _submitRename(context, ref),
               validator: _validateNewName,
             ),
           )
@@ -197,7 +190,7 @@ class _RenameFileDialog extends StatelessWidget {
         ),
         FilledButton(
           child: const Text('Ok'),
-          onPressed: () => _submitRename(context),
+          onPressed: () => _submitRename(context, ref),
         ),
       ],
     );
@@ -213,12 +206,14 @@ class _RenameFileDialog extends StatelessWidget {
     return null;
   }
 
-  void _submitRename(BuildContext context) async {
+  void _submitRename(BuildContext context, WidgetRef ref) async {
     await file.renameFile(controller.text);
+
+    // refresh
+    ref.invalidate(fileBrowserProvider);
 
     // False positive
     // ignore: use_build_context_synchronously
-    file.browser.refresh();
     if (!context.mounted) return;
     Navigator.of(context).pop();
   }

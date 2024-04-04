@@ -343,7 +343,7 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
   }
 
   static Future<String> uploadFile(
-      String serialName, String source, String destination) async {
+      String? serialName, String source, String destination) async {
     var result = await runAdbCommand(serialName, [
       "push",
       source,
@@ -369,7 +369,7 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
   }
 
   static Future<DateTime?> getFileModifiedDate(
-      String serialName, String path) async {
+      String? serialName, String path) async {
     var out = await runAdbCommand(
         serialName, ["shell", "stat -c %Y ${fixPath(path)}"]);
 
@@ -380,7 +380,7 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
     return DateTime.fromMillisecondsSinceEpoch(int.parse(result) * 1000);
   }
 
-  static Future<int?> getFileSize(String serialName, String path) async {
+  static Future<int?> getFileSize(String? serialName, String path) async {
     var out = await runAdbCommand(
         serialName, ["shell", "stat -c %s ${fixPath(path)}"]);
 
@@ -391,23 +391,23 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
     return int.parse(result);
   }
 
-  static Future<void> createDirectory(String serialName, String path) async {
+  static Future<void> createDirectory(String? serialName, String path) async {
     await runAdbCommand(serialName, ["shell", "mkdir -p ${fixPath(path)}"]);
   }
 
-  static Future<void> createFile(String serialName, String path) async {
+  static Future<void> createFile(String? serialName, String path) async {
     await runAdbCommand(serialName, ["shell", "touch ${fixPath(path)}"]);
   }
 
-  static Future<void> removeFile(String serialName, String path) async {
+  static Future<void> removeFile(String? serialName, String path) async {
     await runAdbCommand(serialName, ["shell", "rm ${fixPath(path)}"]);
   }
 
-  static Future<void> removeDirectory(String serialName, String path) async {
+  static Future<void> removeDirectory(String? serialName, String path) async {
     await runAdbCommand(serialName, ["shell", "rm -r ${fixPath(path)}"]);
   }
 
-  static Future<void> enableWireless(String serialName) async {
+  static Future<void> enableWireless(String? serialName) async {
     await runAdbCommand(serialName, ["tcpip", "5555"]);
   }
 

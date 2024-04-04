@@ -17,13 +17,14 @@ import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:trace/trace.dart';
 import 'package:tuple/tuple.dart';
 
 @immutable
-class DeviceBrowserPage extends StatefulWidget {
+class DeviceBrowserPage extends ConsumerStatefulWidget {
   final String serial;
   final String initialAddress;
 
@@ -31,7 +32,7 @@ class DeviceBrowserPage extends StatefulWidget {
       {super.key, required this.initialAddress, required this.serial});
 
   @override
-  State<DeviceBrowserPage> createState() => _DeviceBrowserPageState();
+  ConsumerState<DeviceBrowserPage> createState() => _DeviceBrowserPageState();
 }
 
 // ignore: constant_identifier_names
@@ -41,16 +42,12 @@ enum FileCreation { File, Folder }
 // TODO: Add download progress snackbar (similar to upload progress)
 // TODO: Make snackbar progress animation ease exponential because it looks
 // TODO: File details page
-class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
+class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
   bool _viewAsListMode = true;
   bool _dragging = false;
-  late Future<List<FileBrowserMetadata>?> _fileListingFuture;
 
   final TextEditingController _filterController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
-
-  late final FileBrowser _fileBrowser =
-      FileBrowser(addressBar: _addressController);
 
   @override
   void initState() {
@@ -59,13 +56,10 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     _addressController.text =
         Adb.fixPath(widget.initialAddress, addQuotes: false);
 
-    _fileBrowser.navigateEvent = _onNavigate;
-
     onForwardClick = native2flutter.mouseForwardClick
-        .addListener((_) => _fileBrowser.forward());
-    onBackClick =
-        native2flutter.mouseBackClick.addListener((_) => _fileBrowser.back());
-    _onNavigate(_fileBrowser.currentPath);
+        .addListener((_) => ref.read(fileBrowserProvider.notifier).forward());
+    onBackClick = native2flutter.mouseBackClick
+        .addListener((_) => ref.read(fileBrowserProvider.notifier).back());
   }
 
   @override
@@ -119,7 +113,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
       canRequestFocus: false,
       descendantsAreFocusable: true,
       skipTraversal: true,
-      onKeyEvent: _onKeyHandler,
+      onKey: _onKeyHandler,
       child: DefaultTabController(
         initialIndex: 0,
         length: 2,
@@ -129,7 +123,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
             // Here we take the value from the MyHomePage object that was created by
             // the App.build method, and use it to set our appbar title.
             title: _AppBarActions(
-              fileBrowser: _fileBrowser,
+              addressController: _addressController,
               filterController: _filterController,
               serial: widget.serial,
               onUpload: _uploadFiles,
@@ -141,10 +135,7 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
           body: _buildBody(),
           bottomNavigationBar: SizedBox(
             height: Theme.of(context).buttonTheme.height,
-            child: _PathBreadCumbs(
-              fileBrowser: _fileBrowser,
-              key: ValueKey(_fileBrowser.currentPath),
-            ),
+            child: const _PathBreadCumbs(),
           ),
         ),
       ),
@@ -158,7 +149,6 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
         initialAreas: [Area(weight: 0.15)],
         children: [
           _ShortcutsColumn(
-            fileBrowser: _fileBrowser,
             serial: widget.serial,
             onWatchAdd: onWatchAdd,
           ),
@@ -174,14 +164,15 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     );
   }
 
-  KeyEventResult _onKeyHandler(node, event) {
+  KeyEventResult _onKeyHandler(FocusNode node, RawKeyEvent event) {
+    final fileBrowser = ref.read(fileBrowserProvider.notifier);
     if (!event.repeat && event.isAltPressed) {
       if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
-        _fileBrowser.back();
+        fileBrowser.back();
         return KeyEventResult.handled;
       }
       if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
-        _fileBrowser.forward();
+        fileBrowser.forward();
         return KeyEventResult.handled;
       }
     }
@@ -205,57 +196,47 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
       child: Container(
         color:
             _dragging ? Theme.of(context).primaryColor.withOpacity(0.4) : null,
-        child: _fileView(),
+        child: _FilteredListContainer(
+          filterController: _filterController,
+          builder: (context, filteredFiles) => _viewAsListMode
+              ? _viewAsList(filteredFiles)
+              : _viewAsGrid(filteredFiles),
+        ),
       ),
     );
   }
 
-  FutureBuilder<List<FileBrowserMetadata>?> _fileView() {
-    return FutureBuilder(
-      future: _fileListingFuture,
-      key: ValueKey(_fileListingFuture),
-      builder: (context, snapshot) {
-        if (snapshot.hasError && snapshot.error != null) {
-          return Center(
-            child: Text(snapshot.error.toString()),
-          );
-        }
+  // Widget _fileView() {
+  // final fileListingFuture = ref.watch(fileInfoListingProvider());
 
-        if (snapshot.hasData &&
-            snapshot.data != null &&
-            snapshot.connectionState == ConnectionState.done) {
-          var list = snapshot.data!;
-
-          return _FilteredListContainer(
-            files: list,
-            key: ValueKey(list),
-            filterController: _filterController,
-            builder: (context, filteredFiles) => _viewAsListMode
-                ? _viewAsList(filteredFiles)
-                : _viewAsGrid(filteredFiles),
-          );
-        }
-
-        // Loading
-        return const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: CircularProgressIndicator(),
-              ),
-              Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Text('Awaiting result...'),
-              )
-            ],
-          ),
-        );
-      },
-    );
-  }
+  // return fileListingFuture.when(
+  //     error: (error, stackTrace) => Center(
+  //           child: Text(error.toString()),
+  //         ),
+  //     loading: () => const Center(
+  //           child: Column(
+  //             mainAxisAlignment: MainAxisAlignment.center,
+  //             children: <Widget>[
+  //               SizedBox(
+  //                 width: 60,
+  //                 height: 60,
+  //                 child: CircularProgressIndicator(),
+  //               ),
+  //               Padding(
+  //                 padding: EdgeInsets.only(top: 16),
+  //                 child: Text('Awaiting result...'),
+  //               )
+  //             ],
+  //           ),
+  //         ),
+  //     data: (list) => _FilteredListContainer(
+  //           files: list,
+  //           key: ValueKey(list),
+  //           builder: (context, filteredFiles) => _viewAsListMode
+  //               ? _viewAsList(filteredFiles)
+  //               : _viewAsGrid(filteredFiles),
+  //         ));
+  // }
 
   Widget _viewAsList(List<FileBrowserMetadata> files) {
     return Align(
@@ -294,10 +275,12 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
   }
 
   void _uploadFiles(Iterable<String> paths) async {
+    final fileBrowser = ref.read(fileBrowserProvider);
+
     Trace.verbose("Uploading $paths");
     var tasks = paths.map((path) {
       String dest = Adb.adbPathContext.join(
-          _fileBrowser.currentPath, // adb file path
+          fileBrowser.address, // adb file path
           Adb.hostPath.basename(path) // host file name
           );
 
@@ -329,39 +312,10 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
     );
 
     await Future.wait(tasks);
-    _fileBrowser.refresh(); // update UI
+    ref.invalidate(deviceFileListingProvider);
 
     await Future.delayed(const Duration(seconds: 4));
     snackBar.close();
-  }
-
-  void _onNavigate(String newPath) {
-    if (!context.mounted) return;
-
-    Trace.verbose("Loading $newPath");
-    // final token = ServicesBinding.rootIsolateToken;
-    // var future = compute((message) {
-    //   // why is this necessary?
-    //   BackgroundIsolateBinaryMessenger.ensureInitialized(message.item3!);
-
-    //   return Adb.getFilesInDirectory(message.item1, message.item2);
-    // }, Tuple3(widget.serial, newPath, token));
-    var future = Adb.getFilesInDirectory(widget.serial, newPath);
-
-    var filesFuture = future.then((list) => list.map((e) {
-          return FileBrowserMetadata(
-            browser: _fileBrowser,
-            modifiedTime: e.date,
-            fileSize: e.size,
-            fullFilePath: e.path,
-            isDirectory: e.path.endsWith("/"),
-            serial: widget.serial,
-          );
-        }).toList(growable: false));
-
-    setState(() {
-      _fileListingFuture = filesFuture;
-    });
   }
 
   Future<void> _watchFile(FileBrowserMetadata fileData) async {
@@ -370,48 +324,38 @@ class _DeviceBrowserPageState extends State<DeviceBrowserPage> {
       return;
     }
 
-    var source = fileData.fullFilePath;
+    var source = fileData.path;
 
     onWatchAdd.invoke(Tuple2(savePath, source));
   }
 }
 
-class _FilteredListContainer extends StatefulWidget {
+class _FilteredListContainer extends ConsumerStatefulWidget {
   const _FilteredListContainer({
     super.key,
     required this.filterController,
-    required this.files,
     required this.builder,
   });
 
   final TextEditingController filterController;
-  final List<FileBrowserMetadata> files;
 
   final Widget Function(
       BuildContext context, List<FileBrowserMetadata> filteredFiles) builder;
 
   @override
-  State<_FilteredListContainer> createState() => _FilteredListContainerState();
+  ConsumerState<_FilteredListContainer> createState() =>
+      _FilteredListContainerState();
 }
 
-class _FilteredListContainerState extends State<_FilteredListContainer> {
-  List<FileBrowserMetadata> _filteredFiles = [];
+class _FilteredListContainerState
+    extends ConsumerState<_FilteredListContainer> {
+  String? filter;
 
   @override
   void initState() {
     super.initState();
 
     widget.filterController.addListener(_doFilterFiles);
-
-    _doFilterFiles();
-  }
-
-  @override
-  void didUpdateWidget(covariant _FilteredListContainer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.files != widget.files) {
-      _doFilterFiles();
-    }
   }
 
   @override
@@ -421,38 +365,59 @@ class _FilteredListContainerState extends State<_FilteredListContainer> {
     widget.filterController.removeListener(_doFilterFiles);
   }
 
-  void _doFilterFiles() {
-    var filter = widget.filterController.text.toLowerCase();
-
-    var filteredFiles = filter.isEmpty
-        ? widget.files
-        : widget.files
-            .where((element) =>
-                element.fullFilePath.toLowerCase().contains(filter))
-            .toList(growable: false);
-
-    setState(() {
-      _filteredFiles = filteredFiles;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return widget.builder(context, _filteredFiles);
+    final filesAsync = ref.watch(filteredFileInfoListingProvider(filter));
+
+    return filesAsync.when(
+      data: (files) => widget.builder(context, files),
+      error: (e, s) => Center(
+        child: Text("Error loading file: $e"),
+      ),
+      loading: () => const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            SizedBox(
+              width: 60,
+              height: 60,
+              child: CircularProgressIndicator(),
+            ),
+            Padding(
+              padding: EdgeInsets.only(top: 16),
+              child: Text('Awaiting result...'),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _doFilterFiles() {
+    final newFilter = widget.filterController.text.trim();
+
+    if (filter == newFilter || (newFilter.isEmpty == (filter == null))) return;
+
+    setState(() {
+      if (newFilter.isEmpty) {
+        filter = null;
+      } else {
+        filter = newFilter;
+      }
+    });
   }
 }
 
-class _PathBreadCumbs extends StatelessWidget {
+class _PathBreadCumbs extends ConsumerWidget {
   const _PathBreadCumbs({
     super.key,
-    required FileBrowser fileBrowser,
-  }) : _fileBrowser = fileBrowser;
-
-  final FileBrowser _fileBrowser;
+  });
 
   @override
-  Widget build(BuildContext context) {
-    var currentPath = _fileBrowser.currentPath;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final fileBrowser = ref.watch(fileBrowserProvider);
+
+    var currentPath = fileBrowser.address;
     var locations = currentPath.split("/");
 
     if (locations.isNotEmpty && locations.first.isEmpty) {
@@ -467,7 +432,7 @@ class _PathBreadCumbs extends StatelessWidget {
     return Container(
       color: Theme.of(context).bottomNavigationBarTheme.backgroundColor,
       child: BreadCrumb(
-        key: ValueKey(_fileBrowser.currentPath),
+        key: ValueKey(fileBrowser.address),
         items: locations
             .map((e) => BreadCrumbItem(
                   borderRadius: BorderRadius.circular(4),
@@ -477,7 +442,9 @@ class _PathBreadCumbs extends StatelessWidget {
                       Adb.adbPathContext.basename(e),
                     ),
                   ),
-                  onTap: () => _fileBrowser.navigateToDirectory(e),
+                  onTap: () => ref
+                      .read(fileBrowserProvider.notifier)
+                      .navigateToDirectory(e),
                 ))
             .toList(growable: false),
         divider: const Icon(
@@ -495,38 +462,38 @@ class _PathBreadCumbs extends StatelessWidget {
   }
 }
 
-class _AppBarActions extends StatelessWidget {
+class _AppBarActions extends ConsumerWidget {
   const _AppBarActions({
     super.key,
-    required this.fileBrowser,
+    required this.addressController,
     required this.filterController,
     required this.serial,
     required this.onUpload,
   });
 
-  final FileBrowser fileBrowser;
+  final TextEditingController addressController;
   final TextEditingController filterController;
   final String serial;
   final void Function(Iterable<String> paths) onUpload;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Row(
       children: [
-        _navigationActions(),
-        _addressBar(),
+        _navigationActions(ref),
+        _addressBar(ref),
         _filterBar(),
         _fileActions(context)
       ],
     );
   }
 
-  Widget _navigationActions() {
+  Widget _navigationActions(WidgetRef ref) {
     var backButton = IconButton(
       splashRadius: 20,
       icon: const Icon(FluentIcons.arrow_left_20_regular),
       onPressed: () {
-        fileBrowser.back();
+        ref.read(fileBrowserProvider.notifier).back();
       },
     );
 
@@ -534,7 +501,7 @@ class _AppBarActions extends StatelessWidget {
       splashRadius: 20,
       icon: const Icon(FluentIcons.arrow_right_20_regular),
       onPressed: () {
-        fileBrowser.forward();
+        ref.read(fileBrowserProvider.notifier).forward();
       },
     );
 
@@ -542,15 +509,18 @@ class _AppBarActions extends StatelessWidget {
       splashRadius: 20,
       icon: const Icon(FluentIcons.folder_arrow_up_20_regular),
       onPressed: () {
-        fileBrowser.navigateToDirectory(
-            Adb.adbPathContext.dirname(fileBrowser.currentPath));
+        final currentPath = ref.read(fileBrowserProvider).address;
+        ref
+            .read(fileBrowserProvider.notifier)
+            .navigateToDirectory(Adb.adbPathContext.dirname(currentPath));
       },
     );
     var refreshButton = IconButton(
       splashRadius: 20,
       icon: const Icon(FluentIcons.arrow_clockwise_20_regular),
       onPressed: () {
-        fileBrowser.refresh();
+        ref.invalidate(deviceFileListingProvider);
+        ;
       },
     );
     return Wrap(
@@ -563,19 +533,21 @@ class _AppBarActions extends StatelessWidget {
     );
   }
 
-  Widget _addressBar() {
+  Widget _addressBar(WidgetRef ref) {
     return Expanded(
       flex: 2,
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: TextField(
-          controller: fileBrowser.addressBar,
+          controller: addressController,
           autocorrect: false,
           onSubmitted: (s) {
-            if (s == fileBrowser.currentPath) {
-              fileBrowser.refresh();
+            final fileBrowser = ref.read(fileBrowserProvider);
+            if (s == fileBrowser.address) {
+              ref.invalidate(deviceFileListingProvider);
+              ;
             } else {
-              fileBrowser.navigateToDirectory(s);
+              ref.read(fileBrowserProvider.notifier).navigateToDirectory(s);
             }
           },
           decoration: const InputDecoration(
@@ -650,7 +622,6 @@ class _AppBarActions extends StatelessWidget {
       barrierDismissible: true,
       builder: (BuildContext context) {
         return NewFileDialog(
-          fileBrowser: fileBrowser,
           serial: serial,
         );
       },
@@ -658,21 +629,19 @@ class _AppBarActions extends StatelessWidget {
   }
 }
 
-class NewFileDialog extends StatefulWidget {
+class NewFileDialog extends ConsumerStatefulWidget {
   const NewFileDialog({
     super.key,
-    required this.fileBrowser,
     required this.serial,
   });
 
-  final FileBrowser fileBrowser;
   final String serial;
 
   @override
-  State<NewFileDialog> createState() => _NewFileDialogState();
+  ConsumerState<NewFileDialog> createState() => _NewFileDialogState();
 }
 
-class _NewFileDialogState extends State<NewFileDialog> {
+class _NewFileDialogState extends ConsumerState<NewFileDialog> {
   final TextEditingController fileNameController = TextEditingController();
   FileCreation fileCreation = FileCreation.File;
 
@@ -684,6 +653,8 @@ class _NewFileDialogState extends State<NewFileDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final fileBrowser = ref.watch(fileBrowserProvider);
+
     var cancelButton = TextButton(
       child: const Text('Cancel'),
       onPressed: () {
@@ -695,7 +666,7 @@ class _NewFileDialogState extends State<NewFileDialog> {
       child: const Text('Ok'),
       onPressed: () {
         var path = Adb.adbPathContext
-            .join(widget.fileBrowser.currentPath, fileNameController.text);
+            .join(fileBrowser.address, fileNameController.text);
 
         Future task = switch (fileCreation) {
           FileCreation.File => Adb.createFile(widget.serial, path),
@@ -703,7 +674,7 @@ class _NewFileDialogState extends State<NewFileDialog> {
         };
 
         task.then((_) {
-          widget.fileBrowser.refresh();
+          ref.invalidate(deviceFileListingProvider);
           Navigator.of(context).pop();
         });
       },
@@ -760,28 +731,27 @@ class _NewFileDialogState extends State<NewFileDialog> {
   }
 }
 
-class _ShortcutsColumn extends StatelessWidget {
+class _ShortcutsColumn extends ConsumerWidget {
   const _ShortcutsColumn({
     super.key,
-    required FileBrowser fileBrowser,
     required this.serial,
     required this.onWatchAdd,
-  }) : _fileBrowser = fileBrowser;
+  });
 
-  final FileBrowser _fileBrowser;
   final String serial;
   final EventListenable<Tuple2<HostPath, QuestPath>> onWatchAdd;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         Expanded(
           child: TabBarView(
             children: [
               ShortcutsListWidget(
-                currentPath: _fileBrowser.currentPath,
-                onTap: _fileBrowser.navigateToDirectory,
+                onTap: (s) => ref
+                    .read(fileBrowserProvider.notifier)
+                    .navigateToDirectory(s),
               ),
               FileWatcherList(serial: serial, onUpdate: onWatchAdd)
             ],

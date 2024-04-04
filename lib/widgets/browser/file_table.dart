@@ -1,9 +1,12 @@
+import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
+import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/utils/file_sort.dart';
 import 'package:desktop_adb_file_browser/widgets/adaptive/menu_context.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:filesize/filesize.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 class FileDataTable extends StatefulWidget {
@@ -139,24 +142,18 @@ class _FileDataTableState extends State<FileDataTable> {
   }
 
   int _sortByName(FileBrowserMetadata a, FileBrowserMetadata b) {
-    return fileSort(a.fullFilePath, b.fullFilePath);
+    return fileSort(a.path, b.path);
   }
 
   int _sortByDate(FileBrowserMetadata a, FileBrowserMetadata b) {
-    var modifiedTime1 = a.modifiedTime;
-    var modifiedTime2 = b.modifiedTime;
-    if (modifiedTime1 == null || modifiedTime2 == null) {
-      return 0;
-    }
+    var modifiedTime1 = a.date;
+    var modifiedTime2 = b.date;
     return modifiedTime1.compareTo(modifiedTime2);
   }
 
   int _sortBySize(FileBrowserMetadata a, FileBrowserMetadata b) {
-    var modifiedSize1 = a.fileSize;
-    var modifiedSize2 = b.fileSize;
-    if (modifiedSize1 == null || modifiedSize2 == null) {
-      return 0;
-    }
+    var modifiedSize1 = a.size;
+    var modifiedSize2 = b.size;
     return modifiedSize1.compareTo(modifiedSize2);
   }
 }
@@ -249,7 +246,7 @@ class HeaderCell extends StatelessWidget {
   }
 }
 
-class DataRow extends StatefulWidget {
+class DataRow extends ConsumerStatefulWidget {
   final FileBrowserMetadata file;
   final void Function() onWatch;
 
@@ -260,10 +257,10 @@ class DataRow extends StatefulWidget {
   });
 
   @override
-  State<DataRow> createState() => _DataRowState();
+  ConsumerState<DataRow> createState() => _DataRowState();
 }
 
-class _DataRowState extends State<DataRow> {
+class _DataRowState extends ConsumerState<DataRow> {
   bool downloading = false;
   final MenuController _menuController = MenuController();
   final FocusNode _focusNode = FocusNode();
@@ -288,7 +285,11 @@ class _DataRowState extends State<DataRow> {
       child: InkWell(
         focusNode: _focusNode,
         // onLongPress: _renameDialog,
-        onTap: widget.file.navigateToDir,
+        onTap: () {
+          ref
+              .read(fileBrowserProvider.notifier)
+              .navigateToDirectory(widget.file.path);
+        },
         child: SizedBox(
           height: 40,
           child: Row(
@@ -328,11 +329,9 @@ class _DataRowState extends State<DataRow> {
   Widget _dateCell(FileBrowserMetadata e) {
     String text = "...";
 
-    var date = e.modifiedTime?.toLocal();
+    var date = e.date.toLocal();
 
-    if (date != null) {
-      text = defaultDateFormat.format(date);
-    }
+    text = defaultDateFormat.format(date);
 
     return Text(
       text,
@@ -341,8 +340,8 @@ class _DataRowState extends State<DataRow> {
   }
 
   Widget _fileSizeCell(FileBrowserMetadata e) {
-    var fileSize = e.fileSize;
-    final text = fileSize != null ? filesize(fileSize) : "...";
+    var fileSize = e.size;
+    final String text = filesize(fileSize);
     return Text(
       text,
       style: Theme.of(context).textTheme.titleSmall,

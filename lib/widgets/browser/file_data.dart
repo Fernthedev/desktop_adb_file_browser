@@ -14,31 +14,16 @@ import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:watcher/watcher.dart';
 
-typedef WatchFileCallback = Future<void> Function(FileBrowserMetadata fileData);
+typedef WatchFileCallback = Future<void> Function(FileListingData fileData);
 
-@immutable
-class FileBrowserMetadata {
-  final DateTime? modifiedTime;
-  final int? fileSize;
-  final String fullFilePath;
-  final String? serial;
-
-  const FileBrowserMetadata({
-    required this.fullFilePath,
-    required this.modifiedTime,
-    required this.fileSize,
-    required this.serial,
-  });
-}
-
-extension FileDataState on FileBrowserMetadata {
-  bool get isDirectory => fullFilePath.endsWith("/");
+extension FileDataState on FileListingData {
+  bool get isDirectory => path.endsWith("/");
 
   /// Just the file name
-  String get friendlyFileName => Adb.adbPathContext.basename(fullFilePath);
+  String get friendlyFileName => Adb.adbPathContext.basename(path);
 
   Future<void> copyPathToClipboard() {
-    return FlutterClipboard.copy(fullFilePath);
+    return FlutterClipboard.copy(path);
   }
 
   IconData getIcon() {
@@ -46,7 +31,7 @@ extension FileDataState on FileBrowserMetadata {
   }
 
   Future<void> openTempFile() async {
-    String questPath = fullFilePath;
+    String questPath = path;
     String fileName = friendlyFileName;
 
     var temp = await getTemporaryDirectory();
@@ -82,7 +67,7 @@ extension FileDataState on FileBrowserMetadata {
   }
 
   Future<String?> saveFileToDesktop() async {
-    String source = fullFilePath;
+    String source = path;
 
     final savePath = await getSaveLocation(suggestedName: friendlyFileName);
 
@@ -94,7 +79,7 @@ extension FileDataState on FileBrowserMetadata {
 
   /// return true if modified
   Future<bool> renameFile(String newName) async {
-    String source = fullFilePath;
+    String source = path;
     var task = Adb.moveFile(serial, source,
         Adb.adbPathContext.join(Adb.adbPathContext.dirname(source), newName));
 
@@ -137,13 +122,13 @@ class _RemoveFileDialog extends ConsumerWidget {
             child: const Text('Ok'),
             onPressed: () async {
               if (isFile) {
-                await Adb.removeFile(serial, file.fullFilePath);
+                await Adb.removeFile(serial, file.path);
               } else {
-                await Adb.removeDirectory(serial, file.fullFilePath);
+                await Adb.removeDirectory(serial, file.path);
               }
 
               // refresh
-              ref.invalidate(fileBrowserProvider);
+              ref.invalidate(deviceFileListingProvider);
 
               if (context.mounted) {
                 Navigator.of(context).pop();
@@ -210,7 +195,8 @@ class _RenameFileDialog extends ConsumerWidget {
     await file.renameFile(controller.text);
 
     // refresh
-    ref.invalidate(fileBrowserProvider);
+    ref.invalidate(deviceFileListingProvider);
+    ;
 
     // False positive
     // ignore: use_build_context_synchronously

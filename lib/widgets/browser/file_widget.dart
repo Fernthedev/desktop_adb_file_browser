@@ -1,12 +1,15 @@
+import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
+import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 @immutable
-class FileCardWidget extends StatefulWidget {
+class FileCardWidget extends ConsumerStatefulWidget {
   static const double _iconSplashRadius = 20;
 
-  final FileBrowserMetadata fileData;
+  final FileListingData fileData;
   final void Function() onWatch;
 
   final bool isCard;
@@ -19,15 +22,18 @@ class FileCardWidget extends StatefulWidget {
   });
 
   @override
-  State<FileCardWidget> createState() => _FileCardWidgetState();
+  ConsumerState<FileCardWidget> createState() => _FileCardWidgetState();
 }
 
-class _FileCardWidgetState extends State<FileCardWidget> {
+class _FileCardWidgetState extends ConsumerState<FileCardWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
       child: InkWell(
-        onTap: widget.fileData.navigateToDir,
+        onTap: () {
+          final fileBrowser = ref.read(fileBrowserProvider.notifier);
+          fileBrowser.navigateToDirectory(widget.fileData.path);
+        },
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.end,

@@ -100,25 +100,33 @@ class FileBrowser extends _$FileBrowser {
 }
 
 @riverpod
-Future<List<String>> deviceFileListing(DeviceFileListingRef ref) {
+Future<List<FileListingData>> deviceFileListing(DeviceFileListingRef ref) {
   final address = ref.watch(fileBrowserProvider);
   final device = ref.watch(selectedDeviceProvider);
 
-  return Adb.getFileNamesInDirectory(device?.serialName, address.address);
+  return Adb.getFilesInDirectory(device?.serialName, address.address);
 }
 
 @riverpod
-Future<List<String>> filteredFileListing(
-    FilteredFileListingRef ref, String filter) async {
+Future<List<FileListingData>> filteredFileInfoListing(
+    FilteredFileInfoListingRef ref,
+    [String? filter]) async {
   final list = await ref.watch(deviceFileListingProvider.future);
 
-  final loweredFilter = filter.toLowerCase();
+  final loweredFilter = filter?.toLowerCase();
 
-  return list.where((x) => x.toLowerCase().contains(loweredFilter)).toList();
+  final targetList = loweredFilter == null
+      ? list
+      : list
+          .where((x) =>
+              Adb.adbPathContext.basename(x.path).contains(loweredFilter))
+          .toList();
+
+  return targetList;
 }
 
 @riverpod
-Future<FileBrowserMetadata> fileInfo(FileInfoRef ref, String path) async {
+Future<FileListingData> fileInfo(FileInfoRef ref, String path) async {
   // update if device file listing provider is updated
   ref.watch(deviceFileListingProvider);
   final device = ref.watch(selectedDeviceProvider);
@@ -126,10 +134,12 @@ Future<FileBrowserMetadata> fileInfo(FileInfoRef ref, String path) async {
   final size = Adb.getFileSize(device?.serialName, path);
   final date = Adb.getFileModifiedDate(device?.serialName, path);
 
-  return FileBrowserMetadata(
-    fileSize: await size,
-    fullFilePath: path,
-    modifiedTime: await date,
+  return FileListingData(
+    size: await size ?? -1,
+    path: path,
+    date: await date ?? DateTime.fromMillisecondsSinceEpoch(0),
     serial: device?.serialName,
+    permission: "N/A",
+    user: "N/A"
   );
 }

@@ -196,7 +196,7 @@ abstract class Adb {
 
   //
   static List<FileListingData> parsePathsWithMoreData(
-      String str, String path, bool onlyNames) {
+      String str, String path, bool onlyNames, String? serial) {
     // Remove unnecessary padding that ADB adds to get purely the paths
     var rawPaths = str.split("\n");
     /*
@@ -259,6 +259,7 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
         permission: permission,
         size: size,
         user: user,
+        serial: serial
       );
     }).toList(growable: false);
 
@@ -280,7 +281,7 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
         await runAdbCommand(serialName, ["shell", "ls -pLla ${fixPath(path)}"]);
 
     return parsePathsWithMoreData(
-        normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false);
+        normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false, serialName);
   }
 
   static Future<List<String>?> getDevicesSerial() async {
@@ -308,10 +309,13 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
 
     var result = await startAdbCommand(serialName, ["logcat"]);
 
-    return (result, StreamGroup.mergeBroadcast([
-      result.stderr.transform(utf8.decoder),
-      result.stdout.transform(utf8.decoder),
-    ]));
+    return (
+      result,
+      StreamGroup.mergeBroadcast([
+        result.stderr.transform(utf8.decoder),
+        result.stdout.transform(utf8.decoder),
+      ])
+    );
     // .transform(const LineSplitter());
   }
 
@@ -428,6 +432,8 @@ class Device {
       required this.modelName});
 }
 
+typedef FileBrowserMetadata = FileListingData;
+
 @immutable
 class FileListingData {
   final String permission;
@@ -435,11 +441,14 @@ class FileListingData {
   final int size;
   final DateTime date;
   final String path;
+  final String? serial;
 
-  const FileListingData(
-      {required this.permission,
-      required this.user,
-      required this.size,
-      required this.date,
-      required this.path});
+  const FileListingData({
+    required this.permission,
+    required this.user,
+    required this.size,
+    required this.date,
+    required this.path,
+    required this.serial,
+  });
 }

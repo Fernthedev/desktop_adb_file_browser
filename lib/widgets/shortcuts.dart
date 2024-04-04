@@ -1,22 +1,23 @@
+import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 typedef ShortcutTapFunction = void Function(String path);
 
-class ShortcutsListWidget extends StatefulWidget {
+class ShortcutsListWidget extends ConsumerStatefulWidget {
   final ShortcutTapFunction? onTap;
-  final String currentPath;
 
-  const ShortcutsListWidget(
-      {super.key, required this.onTap, required this.currentPath});
+  const ShortcutsListWidget({super.key, required this.onTap});
 
   @override
-  State<ShortcutsListWidget> createState() => _ShortcutsListWidgetState();
+  ConsumerState<ShortcutsListWidget> createState() =>
+      _ShortcutsListWidgetState();
 }
 
-class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
+class _ShortcutsListWidgetState extends ConsumerState<ShortcutsListWidget> {
   late Future<Map<String, String>> _future;
   late SharedPreferences _preferences;
   final textController = TextEditingController();
@@ -87,13 +88,15 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
   }
 
   Row _shortcutAddRow() {
+    final fileBrowser = ref.watch(fileBrowserProvider);
+
     return Row(
       mainAxisSize: MainAxisSize.max,
       children: [
         // make text field take up
         Expanded(
           child: TextField(
-            key: ValueKey(widget.currentPath),
+            key: ValueKey(fileBrowser.address),
             controller: textController,
             decoration: const InputDecoration(
                 border: UnderlineInputBorder(
@@ -156,10 +159,12 @@ class _ShortcutsListWidgetState extends State<ShortcutsListWidget> {
   void addShortcut(String name) async {
     var map = await _future;
 
-    if (name.isEmpty) name = widget.currentPath;
+    final currentPath = ref.read(fileBrowserProvider).address;
+
+    if (name.isEmpty) name = currentPath;
     if (name.isEmpty) return;
 
-    map[name] = widget.currentPath;
+    map[name] = currentPath;
     _updateMap(map);
   }
 }

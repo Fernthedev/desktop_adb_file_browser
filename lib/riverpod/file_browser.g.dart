@@ -6,12 +6,12 @@ part of 'file_browser.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$deviceFileListingHash() => r'63ccb62464afb8fa7420307e788fa6156ed778c8';
+String _$deviceFileListingHash() => r'fa6c8c03fed896c861c994e0ab45b25b6526eb0d';
 
 /// See also [deviceFileListing].
 @ProviderFor(deviceFileListing)
 final deviceFileListingProvider =
-    AutoDisposeFutureProvider<List<String>>.internal(
+    AutoDisposeFutureProvider<List<FileListingData>>.internal(
   deviceFileListing,
   name: r'deviceFileListingProvider',
   debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
@@ -21,9 +21,10 @@ final deviceFileListingProvider =
   allTransitiveDependencies: null,
 );
 
-typedef DeviceFileListingRef = AutoDisposeFutureProviderRef<List<String>>;
-String _$filteredFileListingHash() =>
-    r'bd77fe22ff453cad5be0e2233aafcf01f08b7f6e';
+typedef DeviceFileListingRef
+    = AutoDisposeFutureProviderRef<List<FileListingData>>;
+String _$filteredFileInfoListingHash() =>
+    r'2ee271a068ad4f86b45d9b982fc8d9b040422fbd';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -46,27 +47,28 @@ class _SystemHash {
   }
 }
 
-/// See also [filteredFileListing].
-@ProviderFor(filteredFileListing)
-const filteredFileListingProvider = FilteredFileListingFamily();
+/// See also [filteredFileInfoListing].
+@ProviderFor(filteredFileInfoListing)
+const filteredFileInfoListingProvider = FilteredFileInfoListingFamily();
 
-/// See also [filteredFileListing].
-class FilteredFileListingFamily extends Family<AsyncValue<List<String>>> {
-  /// See also [filteredFileListing].
-  const FilteredFileListingFamily();
+/// See also [filteredFileInfoListing].
+class FilteredFileInfoListingFamily
+    extends Family<AsyncValue<List<FileListingData>>> {
+  /// See also [filteredFileInfoListing].
+  const FilteredFileInfoListingFamily();
 
-  /// See also [filteredFileListing].
-  FilteredFileListingProvider call(
-    String filter,
-  ) {
-    return FilteredFileListingProvider(
+  /// See also [filteredFileInfoListing].
+  FilteredFileInfoListingProvider call([
+    String? filter,
+  ]) {
+    return FilteredFileInfoListingProvider(
       filter,
     );
   }
 
   @override
-  FilteredFileListingProvider getProviderOverride(
-    covariant FilteredFileListingProvider provider,
+  FilteredFileInfoListingProvider getProviderOverride(
+    covariant FilteredFileInfoListingProvider provider,
   ) {
     return call(
       provider.filter,
@@ -85,33 +87,33 @@ class FilteredFileListingFamily extends Family<AsyncValue<List<String>>> {
       _allTransitiveDependencies;
 
   @override
-  String? get name => r'filteredFileListingProvider';
+  String? get name => r'filteredFileInfoListingProvider';
 }
 
-/// See also [filteredFileListing].
-class FilteredFileListingProvider
-    extends AutoDisposeFutureProvider<List<String>> {
-  /// See also [filteredFileListing].
-  FilteredFileListingProvider(
-    String filter,
-  ) : this._internal(
-          (ref) => filteredFileListing(
-            ref as FilteredFileListingRef,
+/// See also [filteredFileInfoListing].
+class FilteredFileInfoListingProvider
+    extends AutoDisposeFutureProvider<List<FileListingData>> {
+  /// See also [filteredFileInfoListing].
+  FilteredFileInfoListingProvider([
+    String? filter,
+  ]) : this._internal(
+          (ref) => filteredFileInfoListing(
+            ref as FilteredFileInfoListingRef,
             filter,
           ),
-          from: filteredFileListingProvider,
-          name: r'filteredFileListingProvider',
+          from: filteredFileInfoListingProvider,
+          name: r'filteredFileInfoListingProvider',
           debugGetCreateSourceHash:
               const bool.fromEnvironment('dart.vm.product')
                   ? null
-                  : _$filteredFileListingHash,
-          dependencies: FilteredFileListingFamily._dependencies,
+                  : _$filteredFileInfoListingHash,
+          dependencies: FilteredFileInfoListingFamily._dependencies,
           allTransitiveDependencies:
-              FilteredFileListingFamily._allTransitiveDependencies,
+              FilteredFileInfoListingFamily._allTransitiveDependencies,
           filter: filter,
         );
 
-  FilteredFileListingProvider._internal(
+  FilteredFileInfoListingProvider._internal(
     super._createNotifier, {
     required super.name,
     required super.dependencies,
@@ -121,16 +123,18 @@ class FilteredFileListingProvider
     required this.filter,
   }) : super.internal();
 
-  final String filter;
+  final String? filter;
 
   @override
   Override overrideWith(
-    FutureOr<List<String>> Function(FilteredFileListingRef provider) create,
+    FutureOr<List<FileListingData>> Function(
+            FilteredFileInfoListingRef provider)
+        create,
   ) {
     return ProviderOverride(
       origin: this,
-      override: FilteredFileListingProvider._internal(
-        (ref) => create(ref as FilteredFileListingRef),
+      override: FilteredFileInfoListingProvider._internal(
+        (ref) => create(ref as FilteredFileInfoListingRef),
         from: from,
         name: null,
         dependencies: null,
@@ -142,13 +146,13 @@ class FilteredFileListingProvider
   }
 
   @override
-  AutoDisposeFutureProviderElement<List<String>> createElement() {
-    return _FilteredFileListingProviderElement(this);
+  AutoDisposeFutureProviderElement<List<FileListingData>> createElement() {
+    return _FilteredFileInfoListingProviderElement(this);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is FilteredFileListingProvider && other.filter == filter;
+    return other is FilteredFileInfoListingProvider && other.filter == filter;
   }
 
   @override
@@ -160,18 +164,19 @@ class FilteredFileListingProvider
   }
 }
 
-mixin FilteredFileListingRef on AutoDisposeFutureProviderRef<List<String>> {
+mixin FilteredFileInfoListingRef
+    on AutoDisposeFutureProviderRef<List<FileListingData>> {
   /// The parameter `filter` of this provider.
-  String get filter;
+  String? get filter;
 }
 
-class _FilteredFileListingProviderElement
-    extends AutoDisposeFutureProviderElement<List<String>>
-    with FilteredFileListingRef {
-  _FilteredFileListingProviderElement(super.provider);
+class _FilteredFileInfoListingProviderElement
+    extends AutoDisposeFutureProviderElement<List<FileListingData>>
+    with FilteredFileInfoListingRef {
+  _FilteredFileInfoListingProviderElement(super.provider);
 
   @override
-  String get filter => (origin as FilteredFileListingProvider).filter;
+  String? get filter => (origin as FilteredFileInfoListingProvider).filter;
 }
 
 String _$fileInfoHash() => r'6dbfc863524cc52ddb87dc3f198b4e847afd5d83';

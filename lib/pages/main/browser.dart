@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:desktop_adb_file_browser/main.dart';
+import 'package:desktop_adb_file_browser/riverpod/file_queue.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
@@ -19,6 +20,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
+import 'package:open_file/open_file.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:trace/trace.dart';
 import 'package:tuple/tuple.dart';
@@ -80,6 +82,62 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Download Snackbar
+    ref.listen(downloadQueueProvider, (previous, next) async {
+      // Snack bar
+      var snackBar = ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: ProgressSnackbar(
+            futures: next,
+            widgetBuilder: _makeDownloadSnackbarContent,
+          ),
+          duration: const Duration(days: 365), // year old snackbar
+          width: 680.0, // Width of the SnackBar.
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8.0, // Inner padding for SnackBar content.
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+        ),
+      );
+
+      await Future.wait(next);
+      ref.invalidate(deviceFileListingProvider);
+
+      await Future.delayed(const Duration(seconds: 4));
+      snackBar.close();
+    });
+    // Upload Snackbar
+    ref.listen(downloadQueueProvider, (previous, next) async {
+      // Snack bar
+      var snackBar = ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: ProgressSnackbar(
+            futures: next,
+            widgetBuilder: ((totalFutures, remainingFutures) => Text(
+                "Uploading ${(totalFutures - remainingFutures) / totalFutures * 100}")),
+          ),
+          duration: const Duration(days: 365), // year old snackbar
+          width: 680.0, // Width of the SnackBar.
+          padding: const EdgeInsets.symmetric(
+            horizontal: 8.0, // Inner padding for SnackBar content.
+          ),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
+        ),
+      );
+
+      await Future.wait(next);
+      ref.invalidate(deviceFileListingProvider);
+
+      await Future.delayed(const Duration(seconds: 4));
+      snackBar.close();
+    });
+
     var listViewButton = IconButton(
       icon: Icon(_viewAsListMode ? Icons.list : Icons.grid_3x3),
       onPressed: () {
@@ -140,6 +198,19 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
         ),
       ),
     );
+  }
+
+  Widget _makeDownloadSnackbarContent(int totalFutures, int remainingFutures) {
+    final onClick = remainingFutures > 0 ? null : () => OpenFile.open(null);
+
+    return Wrap(children: [
+      Text(
+          "Downloading: ${(totalFutures - remainingFutures) / totalFutures * 100}"),
+      FloatingActionButton.extended(
+        onPressed: onClick,
+        label: const Text("Open"),
+      )
+    ]);
   }
 
   MultiSplitViewTheme _buildBody() {
@@ -206,38 +277,6 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
     );
   }
 
-  // Widget _fileView() {
-  // final fileListingFuture = ref.watch(fileInfoListingProvider());
-
-  // return fileListingFuture.when(
-  //     error: (error, stackTrace) => Center(
-  //           child: Text(error.toString()),
-  //         ),
-  //     loading: () => const Center(
-  //           child: Column(
-  //             mainAxisAlignment: MainAxisAlignment.center,
-  //             children: <Widget>[
-  //               SizedBox(
-  //                 width: 60,
-  //                 height: 60,
-  //                 child: CircularProgressIndicator(),
-  //               ),
-  //               Padding(
-  //                 padding: EdgeInsets.only(top: 16),
-  //                 child: Text('Awaiting result...'),
-  //               )
-  //             ],
-  //           ),
-  //         ),
-  //     data: (list) => _FilteredListContainer(
-  //           files: list,
-  //           key: ValueKey(list),
-  //           builder: (context, filteredFiles) => _viewAsListMode
-  //               ? _viewAsList(filteredFiles)
-  //               : _viewAsGrid(filteredFiles),
-  //         ));
-  // }
-
   Widget _viewAsList(List<FileBrowserMetadata> files) {
     return Align(
       alignment: Alignment.topCenter,
@@ -276,6 +315,7 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
 
   void _uploadFiles(Iterable<String> paths) async {
     final fileBrowser = ref.read(fileBrowserProvider);
+    final uploadQueue = ref.read(uploadQueueProvider.notifier);
 
     Trace.verbose("Uploading $paths");
     var tasks = paths.map((path) {
@@ -288,35 +328,12 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
       return Adb.uploadFile(widget.serial, path, dest);
     });
 
-    // Snack bar
-    var snackBar = ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: ProgressSnackbar(
-            futures: tasks,
-            stringBuilder: (futureCount, futureRemaining) =>
-                "Uploading files! ${(futureCount - futureRemaining) / futureCount * 100}%",
-          ),
-        ),
-        duration: const Duration(days: 365), // year old snackbar
-        width: 680.0, // Width of the SnackBar.
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8.0, // Inner padding for SnackBar content.
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-      ),
-    );
-
-    await Future.wait(tasks);
-    ref.invalidate(deviceFileListingProvider);
-
-    await Future.delayed(const Duration(seconds: 4));
-    snackBar.close();
+    uploadQueue.addAllQueue(tasks);
   }
+
+  void _showUploadSnackbar() {}
+
+  void _showDownloadSnackbar() {}
 
   Future<void> _watchFile(FileBrowserMetadata fileData) async {
     String? savePath = await fileData.saveFileToDesktop();
@@ -545,7 +562,6 @@ class _AppBarActions extends ConsumerWidget {
             final fileBrowser = ref.read(fileBrowserProvider);
             if (s == fileBrowser.address) {
               ref.invalidate(deviceFileListingProvider);
-              ;
             } else {
               ref.read(fileBrowserProvider.notifier).navigateToDirectory(s);
             }

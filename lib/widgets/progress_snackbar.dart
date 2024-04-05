@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
-typedef StringBuilderFn = String Function(
+typedef WidgetBuilderFn = Widget Function(
     int totalFutures, int remainingFutures);
 
 class ProgressSnackbar extends StatefulWidget {
   const ProgressSnackbar(
-      {super.key, required this.futures, required this.stringBuilder});
+      {super.key, required this.futures, required this.widgetBuilder});
 
   final Iterable<Future> futures;
-  final StringBuilderFn stringBuilder;
+  final WidgetBuilderFn widgetBuilder;
 
   @override
   State<ProgressSnackbar> createState() => _ProgressSnackbarState();
@@ -37,12 +37,12 @@ class _ProgressSnackbarState extends State<ProgressSnackbar> {
 
   @override
   Widget build(BuildContext context) {
-    final String content =
-        widget.stringBuilder(futuresList.length, futureCount);
+    final Widget content =
+        widget.widgetBuilder(futuresList.length, futureCount);
 
     return Column(
       children: [
-        Text(content),
+        content,
         const SizedBox(height: 20),
         LinearProgressIndicator(
           value: futureCount / futuresList.length,

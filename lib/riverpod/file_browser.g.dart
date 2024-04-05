@@ -24,7 +24,7 @@ final deviceFileListingProvider =
 typedef DeviceFileListingRef
     = AutoDisposeFutureProviderRef<List<FileListingData>>;
 String _$filteredFileInfoListingHash() =>
-    r'2ee271a068ad4f86b45d9b982fc8d9b040422fbd';
+    r'4423120e2ce105dc8aa0987c2a29dab9e33d10b5';
 
 /// Copied from Dart SDK
 class _SystemHash {
@@ -179,14 +179,14 @@ class _FilteredFileInfoListingProviderElement
   String? get filter => (origin as FilteredFileInfoListingProvider).filter;
 }
 
-String _$fileInfoHash() => r'6dbfc863524cc52ddb87dc3f198b4e847afd5d83';
+String _$fileInfoHash() => r'3b490c9fe56bdc993118b829a15c45610210ee44';
 
 /// See also [fileInfo].
 @ProviderFor(fileInfo)
 const fileInfoProvider = FileInfoFamily();
 
 /// See also [fileInfo].
-class FileInfoFamily extends Family<AsyncValue<FileBrowserMetadata>> {
+class FileInfoFamily extends Family<AsyncValue<FileListingData>> {
   /// See also [fileInfo].
   const FileInfoFamily();
 
@@ -224,7 +224,7 @@ class FileInfoFamily extends Family<AsyncValue<FileBrowserMetadata>> {
 }
 
 /// See also [fileInfo].
-class FileInfoProvider extends AutoDisposeFutureProvider<FileBrowserMetadata> {
+class FileInfoProvider extends AutoDisposeFutureProvider<FileListingData> {
   /// See also [fileInfo].
   FileInfoProvider(
     String path,
@@ -258,7 +258,7 @@ class FileInfoProvider extends AutoDisposeFutureProvider<FileBrowserMetadata> {
 
   @override
   Override overrideWith(
-    FutureOr<FileBrowserMetadata> Function(FileInfoRef provider) create,
+    FutureOr<FileListingData> Function(FileInfoRef provider) create,
   ) {
     return ProviderOverride(
       origin: this,
@@ -275,7 +275,7 @@ class FileInfoProvider extends AutoDisposeFutureProvider<FileBrowserMetadata> {
   }
 
   @override
-  AutoDisposeFutureProviderElement<FileBrowserMetadata> createElement() {
+  AutoDisposeFutureProviderElement<FileListingData> createElement() {
     return _FileInfoProviderElement(this);
   }
 
@@ -293,14 +293,13 @@ class FileInfoProvider extends AutoDisposeFutureProvider<FileBrowserMetadata> {
   }
 }
 
-mixin FileInfoRef on AutoDisposeFutureProviderRef<FileBrowserMetadata> {
+mixin FileInfoRef on AutoDisposeFutureProviderRef<FileListingData> {
   /// The parameter `path` of this provider.
   String get path;
 }
 
 class _FileInfoProviderElement
-    extends AutoDisposeFutureProviderElement<FileBrowserMetadata>
-    with FileInfoRef {
+    extends AutoDisposeFutureProviderElement<FileListingData> with FileInfoRef {
   _FileInfoProviderElement(super.provider);
 
   @override

@@ -41,8 +41,6 @@ class DeviceBrowserPage extends ConsumerStatefulWidget {
 enum FileCreation { File, Folder }
 
 // TODO: Gestures
-// TODO: Add download progress snackbar (similar to upload progress)
-// TODO: Make snackbar progress animation ease exponential because it looks
 // TODO: File details page
 class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
   bool _viewAsListMode = true;

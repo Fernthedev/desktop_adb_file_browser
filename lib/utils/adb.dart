@@ -12,7 +12,6 @@ import 'package:path/path.dart' as host_path;
 
 import 'package:path_provider/path_provider.dart';
 import 'package:trace/trace.dart';
-import 'package:tuple/tuple.dart';
 
 typedef DownloadProgressCallback = void Function(int current, int total);
 

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:desktop_adb_file_browser/utils/adb.dart';
-import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'file_queue.g.dart';

@@ -4,7 +4,6 @@ import 'dart:math';
 
 import 'package:clipboard/clipboard.dart';
 import 'package:desktop_adb_file_browser/riverpod/file_queue.dart';
-import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
 import 'package:file_selector/file_selector.dart';
@@ -204,7 +203,6 @@ class _RenameFileDialog extends ConsumerWidget {
 
     // refresh
     ref.invalidate(deviceFileListingProvider);
-    ;
 
     // False positive
     // ignore: use_build_context_synchronously

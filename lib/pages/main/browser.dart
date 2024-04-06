@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:multi_split_view/multi_split_view.dart';
-import 'package:open_file/open_file.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:trace/trace.dart';
 import 'package:tuple/tuple.dart';
@@ -23,7 +22,6 @@ import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_table.dart';
 import 'package:desktop_adb_file_browser/widgets/browser/file_widget.dart';
-import 'package:desktop_adb_file_browser/widgets/progress_snackbar.dart';
 import 'package:desktop_adb_file_browser/widgets/shortcuts.dart';
 import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 
@@ -266,7 +264,6 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
 
 class _FilteredListContainer extends ConsumerStatefulWidget {
   const _FilteredListContainer({
-    super.key,
     required this.filterController,
     required this.builder,
   });
@@ -343,9 +340,7 @@ class _FilteredListContainerState
 }
 
 class _PathBreadCumbs extends ConsumerWidget {
-  const _PathBreadCumbs({
-    super.key,
-  });
+  const _PathBreadCumbs();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -398,7 +393,6 @@ class _PathBreadCumbs extends ConsumerWidget {
 
 class _AppBarActions extends ConsumerStatefulWidget {
   const _AppBarActions({
-    super.key,
     required this.serial,
     required this.onUpload,
     required this.filterController,
@@ -692,7 +686,6 @@ class _NewFileDialogState extends ConsumerState<NewFileDialog> {
 
 class _ShortcutsColumn extends ConsumerWidget {
   const _ShortcutsColumn({
-    super.key,
     required this.serial,
     required this.onWatchAdd,
   });

@@ -7,7 +7,7 @@ class Native2FlutterImpl extends Native2Flutter {
   EventListenable<void> mouseBackClick = EventListenable();
 
   Native2FlutterImpl([BinaryMessenger? messenger]) {
-    Native2Flutter.setup(this, binaryMessenger: messenger);
+    Native2Flutter.setUp(this, binaryMessenger: messenger);
   }
 
   @override

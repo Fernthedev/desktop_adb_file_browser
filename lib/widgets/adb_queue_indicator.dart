@@ -37,7 +37,7 @@ class _ADBQueueIndicatorState extends ConsumerState<ADBQueueIndicator> {
         content: DownloadQueueSnackbar(
           futures: {nextFuture},
         ),
-        duration: const Duration(days: 365), // year old snackbar
+        duration: const Duration(seconds: 10), // year old snackbar
         width: 680.0, // Width of the SnackBar.
         padding: const EdgeInsets.symmetric(
           horizontal: 8.0, // Inner padding for SnackBar content.
@@ -53,6 +53,7 @@ class _ADBQueueIndicatorState extends ConsumerState<ADBQueueIndicator> {
     ref.invalidate(deviceFileListingProvider);
 
     await Future.delayed(const Duration(seconds: 4));
+    // TODO: Figure out a way to check if the snackbar is visible
     try {
       snackBar.close();
     } catch (e) {
@@ -87,6 +88,7 @@ class _ADBQueueIndicatorState extends ConsumerState<ADBQueueIndicator> {
     ref.invalidate(deviceFileListingProvider);
 
     await Future.delayed(const Duration(seconds: 4));
+    // TODO: Figure out a way to check if the snackbar is visible
     try {
       snackBar.close();
     } catch (e) {

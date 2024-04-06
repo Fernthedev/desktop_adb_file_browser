@@ -30,7 +30,6 @@ final routes = RouteMap(routes: {
       key: const ValueKey("browser"),
       child: DeviceBrowserPage(
         serial: info.pathParameters['device']!,
-        initialAddress: info.pathParameters['path']!,
       )),
   '/log/:device': (info) => MaterialPage(
       key: const ValueKey("log"),

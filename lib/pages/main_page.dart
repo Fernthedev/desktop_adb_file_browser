@@ -103,7 +103,6 @@ class _MainPageState extends State<MainPage> {
           ),
         _Page.browser => DeviceBrowserPage(
             key: const ValueKey("browser"),
-            initialAddress: "/sdcard/",
             serial: _selectedDevice.value!,
           ),
         _Page.logger => LogPage(

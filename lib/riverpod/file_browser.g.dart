@@ -306,7 +306,7 @@ class _FileInfoProviderElement
   String get path => (origin as FileInfoProvider).path;
 }
 
-String _$fileBrowserHash() => r'998143e802b3e248e0c2da7400bb1e894b141167';
+String _$fileBrowserHash() => r'f4eed4d7da481fa1f1fe66f07e47d0d4fa995eb4';
 
 /// See also [FileBrowser].
 @ProviderFor(FileBrowser)

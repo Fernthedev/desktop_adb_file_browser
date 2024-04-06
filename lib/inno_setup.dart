@@ -1,5 +1,6 @@
 import 'dart:io';
 
+// ignore: depend_on_referenced_packages
 import 'package:innosetup/innosetup.dart';
 import 'package:path/path.dart' as path;
 import 'package:version/version.dart';

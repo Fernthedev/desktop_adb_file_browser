@@ -9,8 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:routemaster/routemaster.dart';
 import 'package:trace/trace.dart';
 
-import '../../utils/scroll.dart';
-
 class LogPage extends StatefulWidget {
   const LogPage({super.key, required this.serial});
 
@@ -23,7 +21,6 @@ class LogPage extends StatefulWidget {
 class _LogPageState extends State<LogPage> {
   final List<String> _logs = [];
   final UniqueKey _listKey = UniqueKey();
-  final _scrollController = AdjustableScrollController();
 
   late final Future<(Process, Stream<String>)> _logFuture =
       Adb.logcat(widget.serial);
@@ -47,7 +44,7 @@ class _LogPageState extends State<LogPage> {
   }
 
   FutureOr<Null> _handleLogFuture((Process, Stream<String>) values) {
-    final (process, stream) = values;
+    final (_, stream) = values;
     try {
       _streamSubscription = stream.listen((event) {
         setState(() {

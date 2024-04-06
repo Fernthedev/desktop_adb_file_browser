@@ -49,6 +49,5 @@ class _ProgressSnackbarState extends State<ProgressSnackbar> {
         )
       ],
     );
-    ;
   }
 }

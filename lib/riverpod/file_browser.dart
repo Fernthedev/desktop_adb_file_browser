@@ -3,8 +3,6 @@ import 'dart:collection';
 import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/utils/stack.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:trace/trace.dart';
@@ -73,7 +71,7 @@ class FileBrowser extends _$FileBrowser {
     final newForwardPaths = Queue<String>.from(state.forwardPaths);
     String newCurrentPath = state.address;
 
-    final oldAddressText = state.address;
+    // final oldAddressText = state.address;
 
     targetPath = targetPath == null
         ? null

@@ -38,10 +38,14 @@ class FileBrowser extends _$FileBrowser {
     if (state.historyPaths.isEmpty) return;
 
     final newForwardPaths = Queue<String>.from(state.forwardPaths);
-    final targetPath = state.address;
-    newForwardPaths.push(targetPath);
+    final currentPath = state.address;
+    newForwardPaths.push(currentPath);
 
-    state = state.copyWith(forwardPaths: newForwardPaths);
+    final newHistoryPaths = Queue<String>.from(state.historyPaths);
+    final targetPath = newHistoryPaths.pop();
+
+    state = state.copyWith(
+        forwardPaths: newForwardPaths, historyPaths: newHistoryPaths);
     _refreshFiles(
         targetPath: targetPath, addToHistory: false, clearForward: false);
   }
@@ -136,11 +140,10 @@ Future<FileListingData> fileInfo(FileInfoRef ref, String path) async {
   final date = Adb.getFileModifiedDate(device?.serialName, path);
 
   return FileListingData(
-    size: await size ?? -1,
-    path: path,
-    date: await date ?? DateTime.fromMillisecondsSinceEpoch(0),
-    serial: device?.serialName,
-    permission: "N/A",
-    user: "N/A"
-  );
+      size: await size ?? -1,
+      path: path,
+      date: await date ?? DateTime.fromMillisecondsSinceEpoch(0),
+      serial: device?.serialName,
+      permission: "N/A",
+      user: "N/A");
 }

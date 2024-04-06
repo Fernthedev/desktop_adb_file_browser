@@ -1,17 +1,19 @@
 import 'dart:async';
 
+import 'package:desktop_adb_file_browser/riverpod/file_queue.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/utils/listener.dart';
 import 'package:desktop_adb_file_browser/utils/scroll.dart';
 import 'package:desktop_adb_file_browser/utils/storage.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trace/trace.dart';
 import 'package:tuple/tuple.dart';
 import 'package:watcher/watcher.dart';
 
-class FileWatcherList extends StatefulWidget {
+class FileWatcherList extends ConsumerStatefulWidget {
   const FileWatcherList(
       {super.key, required this.serial, required this.onUpdate});
 
@@ -21,10 +23,10 @@ class FileWatcherList extends StatefulWidget {
   final EventListenable<Tuple2<HostPath, QuestPath>> onUpdate;
 
   @override
-  State<FileWatcherList> createState() => _FileWatcherListState();
+  ConsumerState<FileWatcherList> createState() => _FileWatcherListState();
 }
 
-class _FileWatcherListState extends State<FileWatcherList> {
+class _FileWatcherListState extends ConsumerState<FileWatcherList> {
   late Future<Map<HostPath, QuestPath>> _future;
   late SharedPreferences _preferences;
   late ListenableHolder<void> _listenableHolder;
@@ -56,7 +58,7 @@ class _FileWatcherListState extends State<FileWatcherList> {
     _watchers.clear();
   }
 
-  void _handleChange(String src, WatchEvent event) async {
+  void _handleChange(WidgetRef ref, String src, WatchEvent event) async {
     var map = await _future;
     if (!map.containsKey(src)) return;
 
@@ -68,7 +70,7 @@ class _FileWatcherListState extends State<FileWatcherList> {
 
     if (event.type == ChangeType.MODIFY) {
       Trace.verbose("Uploading changes");
-      Adb.uploadFile(widget.serial, src, dest);
+      ref.read(uploadQueueProvider.notifier).doUpload(widget.serial, src, dest);
     }
   }
 
@@ -98,8 +100,10 @@ class _FileWatcherListState extends State<FileWatcherList> {
     // Add new keys
     final newFiles = newMap.map((key, value) {
       final watcher = Watcher(key);
-      return MapEntry(key,
-          Tuple2(watcher, watcher.events.listen((e) => _handleChange(key, e))));
+      return MapEntry(
+          key,
+          Tuple2(watcher,
+              watcher.events.listen((e) => _handleChange(ref, key, e))));
     });
     newFiles.removeWhere((key, value) => newMap.containsKey(key));
 

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:clipboard/clipboard.dart';
+import 'package:desktop_adb_file_browser/riverpod/file_queue.dart';
 import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
@@ -30,7 +31,7 @@ extension FileDataState on FileListingData {
     return isDirectory ? Icons.folder : FluentIcons.document_48_regular;
   }
 
-  Future<void> openTempFile() async {
+  Future<void> openTempFile(WidgetRef ref) async {
     String questPath = path;
     String fileName = friendlyFileName;
 
@@ -38,7 +39,9 @@ extension FileDataState on FileListingData {
     var randomName = "${Random().nextInt(10000)}$fileName";
 
     var dest = Adb.hostPath.join(temp.path, randomName);
-    await Adb.downloadFile(serial, questPath, dest);
+    await ref
+        .read(downloadQueueProvider.notifier)
+        .doDownload(serial, questPath, dest);
 
     StreamSubscription? subscription;
     subscription = Watcher(dest).events.listen((event) async {
@@ -47,7 +50,9 @@ extension FileDataState on FileListingData {
       }
 
       if (event.type == ChangeType.MODIFY) {
-        await Adb.uploadFile(serial, dest, questPath);
+        await ref
+            .read(uploadQueueProvider.notifier)
+            .doUpload(serial, dest, questPath);
       }
     });
 
@@ -66,14 +71,17 @@ extension FileDataState on FileListingData {
         builder: ((context) => _RemoveFileDialog(file: this)));
   }
 
-  Future<String?> saveFileToDesktop() async {
+  Future<String?> saveFileToDesktop(WidgetRef ref) async {
     String source = path;
 
     final savePath = await getSaveLocation(suggestedName: friendlyFileName);
 
     if (savePath == null) return null;
 
-    await Adb.downloadFile(serial, source, savePath.path);
+    await ref
+        .read(downloadQueueProvider.notifier)
+        .doDownload(serial, source, savePath.path);
+
     return savePath.path;
   }
 

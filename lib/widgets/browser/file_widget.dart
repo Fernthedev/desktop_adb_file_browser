@@ -70,13 +70,13 @@ class _FileCardWidgetState extends ConsumerState<FileCardWidget> {
                     ? const Icon(null)
                     : IconButton(
                         icon: const Icon(FluentIcons.open_24_filled, size: 24),
-                        onPressed: widget.fileData.openTempFile,
+                        onPressed: () => widget.fileData.openTempFile(ref),
                         splashRadius: FileCardWidget._iconSplashRadius,
                         tooltip: "Open (temp)",
                       ),
                 IconButton(
                   icon: const Icon(Icons.download_rounded),
-                  onPressed: widget.fileData.saveFileToDesktop,
+                  onPressed: () => widget.fileData.saveFileToDesktop(ref),
                 ),
                 IconButton(
                     icon: const Icon(Icons.copy),

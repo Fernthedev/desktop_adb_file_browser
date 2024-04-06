@@ -350,7 +350,7 @@ class _DataRowState extends ConsumerState<DataRow> {
   }
 }
 
-class _ActionsMenu extends StatelessWidget {
+class _ActionsMenu extends ConsumerWidget {
   const _ActionsMenu({
     required this.fileData,
     required this.child,
@@ -366,7 +366,7 @@ class _ActionsMenu extends StatelessWidget {
   final void Function() onWatch;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isFile = !fileData.isDirectory;
 
     var menus = [
@@ -385,7 +385,7 @@ class _ActionsMenu extends StatelessWidget {
           Icons.download_rounded,
           size: 24,
         ),
-        onPressed: fileData.saveFileToDesktop,
+        onPressed: () => fileData.saveFileToDesktop(ref),
         child: const Text("Download"),
       ),
       MenuItemButton(
@@ -406,7 +406,7 @@ class _ActionsMenu extends StatelessWidget {
             child: const Text("Watch changes (desktop -> device)")),
         MenuItemButton(
             leadingIcon: const Icon(FluentIcons.open_24_filled, size: 24),
-            onPressed: fileData.openTempFile,
+            onPressed: () => fileData.openTempFile(ref),
             child: const Text("Open (temp)")),
       ];
 

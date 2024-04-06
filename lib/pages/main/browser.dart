@@ -1,17 +1,5 @@
 import 'dart:async';
 
-import 'package:desktop_adb_file_browser/main.dart';
-import 'package:desktop_adb_file_browser/riverpod/file_queue.dart';
-import 'package:desktop_adb_file_browser/utils/adb.dart';
-import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
-import 'package:desktop_adb_file_browser/utils/listener.dart';
-import 'package:desktop_adb_file_browser/utils/storage.dart';
-import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
-import 'package:desktop_adb_file_browser/widgets/browser/file_table.dart';
-import 'package:desktop_adb_file_browser/widgets/browser/file_widget.dart';
-import 'package:desktop_adb_file_browser/widgets/progress_snackbar.dart';
-import 'package:desktop_adb_file_browser/widgets/shortcuts.dart';
-import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -25,13 +13,25 @@ import 'package:routemaster/routemaster.dart';
 import 'package:trace/trace.dart';
 import 'package:tuple/tuple.dart';
 
+import 'package:desktop_adb_file_browser/main.dart';
+import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
+import 'package:desktop_adb_file_browser/riverpod/file_queue.dart';
+import 'package:desktop_adb_file_browser/utils/adb.dart';
+import 'package:desktop_adb_file_browser/utils/listener.dart';
+import 'package:desktop_adb_file_browser/utils/storage.dart';
+import 'package:desktop_adb_file_browser/widgets/browser/file_data.dart';
+import 'package:desktop_adb_file_browser/widgets/browser/file_table.dart';
+import 'package:desktop_adb_file_browser/widgets/browser/file_widget.dart';
+import 'package:desktop_adb_file_browser/widgets/progress_snackbar.dart';
+import 'package:desktop_adb_file_browser/widgets/shortcuts.dart';
+import 'package:desktop_adb_file_browser/widgets/watchers.dart';
+
 @immutable
 class DeviceBrowserPage extends ConsumerStatefulWidget {
   final String serial;
-  final String initialAddress;
 
   const DeviceBrowserPage(
-      {super.key, required this.initialAddress, required this.serial});
+      {super.key, required this.serial});
 
   @override
   ConsumerState<DeviceBrowserPage> createState() => _DeviceBrowserPageState();
@@ -49,14 +49,10 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
   bool _dragging = false;
 
   final TextEditingController _filterController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-
-    _addressController.text =
-        Adb.fixPath(widget.initialAddress, addQuotes: false);
 
     onForwardClick = native2flutter.mouseForwardClick
         .addListener((_) => ref.read(fileBrowserProvider.notifier).forward());
@@ -70,7 +66,6 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
     onForwardClick.dispose();
     onBackClick.dispose();
 
-    _addressController.dispose();
     _filterController.dispose();
   }
 
@@ -130,10 +125,9 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
             // Here we take the value from the MyHomePage object that was created by
             // the App.build method, and use it to set our appbar title.
             title: _AppBarActions(
-              addressController: _addressController,
-              filterController: _filterController,
               serial: widget.serial,
               onUpload: _uploadFiles,
+              filterController: _filterController,
             ),
             leading: conditionalExitButton,
             automaticallyImplyLeading: true,
@@ -313,7 +307,6 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
   }
 
   // TODO: Make this a widget ancestor
-
   void _showUploadSnackbar(Set<Future>? previous, Set<Future> next) async {
     if (next.isEmpty) return;
     if (previous != null && previous.isNotEmpty) {
@@ -476,22 +469,44 @@ class _PathBreadCumbs extends ConsumerWidget {
   }
 }
 
-class _AppBarActions extends ConsumerWidget {
+class _AppBarActions extends ConsumerStatefulWidget {
   const _AppBarActions({
     super.key,
-    required this.addressController,
-    required this.filterController,
     required this.serial,
     required this.onUpload,
+    required this.filterController,
   });
 
-  final TextEditingController addressController;
-  final TextEditingController filterController;
   final String serial;
   final void Function(Iterable<String> paths) onUpload;
+  final TextEditingController filterController;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConsumerStatefulWidget> createState() => _AppBarActionsState();
+}
+
+class _AppBarActionsState extends ConsumerState<_AppBarActions> {
+  final TextEditingController _addressController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+
+    _addressController.text = ref.read(fileBrowserProvider).address;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _addressController.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(fileBrowserProvider, (previous, next) {
+      _addressController.text = next.address;
+    });
+
     return Row(
       children: [
         _navigationActions(ref),
@@ -534,7 +549,6 @@ class _AppBarActions extends ConsumerWidget {
       icon: const Icon(FluentIcons.arrow_clockwise_20_regular),
       onPressed: () {
         ref.invalidate(deviceFileListingProvider);
-        ;
       },
     );
     return Wrap(
@@ -553,7 +567,7 @@ class _AppBarActions extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: TextField(
-          controller: addressController,
+          controller: _addressController,
           autocorrect: false,
           onSubmitted: (s) {
             final fileBrowser = ref.read(fileBrowserProvider);
@@ -581,7 +595,7 @@ class _AppBarActions extends ConsumerWidget {
       child: Padding(
         padding: const EdgeInsets.all(8.0),
         child: TextField(
-          controller: filterController,
+          controller: widget.filterController,
           autocorrect: false,
           decoration: const InputDecoration(
             prefixIcon: Icon(Icons.search),
@@ -605,7 +619,7 @@ class _AppBarActions extends ConsumerWidget {
       onPressed: () {
         openFiles().then((value) {
           if (value.isEmpty) return;
-          onUpload(value.map((e) => e.path));
+          widget.onUpload(value.map((e) => e.path));
         });
       },
     );
@@ -635,7 +649,7 @@ class _AppBarActions extends ConsumerWidget {
       barrierDismissible: true,
       builder: (BuildContext context) {
         return NewFileDialog(
-          serial: serial,
+          serial: widget.serial,
         );
       },
     );

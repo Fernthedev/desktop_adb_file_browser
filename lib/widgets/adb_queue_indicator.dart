@@ -53,7 +53,11 @@ class _ADBQueueIndicatorState extends ConsumerState<ADBQueueIndicator> {
     ref.invalidate(deviceFileListingProvider);
 
     await Future.delayed(const Duration(seconds: 4));
-    snackBar.close();
+    try {
+      snackBar.close();
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 
   void _showUploadSnackbar(
@@ -83,7 +87,11 @@ class _ADBQueueIndicatorState extends ConsumerState<ADBQueueIndicator> {
     ref.invalidate(deviceFileListingProvider);
 
     await Future.delayed(const Duration(seconds: 4));
-    snackBar.close();
+    try {
+      snackBar.close();
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 }
 

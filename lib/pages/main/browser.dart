@@ -486,12 +486,14 @@ class _AppBarActions extends ConsumerStatefulWidget {
 }
 
 class _AppBarActionsState extends ConsumerState<_AppBarActions> {
+  // This is just used to minimize state updates to only Text
   final TextEditingController _addressController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
 
+    // Set initial address
     _addressController.text = ref.read(fileBrowserProvider).address;
   }
 
@@ -503,6 +505,7 @@ class _AppBarActionsState extends ConsumerState<_AppBarActions> {
 
   @override
   Widget build(BuildContext context) {
+    // Update address bar to source of truth
     ref.listen(fileBrowserProvider, (previous, next) {
       _addressController.text = next.address;
     });

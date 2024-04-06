@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:desktop_adb_file_browser/widgets/adb_queue_indicator.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
@@ -30,15 +31,11 @@ import 'package:desktop_adb_file_browser/widgets/watchers.dart';
 class DeviceBrowserPage extends ConsumerStatefulWidget {
   final String serial;
 
-  const DeviceBrowserPage(
-      {super.key, required this.serial});
+  const DeviceBrowserPage({super.key, required this.serial});
 
   @override
   ConsumerState<DeviceBrowserPage> createState() => _DeviceBrowserPageState();
 }
-
-// ignore: constant_identifier_names
-enum FileCreation { File, Folder }
 
 // TODO: Gestures
 // TODO: File details page
@@ -75,11 +72,6 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Download Snackbar
-    ref.listen(downloadQueueProvider, _showDownloadSnackbar);
-    // Upload Snackbar
-    ref.listen(uploadQueueProvider, _showUploadSnackbar);
-
     var listViewButton = IconButton(
       icon: Icon(_viewAsListMode ? Icons.list : Icons.grid_3x3),
       onPressed: () {
@@ -114,27 +106,29 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
       descendantsAreFocusable: true,
       skipTraversal: true,
       onKey: _onKeyHandler,
-      child: DefaultTabController(
-        initialIndex: 0,
-        length: 2,
-        child: Scaffold(
-          appBar: AppBar(
-            elevation: 2.8,
-            // Here we take the value from the MyHomePage object that was created by
-            // the App.build method, and use it to set our appbar title.
-            title: _AppBarActions(
-              serial: widget.serial,
-              onUpload: _uploadFiles,
-              filterController: _filterController,
+      child: ADBQueueIndicator(
+        child: DefaultTabController(
+          initialIndex: 0,
+          length: 2,
+          child: Scaffold(
+            appBar: AppBar(
+              elevation: 2.8,
+              // Here we take the value from the MyHomePage object that was created by
+              // the App.build method, and use it to set our appbar title.
+              title: _AppBarActions(
+                serial: widget.serial,
+                onUpload: _uploadFiles,
+                filterController: _filterController,
+              ),
+              leading: conditionalExitButton,
+              automaticallyImplyLeading: true,
+              actions: [listViewButton],
             ),
-            leading: conditionalExitButton,
-            automaticallyImplyLeading: true,
-            actions: [listViewButton],
-          ),
-          body: _buildBody(),
-          bottomNavigationBar: SizedBox(
-            height: Theme.of(context).buttonTheme.height,
-            child: const _PathBreadCumbs(),
+            body: _buildBody(),
+            bottomNavigationBar: SizedBox(
+              height: Theme.of(context).buttonTheme.height,
+              child: const _PathBreadCumbs(),
+            ),
           ),
         ),
       ),
@@ -243,24 +237,19 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
 
   void _uploadFiles(Iterable<String> paths) async {
     final fileBrowser = ref.read(fileBrowserProvider);
-    final uploadQueue = ref.read(uploadQueueProvider.notifier);
 
     Trace.verbose("Uploading $paths");
-    var tasks = paths.map((path) {
-      String dest = Adb.adbPathContext.join(
-          fileBrowser.address, // adb file path
-          Adb.hostPath.basename(path) // host file name
-          );
 
-      final future = ref
+    for (final path in paths) {
+      final devicePath = fileBrowser.address;
+      final hostFilename = Adb.hostPath.basename(path);
+
+      final dest = Adb.adbPathContext.join(devicePath, hostFilename);
+
+      ref
           .read(uploadQueueProvider.notifier)
           .doUpload(widget.serial, path, dest);
-
-      // C:\Users\foo.txt -> currentPath/foo.txt
-      return future;
-    });
-
-    uploadQueue.addAllQueue(tasks);
+    }
   }
 
   Future<void> _watchFile(FileBrowserMetadata fileData) async {
@@ -272,66 +261,6 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
     var source = fileData.path;
 
     onWatchAdd.invoke(Tuple2(savePath, source));
-  }
-
-  // TODO: Make this a widget ancestor
-  void _showDownloadSnackbar(Set<Future>? previous, Set<Future> next) async {
-    if (next.isEmpty) return;
-    if (previous != null && previous.isNotEmpty) {
-      return;
-    }
-
-    // Snack bar
-    var snackBar = ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const DownloadQueueSnackbar(),
-        duration: const Duration(days: 365), // year old snackbar
-        width: 680.0, // Width of the SnackBar.
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8.0, // Inner padding for SnackBar content.
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-      ),
-    );
-
-    await Future.wait(next);
-    ref.invalidate(deviceFileListingProvider);
-
-    await Future.delayed(const Duration(seconds: 4));
-    snackBar.close();
-  }
-
-  // TODO: Make this a widget ancestor
-  void _showUploadSnackbar(Set<Future>? previous, Set<Future> next) async {
-    if (next.isEmpty) return;
-    if (previous != null && previous.isNotEmpty) {
-      return;
-    }
-
-    // Snack bar
-    var snackBar = ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const UploadQueueSnackbar(),
-        duration: const Duration(days: 365), // year old snackbar
-        width: 680.0, // Width of the SnackBar.
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8.0, // Inner padding for SnackBar content.
-        ),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10.0),
-        ),
-      ),
-    );
-
-    await Future.wait(next);
-    ref.invalidate(deviceFileListingProvider);
-
-    await Future.delayed(const Duration(seconds: 4));
-    snackBar.close();
   }
 }
 
@@ -669,9 +598,11 @@ class NewFileDialog extends ConsumerStatefulWidget {
   ConsumerState<NewFileDialog> createState() => _NewFileDialogState();
 }
 
+enum FileCreation { file, folder }
+
 class _NewFileDialogState extends ConsumerState<NewFileDialog> {
   final TextEditingController fileNameController = TextEditingController();
-  FileCreation fileCreation = FileCreation.File;
+  FileCreation fileCreation = FileCreation.file;
 
   @override
   void dispose() {
@@ -697,8 +628,8 @@ class _NewFileDialogState extends ConsumerState<NewFileDialog> {
             .join(fileBrowser.address, fileNameController.text);
 
         Future task = switch (fileCreation) {
-          FileCreation.File => Adb.createFile(widget.serial, path),
-          FileCreation.Folder => Adb.createDirectory(widget.serial, path)
+          FileCreation.file => Adb.createFile(widget.serial, path),
+          FileCreation.folder => Adb.createDirectory(widget.serial, path)
         };
 
         task.then((_) {
@@ -741,12 +672,12 @@ class _NewFileDialogState extends ConsumerState<NewFileDialog> {
     return SegmentedButton<FileCreation>(
       segments: const [
         ButtonSegment(
-          value: FileCreation.File,
+          value: FileCreation.file,
           label: Text("File"),
           icon: Icon(FluentIcons.document_24_regular),
         ),
         ButtonSegment(
-          value: FileCreation.Folder,
+          value: FileCreation.folder,
           label: Text("Folder"),
           icon: Icon(FluentIcons.folder_24_regular),
         ),

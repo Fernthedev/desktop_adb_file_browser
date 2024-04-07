@@ -58,6 +58,10 @@ class FileBrowser extends _$FileBrowser {
     _refreshFiles(targetPath: path, clearForward: false);
   }
 
+  void gotoTopDirectory() {
+    navigateToDirectory(Adb.adbPathContext.dirname(state.address));
+  }
+
   void navigateToDirectory(String directory) {
     _refreshFiles(targetPath: directory, clearForward: true);
     Trace.verbose("clear forward");

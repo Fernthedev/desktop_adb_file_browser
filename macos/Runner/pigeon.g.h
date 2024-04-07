@@ -17,7 +17,6 @@ NSObject<FlutterMessageCodec> *PGNNative2FlutterGetCodec(void);
 @interface PGNNative2Flutter : NSObject
 - (instancetype)initWithBinaryMessenger:(id<FlutterBinaryMessenger>)binaryMessenger;
 - (instancetype)initWithBinaryMessenger:(id<FlutterBinaryMessenger>)binaryMessenger messageChannelSuffix:(nullable NSString *)messageChannelSuffix;
-- (void)onClickForward:(BOOL)forward completion:(void (^)(FlutterError *_Nullable))completion;
 @end
 
 NS_ASSUME_NONNULL_END

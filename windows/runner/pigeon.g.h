@@ -43,10 +43,6 @@ class Native2Flutter {
     flutter::BinaryMessenger* binary_messenger,
     const std::string& message_channel_suffix);
   static const flutter::StandardMessageCodec& GetCodec();
-  void OnClick(
-    bool forward,
-    std::function<void(void)>&& on_success,
-    std::function<void(const FlutterError&)>&& on_error);
 
  private:
   flutter::BinaryMessenger* binary_messenger_;

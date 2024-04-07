@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:desktop_adb_file_browser/utils/logging_shortcut_manager.dart';
 import 'package:desktop_adb_file_browser/widgets/adb_queue_indicator.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
@@ -15,7 +14,6 @@ import 'package:routemaster/routemaster.dart';
 import 'package:trace/trace.dart';
 import 'package:tuple/tuple.dart';
 
-import 'package:desktop_adb_file_browser/main.dart';
 import 'package:desktop_adb_file_browser/riverpod/file_browser.dart';
 import 'package:desktop_adb_file_browser/riverpod/file_queue.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
@@ -48,18 +46,11 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
   @override
   void initState() {
     super.initState();
-
-    // onForwardClick = native2flutter.mouseForwardClick
-    //     .addListener((_) => ref.read(fileBrowserProvider.notifier).forward());
-    // onBackClick = native2flutter.mouseBackClick
-    //     .addListener((_) => ref.read(fileBrowserProvider.notifier).back());
   }
 
   @override
   void dispose() {
     super.dispose();
-    // onForwardClick.dispose();
-    // onBackClick.dispose();
 
     _filterController.dispose();
   }

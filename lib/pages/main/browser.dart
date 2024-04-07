@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:desktop_adb_file_browser/utils/logging_shortcut_manager.dart';
 import 'package:desktop_adb_file_browser/widgets/adb_queue_indicator.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_breadcrumb/flutter_breadcrumb.dart';
@@ -47,17 +49,17 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
   void initState() {
     super.initState();
 
-    onForwardClick = native2flutter.mouseForwardClick
-        .addListener((_) => ref.read(fileBrowserProvider.notifier).forward());
-    onBackClick = native2flutter.mouseBackClick
-        .addListener((_) => ref.read(fileBrowserProvider.notifier).back());
+    // onForwardClick = native2flutter.mouseForwardClick
+    //     .addListener((_) => ref.read(fileBrowserProvider.notifier).forward());
+    // onBackClick = native2flutter.mouseBackClick
+    //     .addListener((_) => ref.read(fileBrowserProvider.notifier).back());
   }
 
   @override
   void dispose() {
     super.dispose();
-    onForwardClick.dispose();
-    onBackClick.dispose();
+    // onForwardClick.dispose();
+    // onBackClick.dispose();
 
     _filterController.dispose();
   }
@@ -98,38 +100,104 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
     var conditionalExitButton =
         Routemaster.of(context).history.canGoBack ? exitButton : null;
 
-    return Focus(
+    return FocusableActionDetector(
       autofocus: true,
-      canRequestFocus: false,
       descendantsAreFocusable: true,
-      skipTraversal: true,
-      onKey: _onKeyHandler,
-      child: ADBQueueIndicator(
-        child: DefaultTabController(
-          initialIndex: 0,
-          length: 2,
-          child: Scaffold(
-            appBar: AppBar(
-              elevation: 2.8,
-              // Here we take the value from the MyHomePage object that was created by
-              // the App.build method, and use it to set our appbar title.
-              title: _AppBarActions(
-                serial: widget.serial,
-                onUpload: _uploadFiles,
-                filterController: _filterController,
+      actions: <Type, Action<Intent>>{
+        NavigateForwardIntent: CallbackAction<NavigateForwardIntent>(
+            onInvoke: (intent) =>
+                ref.read(fileBrowserProvider.notifier).forward()),
+        NavigateBackIntent: CallbackAction<NavigateBackIntent>(
+            onInvoke: (intent) =>
+                ref.read(fileBrowserProvider.notifier).back()),
+        NavigateTopIntent: CallbackAction<NavigateTopIntent>(
+            onInvoke: (intent) =>
+                ref.read(fileBrowserProvider.notifier).gotoTopDirectory()),
+        RefreshListingIntent: CallbackAction<RefreshListingIntent>(
+            onInvoke: (intent) => ref.invalidate(deviceFileListingProvider)),
+      },
+      shortcuts: <LogicalKeySet, Intent>{
+        // back
+        LogicalKeySet(LogicalKeyboardKey.alt, LogicalKeyboardKey.arrowLeft):
+            const NavigateBackIntent(),
+        LogicalKeySet(
+                LogicalKeyboardKey.control, LogicalKeyboardKey.browserBack):
+            const NavigateBackIntent(),
+
+        // forward
+        LogicalKeySet(LogicalKeyboardKey.alt, LogicalKeyboardKey.arrowRight):
+            const NavigateForwardIntent(),
+        LogicalKeySet(LogicalKeyboardKey.browserForward):
+            const NavigateBackIntent(),
+
+        // top
+        LogicalKeySet(LogicalKeyboardKey.alt, LogicalKeyboardKey.arrowUp):
+            const NavigateTopIntent(),
+
+        // refresh
+        LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyR):
+            const RefreshListingIntent(),
+      },
+      // use a builder so we can use Actions.handle<>
+      // we need a content child of the actions
+      child: Builder(builder: (context) {
+        // handles mouse buttons
+        return Listener(
+          onPointerDown: (p) {
+            if (p.kind != PointerDeviceKind.mouse) return;
+            if (p.buttons & kBackMouseButton != 0) {
+              Actions.invoke(context, const NavigateBackIntent());
+            }
+            if (p.buttons & kForwardMouseButton != 0) {
+              Actions.invoke(context, const NavigateForwardIntent());
+            }
+          },
+          // handles trackpad gestures
+          child: GestureDetector(
+            onPanEnd: (dragEndDetails) {
+              final velocity = dragEndDetails.primaryVelocity;
+              if (velocity == null || velocity == 0) return;
+
+              debugPrint("Drag velocity ${dragEndDetails.primaryVelocity}");
+
+              if (velocity < 0) {
+                Actions.invoke(context, const NavigateForwardIntent());
+                return;
+              }
+              if (velocity > 0) {
+                Actions.invoke(context, const NavigateBackIntent());
+                return;
+              }
+            },
+            child: ADBQueueIndicator(
+              child: DefaultTabController(
+                initialIndex: 0,
+                length: 2,
+                child: Scaffold(
+                  appBar: AppBar(
+                    elevation: 2.8,
+                    // Here we take the value from the MyHomePage object that was created by
+                    // the App.build method, and use it to set our appbar title.
+                    title: _AppBarActions(
+                      serial: widget.serial,
+                      onUpload: _uploadFiles,
+                      filterController: _filterController,
+                    ),
+                    leading: conditionalExitButton,
+                    automaticallyImplyLeading: true,
+                    actions: [listViewButton],
+                  ),
+                  body: _buildBody(),
+                  bottomNavigationBar: SizedBox(
+                    height: Theme.of(context).buttonTheme.height,
+                    child: const _PathBreadCumbs(),
+                  ),
+                ),
               ),
-              leading: conditionalExitButton,
-              automaticallyImplyLeading: true,
-              actions: [listViewButton],
-            ),
-            body: _buildBody(),
-            bottomNavigationBar: SizedBox(
-              height: Theme.of(context).buttonTheme.height,
-              child: const _PathBreadCumbs(),
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -153,22 +221,6 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
                     color: Colors.black),
       ),
     );
-  }
-
-  KeyEventResult _onKeyHandler(FocusNode node, RawKeyEvent event) {
-    final fileBrowser = ref.read(fileBrowserProvider.notifier);
-    if (!event.repeat && event.isAltPressed) {
-      if (event.isKeyPressed(LogicalKeyboardKey.arrowLeft)) {
-        fileBrowser.back();
-        return KeyEventResult.handled;
-      }
-      if (event.isKeyPressed(LogicalKeyboardKey.arrowRight)) {
-        fileBrowser.forward();
-        return KeyEventResult.handled;
-      }
-    }
-
-    return KeyEventResult.ignored;
   }
 
   DropTarget _fileListContainer() {
@@ -445,35 +497,36 @@ class _AppBarActionsState extends ConsumerState<_AppBarActions> {
     var backButton = IconButton(
       splashRadius: 20,
       icon: const Icon(FluentIcons.arrow_left_20_regular),
-      onPressed: () {
-        ref.read(fileBrowserProvider.notifier).back();
-      },
+      onPressed: Actions.handler<NavigateBackIntent>(
+        context,
+        const NavigateBackIntent(),
+      ),
     );
 
     var forwardButton = IconButton(
       splashRadius: 20,
       icon: const Icon(FluentIcons.arrow_right_20_regular),
-      onPressed: () {
-        ref.read(fileBrowserProvider.notifier).forward();
-      },
+      onPressed: Actions.handler<NavigateForwardIntent>(
+        context,
+        const NavigateForwardIntent(),
+      ),
     );
 
     var topLevelButton = IconButton(
       splashRadius: 20,
       icon: const Icon(FluentIcons.folder_arrow_up_20_regular),
-      onPressed: () {
-        final currentPath = ref.read(fileBrowserProvider).address;
-        ref
-            .read(fileBrowserProvider.notifier)
-            .navigateToDirectory(Adb.adbPathContext.dirname(currentPath));
-      },
+      onPressed: Actions.handler<NavigateTopIntent>(
+        context,
+        const NavigateTopIntent(),
+      ),
     );
     var refreshButton = IconButton(
       splashRadius: 20,
       icon: const Icon(FluentIcons.arrow_clockwise_20_regular),
-      onPressed: () {
-        ref.invalidate(deviceFileListingProvider);
-      },
+      onPressed: Actions.handler<RefreshListingIntent>(
+        context,
+        const RefreshListingIntent(),
+      ),
     );
     return Wrap(
       children: [
@@ -730,4 +783,20 @@ class _ShortcutsColumn extends ConsumerWidget {
       ],
     );
   }
+}
+
+class NavigateForwardIntent extends Intent {
+  const NavigateForwardIntent();
+}
+
+class NavigateBackIntent extends Intent {
+  const NavigateBackIntent();
+}
+
+class NavigateTopIntent extends Intent {
+  const NavigateTopIntent();
+}
+
+class RefreshListingIntent extends Intent {
+  const RefreshListingIntent();
 }

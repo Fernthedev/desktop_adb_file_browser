@@ -230,7 +230,7 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
       },
       child: Container(
         color:
-            _dragging ? Theme.of(context).primaryColor.withOpacity(0.4) : null,
+            _dragging ? Theme.of(context).focusColor.withOpacity(0.4) : null,
         child: _FilteredListContainer(
           filterController: _filterController,
           builder: (context, filteredFiles) => _viewAsListMode

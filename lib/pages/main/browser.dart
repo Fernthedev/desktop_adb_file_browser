@@ -149,6 +149,7 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
             onHorizontalDragEnd: (dragEndDetails) {
               final velocity = dragEndDetails.primaryVelocity;
               if (velocity == null || velocity == 0) return;
+              if (velocity.abs() < 4000) return;
 
               debugPrint("Drag velocity ${dragEndDetails.primaryVelocity}");
 
@@ -229,8 +230,7 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
         });
       },
       child: Container(
-        color:
-            _dragging ? Theme.of(context).focusColor.withOpacity(0.4) : null,
+        color: _dragging ? Theme.of(context).focusColor.withOpacity(0.4) : null,
         child: _FilteredListContainer(
           filterController: _filterController,
           builder: (context, filteredFiles) => _viewAsListMode

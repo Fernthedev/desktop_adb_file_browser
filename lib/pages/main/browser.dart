@@ -145,7 +145,8 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
           },
           // handles trackpad gestures
           child: GestureDetector(
-            onPanEnd: (dragEndDetails) {
+            supportedDevices: const {PointerDeviceKind.trackpad},
+            onHorizontalDragEnd: (dragEndDetails) {
               final velocity = dragEndDetails.primaryVelocity;
               if (velocity == null || velocity == 0) return;
 

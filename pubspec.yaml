@@ -84,6 +84,7 @@ dev_dependencies:
   riverpod_lint: ^2.3.10
   freezed: ^2.4.7
   json_serializable: ^6.7.1
+  msix: ^3.16.7
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -97,8 +98,8 @@ msix_config:
   publisher: CN=Fernthedev, O=Msix Testing... # required
   sign_msix: false
   install_certificate: false
-  # app_installer: #<-- app installer configuration
-  #   publish_folder_path: E:\SSDUse\ProgrammingProjects\FlutterProjects\desktop_adb_file_browser\publish
+  app_installer: #<-- app installer configuration
+    publish_folder_path: ./publish
   #   hours_between_update_checks: 0
   #   automatic_background_task: true
   #   update_blocks_activation: true

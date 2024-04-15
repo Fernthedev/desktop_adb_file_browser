@@ -60,6 +60,10 @@ jobs:
     #   if: contains(matrix.runner, 'windows')
     #   run: flutter pub run msix:create
 
+    - name: Make MSIX Installer
+      if: contains(matrix.runner, 'windows')
+      run: 'dart run msix:publish'
+
     - name: Download Inno Setup
       uses: suisei-cn/actions-download-file@v1
       if: contains(matrix.runner, 'windows')
@@ -100,6 +104,14 @@ jobs:
       with:
         name: ${{ matrix.target }}
         path: ./build/windows/x64/runner/Release/*
+        if-no-files-found: error
+        
+    - name: Upload Windows installer (MSIX)
+      if: contains(matrix.runner, 'windows')
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.target }}
+        path: ./publish/
         if-no-files-found: error
 
     # - name: Upload Windows MSIX installer

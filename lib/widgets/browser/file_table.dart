@@ -286,6 +286,8 @@ class _DataRowState extends ConsumerState<DataRow> {
         focusNode: _focusNode,
         // onLongPress: _renameDialog,
         onTap: () {
+          if (!widget.file.isDirectory) return;
+          
           ref
               .read(fileBrowserProvider.notifier)
               .navigateToDirectory(widget.file.path);

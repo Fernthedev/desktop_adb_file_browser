@@ -62,7 +62,10 @@ jobs:
 
     - name: Make MSIX Installer
       if: contains(matrix.runner, 'windows')
-      run: 'dart run msix:publish'
+      run: |
+        mkdir publish
+        dart run msix:publish
+        
 
     - name: Download Inno Setup
       uses: suisei-cn/actions-download-file@v1

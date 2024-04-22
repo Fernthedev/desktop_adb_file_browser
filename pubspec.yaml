@@ -98,8 +98,8 @@ msix_config:
   publisher: CN=Fernthedev, O=Msix Testing... # required
   sign_msix: false
   install_certificate: false
-  app_installer: #<-- app installer configuration
-    publish_folder_path: ./publish
+  # app_installer: #<-- app installer configuration
+    # publish_folder_path: ./publish
   #   hours_between_update_checks: 0
   #   automatic_background_task: true
   #   update_blocks_activation: true

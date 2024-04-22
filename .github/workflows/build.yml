@@ -114,7 +114,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: ${{ matrix.target }}-msix
-        path: ./publish/desktop_adb_file_browser.msix
+        path: ./build/windows/x64/runner/Release/desktop_adb_file_browser.msix
         if-no-files-found: error
 
     # - name: Upload Windows MSIX installer

@@ -64,7 +64,7 @@ jobs:
       if: contains(matrix.runner, 'windows')
       run: |
         mkdir publish
-        dart run msix:publish
+        dart run msix:create
         
 
     - name: Download Inno Setup

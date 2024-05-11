@@ -371,7 +371,9 @@ class _FilteredListContainerState
   void _doFilterFiles() {
     final newFilter = widget.filterController.text.trim();
 
-    if (filter == newFilter || (newFilter.isEmpty == (filter == null))) return;
+    if (filter == newFilter) {
+      return;
+    }
 
     setState(() {
       if (newFilter.isEmpty) {

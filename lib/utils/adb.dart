@@ -258,7 +258,7 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
         permission: permission,
         size: size,
         user: user,
-        serial: serial
+        serial: serial,
       );
     }).toList(growable: false);
 
@@ -279,8 +279,20 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
     var result =
         await runAdbCommand(serialName, ["shell", "ls -pLla ${fixPath(path)}"]);
 
-    return parsePathsWithMoreData(
-        normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false, serialName);
+    return parsePathsWithMoreData(normalizeOutput(result.stdout),
+        fixPath(path, addQuotes: false), false, serialName);
+  }
+
+  static Future<List<String>> getPackageList(
+      String? serialName, String path) async {
+    var result = await runAdbCommand(serialName, ["shell", "pm list packages"]);
+
+    var listed = (result.stdout as String)
+        .split("\n")
+        .map((x) => x.substring("package:".length))
+        .toList();
+
+    return listed;
   }
 
   static Future<List<String>?> getDevicesSerial() async {

@@ -1,19 +1,22 @@
 import 'package:desktop_adb_file_browser/pages/main/browser.dart';
 import 'package:desktop_adb_file_browser/pages/main/devices.dart';
 import 'package:desktop_adb_file_browser/pages/main/logger.dart';
+import 'package:desktop_adb_file_browser/pages/main/package_list.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 
 enum _Page {
-  devices("Devices", FluentIcons.phone_48_regular),
-  browser("Browser", FluentIcons.folder_48_regular),
-  logger("Logger", FluentIcons.code_block_48_regular);
+  devices("Devices", FluentIcons.phone_48_regular, false),
+  browser("Browser", FluentIcons.folder_48_regular, true),
+  logger("Logger", FluentIcons.code_block_48_regular, true),
+  packages("Packages", FluentIcons.apps_48_regular, true);
 
-  const _Page(this.name, this.icon);
+  const _Page(this.name, this.icon, this.requiresDevice);
 
   final String name;
   final IconData icon;
+  final bool requiresDevice;
 }
 
 _Page _pageForIndex(int v) =>
@@ -58,22 +61,14 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
-    var dests = [
-      NavigationRailDestination(
-        icon: Icon(_Page.devices.icon),
-        label: Text(_Page.devices.name),
-      ),
-      NavigationRailDestination(
-        icon: addDisabledTooltip(Icon(_Page.browser.icon)),
-        label: Text(_Page.browser.name),
-        disabled: _selectedDevice.value == null,
-      ),
-      NavigationRailDestination(
-        icon: addDisabledTooltip(Icon(_Page.logger.icon)),
-        label: Text(_Page.logger.name),
-        disabled: _selectedDevice.value == null,
-      ),
-    ];
+    final dests = _Page.values
+        .map((x) => NavigationRailDestination(
+              icon: addDisabledTooltip(Icon(x.icon)),
+              label: Text(x.name),
+              disabled:
+                  false && x.requiresDevice && _selectedDevice.value == null,
+            ))
+        .toList();
 
     return Scaffold(
       body: Row(children: [
@@ -89,7 +84,10 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
         Expanded(
-          child: _buildCurrentPage(_currentPage),
+          child: Container(
+            color: Theme.of(context).colorScheme.surface,
+            child: _buildCurrentPage(_currentPage),
+          ),
         )
       ]),
     );
@@ -108,6 +106,10 @@ class _MainPageState extends State<MainPage> {
         _Page.logger => LogPage(
             key: const ValueKey("logger"),
             serial: _selectedDevice.value!,
+          ),
+        _Page.packages => PackageList(
+            key: const ValueKey("packages"),
+            serial: _selectedDevice.value ?? "",
           ),
       };
 }

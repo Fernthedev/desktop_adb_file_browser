@@ -6,7 +6,7 @@ part of 'file_queue.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$downloadQueueHash() => r'c048bf98fea996fe1353214ee3795c65d534e996';
+String _$downloadQueueHash() => r'3d6f69799aff8cadf2b0ac539575b0475ae13bb0';
 
 /// See also [DownloadQueue].
 @ProviderFor(DownloadQueue)

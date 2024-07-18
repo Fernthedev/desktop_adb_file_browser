@@ -143,7 +143,7 @@ class _LogPageState extends State<LogPage> {
           visible: _showLogs,
           replacement: _loadingSpinner(),
           child: Container(
-            color: Theme.of(context).colorScheme.background,
+            color: Theme.of(context).colorScheme.surface,
             child: buildList(),
           ),
         ),

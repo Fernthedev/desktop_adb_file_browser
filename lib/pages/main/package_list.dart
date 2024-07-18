@@ -73,7 +73,7 @@ class _PackageListState extends State<PackageList> {
       onTap: () {},
       trailing: Wrap(
         children: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.copy)),
+          IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
           IconButton(onPressed: () {}, icon: const Icon(Icons.delete)),
         ],
       ),

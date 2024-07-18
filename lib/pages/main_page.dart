@@ -66,7 +66,7 @@ class _MainPageState extends State<MainPage> {
               icon: addDisabledTooltip(Icon(x.icon)),
               label: Text(x.name),
               disabled:
-                  false && x.requiresDevice && _selectedDevice.value == null,
+                  x.requiresDevice && _selectedDevice.value == null,
             ))
         .toList();
 
@@ -109,7 +109,7 @@ class _MainPageState extends State<MainPage> {
           ),
         _Page.packages => PackageList(
             key: const ValueKey("packages"),
-            serial: _selectedDevice.value ?? "",
+            serial: _selectedDevice.value!,
           ),
       };
 }

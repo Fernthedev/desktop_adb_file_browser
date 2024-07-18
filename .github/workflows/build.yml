@@ -90,7 +90,7 @@ jobs:
       if: contains(matrix.runner, 'macos')
       run: |
         cd ./build/macos/Build/Products/Release/
-        ditto -c -k --sequesterRsrc --keepParent ./desktop_adb_file_browser.app result.zip || true
+        ditto -c -k --sequesterRsrc --keepParent "./Desktop ADB File Browser.app" result.zip || true
 
     # - name: Create Snap installer
     #   if: contains(matrix.runner, 'ubuntu')

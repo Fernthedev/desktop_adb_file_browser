@@ -3,6 +3,7 @@ import 'package:desktop_adb_file_browser/riverpod/package_list.dart';
 import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/adb_queue_indicator.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +21,8 @@ class PackageList extends ConsumerStatefulWidget {
 }
 
 class _PackageListState extends ConsumerState<PackageList> {
+  bool _dragging = false;
+
   @override
   Widget build(BuildContext context) {
     final packageListFuture = ref.watch(packageListProvider);
@@ -31,31 +34,52 @@ class _PackageListState extends ConsumerState<PackageList> {
         actions: [
           IconButton(
               onPressed: () async {
-                final path = await openFile();
-                if (path == null) return;
+                final file = await openFile();
+                if (file == null) return;
 
-                await uploadAndInstallAPK(path.path);
+                await uploadAndInstallAPK(file.path);
               },
               icon: const Icon(FluentIcons.arrow_upload_32_regular))
         ],
       ),
       body: ADBQueueIndicator(
-        child: packageListFuture.when(
-          data: (packageList) => ListView.separated(
-            itemBuilder: (c, i) => itemBuilder(c, i, packageList),
-            itemCount: packageList.length,
-            shrinkWrap: true,
-            separatorBuilder: (context, index) => const Divider(),
-          ),
-          error: (error, stackTrace) {
-            debugPrint(error.toString());
-            debugPrint(stackTrace.toString());
-            return Center(
-              child: Text("Error: $error"),
-            );
-          },
-          loading: () => const Center(
-            child: CircularProgressIndicator(),
+        child: Container(
+          color:
+              _dragging ? Theme.of(context).focusColor.withOpacity(0.4) : null,
+          child: DropTarget(
+            onDragDone: (details) async {
+              for (final file in details.files) {
+                await uploadAndInstallAPK(file.path);
+              }
+            },
+            onDragEntered: (detail) {
+              setState(() {
+                _dragging = true;
+              });
+            },
+            onDragExited: (detail) {
+              setState(() {
+                _dragging = false;
+              });
+            },
+            child: packageListFuture.when(
+              data: (packageList) => ListView.separated(
+                itemBuilder: (c, i) => itemBuilder(c, i, packageList),
+                itemCount: packageList.length,
+                shrinkWrap: true,
+                separatorBuilder: (context, index) => const Divider(),
+              ),
+              error: (error, stackTrace) {
+                debugPrint(error.toString());
+                debugPrint(stackTrace.toString());
+                return Center(
+                  child: Text("Error: $error"),
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
           ),
         ),
       ),

@@ -51,7 +51,7 @@ class _PackageListState extends ConsumerState<PackageList> {
     return packageMetadataFuture.when(
       data: (packageMetadata) => ListTile(
         title: Text(packageMetadata.packageName),
-        subtitle: Text(packageMetadata.packageId),
+            Text("${packageMetadata.packageId} - ${packageMetadata.version}"),
         leading: const Icon(Icons.apps),
         dense: true,
         onTap: () {},

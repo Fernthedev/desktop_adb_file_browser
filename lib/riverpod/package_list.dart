@@ -38,10 +38,5 @@ class PackageList extends _$PackageList {
 Future<PackageMetadata> packageInfo(PackageInfoRef ref, String id) async {
   final device = ref.watch(selectedDeviceProvider);
 
-  return PackageMetadata(
-    packageId: id,
-    groupId: "",
-    packageName: "",
-    version: "",
-  );
+  return Adb.getPackageInfo(device?.serialName, id);
 }

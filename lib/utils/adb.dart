@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:async/async.dart';
+import 'package:desktop_adb_file_browser/riverpod/package_list.dart';
 import 'package:desktop_adb_file_browser/utils/platform.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -21,6 +22,8 @@ abstract class Adb {
 
   static final _fileListingRegex =
       RegExp(r"([\w-]+) *(\d+) *(\w+) *(\w+) *(\d+) *([\d-]+) *([\d:]+) *(.*)");
+
+  static final _packageVersion = RegExp(r"versionName=(.*)\n");
 
   static final Context adbPathContext = Context(style: Style.posix);
 
@@ -283,8 +286,7 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
         fixPath(path, addQuotes: false), false, serialName);
   }
 
-  static Future<List<String>> getPackageList(
-      String? serialName) async {
+  static Future<List<String>> getPackageList(String? serialName) async {
     var result = await runAdbCommand(serialName, ["shell", "pm list packages"]);
 
     var listed = (result.stdout as String)
@@ -295,6 +297,24 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
         .toList();
 
     return listed;
+  }
+
+  static Future<PackageMetadata> getPackageInfo(
+      String? serialName, String packageId) async {
+    var result = await runAdbCommand(
+        serialName, ["shell", "dumpsys package $packageId"]);
+
+    String str = result.stdout;
+    str = str.replaceAll("\r\n", "\n");
+
+    final version = _packageVersion.firstMatch(str)?[1] ?? "version n/a";
+
+    return PackageMetadata(
+      packageName: "",
+      packageId: packageId,
+      version: version,
+      groupId: "",
+    );
   }
 
   static Future<List<String>?> getDevicesSerial() async {

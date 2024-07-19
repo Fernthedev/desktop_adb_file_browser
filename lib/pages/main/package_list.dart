@@ -54,7 +54,6 @@ class _PackageListState extends ConsumerState<PackageList> {
         title: Text(packageMetadata.packageName),
         subtitle:
             Text("${packageMetadata.packageId} - ${packageMetadata.version}"),
-        leading: const Icon(Icons.apps),
         dense: true,
         onTap: () {},
         trailing: Wrap(

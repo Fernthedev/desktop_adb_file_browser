@@ -1,10 +1,14 @@
+import 'package:desktop_adb_file_browser/riverpod/file_queue.dart';
 import 'package:desktop_adb_file_browser/riverpod/package_list.dart';
 import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/adb_queue_indicator.dart';
+import 'package:file_selector/file_selector.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 class PackageList extends ConsumerStatefulWidget {
   const PackageList({super.key, required this.serial});
@@ -24,6 +28,16 @@ class _PackageListState extends ConsumerState<PackageList> {
       appBar: AppBar(
         title: const Text("Packages"),
         automaticallyImplyLeading: true,
+        actions: [
+          IconButton(
+              onPressed: () async {
+                final path = await openFile();
+                if (path == null) return;
+
+                await uploadAndInstallAPK(path.path);
+              },
+              icon: const Icon(FluentIcons.arrow_upload_32_regular))
+        ],
       ),
       body: ADBQueueIndicator(
         child: packageListFuture.when(
@@ -99,5 +113,25 @@ class _PackageListState extends ConsumerState<PackageList> {
         leading: const CircularProgressIndicator(),
       ),
     );
+  }
+
+  Future<void> uploadAndInstallAPK(String apkPath) async {
+    var notifier = ref.read(uploadQueueProvider.notifier);
+    var device = ref.read(selectedDeviceProvider);
+
+    var uuid = const Uuid();
+    var randomPath = "/tmp/${uuid.v8()}.apk";
+
+    await notifier.doUpload(device?.serialName, apkPath, randomPath);
+    await Adb.installPackage(device?.serialName, randomPath);
+
+    if (!context.mounted) return;
+    final snackBar = SnackBar(
+      content:
+          Text('Installed package ${Adb.adbPathContext.basename(apkPath)}'),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+    await Adb.removeFile(device?.serialName, randomPath);
   }
 }

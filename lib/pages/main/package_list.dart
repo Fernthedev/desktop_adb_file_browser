@@ -1,81 +1,74 @@
+import 'package:desktop_adb_file_browser/riverpod/package_list.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-// part 'package_list.g.dart';
-part 'package_list.freezed.dart';
-
-@freezed
-class PackageMetadata with _$PackageMetadata {
-  const factory PackageMetadata({
-    required String packageName,
-    required String packageId,
-    required String version,
-    required String groupId,
-  }) = _PackageMetadata;
-}
-
-class PackageList extends StatefulWidget {
+class PackageList extends ConsumerStatefulWidget {
   const PackageList({super.key, required this.serial});
 
   final String serial;
 
   @override
-  State<PackageList> createState() => _PackageListState();
+  ConsumerState<PackageList> createState() => _PackageListState();
 }
 
-class _PackageListState extends State<PackageList> {
-  final packageList = [
-    const PackageMetadata(
-        groupId: "flamingo",
-        packageId: "wen",
-        packageName: "hoodie",
-        version: "1.0.0"),
-    const PackageMetadata(
-        groupId: "flamingo",
-        packageId: "wen",
-        packageName: "hoodie",
-        version: "1.0.0"),
-    const PackageMetadata(
-        groupId: "flamingo",
-        packageId: "wen",
-        packageName: "hoodie",
-        version: "1.0.0"),
-    const PackageMetadata(
-        groupId: "flamingo",
-        packageId: "wen",
-        packageName: "hoodie",
-        version: "1.0.0"),
-  ];
-
+class _PackageListState extends ConsumerState<PackageList> {
   @override
   Widget build(BuildContext context) {
+    final packageListFuture = ref.watch(packageListProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Packages"),
         automaticallyImplyLeading: true,
       ),
-      body: ListView.separated(
-        itemBuilder: itemBuilder,
-        itemCount: packageList.length,
-        shrinkWrap: true,
-        separatorBuilder: (context, index) => const Divider(),
+      body: packageListFuture.when(
+        data: (packageList) => ListView.separated(
+          itemBuilder: (c, i) => itemBuilder(c, i, packageList),
+          itemCount: packageList.length,
+          shrinkWrap: true,
+          separatorBuilder: (context, index) => const Divider(),
+        ),
+        error: (error, stackTrace) {
+          debugPrint(error.toString());
+          debugPrint(stackTrace.toString());
+          return Center(
+            child: Text("Error: $error"),
+          );
+        },
+        loading: () => const Center(
+          child: CircularProgressIndicator(),
+        ),
       ),
     );
   }
 
-  Widget? itemBuilder(BuildContext context, int index) {
-    final item = packageList[index];
-    return ListTile(
-      title: Text(item.packageName),
-      subtitle: Text(item.packageId),
-      leading: const Icon(Icons.apps),
-      dense: true,
-      onTap: () {},
-      trailing: Wrap(
-        children: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.delete)),
-        ],
+  Widget? itemBuilder(
+      BuildContext context, int index, List<String> packageList) {
+    final packageId = packageList[index];
+    final packageMetadataFuture = ref.watch(packageInfoProvider(packageId));
+
+    return packageMetadataFuture.when(
+      data: (packageMetadata) => ListTile(
+        title: Text(packageMetadata.packageName),
+        subtitle: Text(packageMetadata.packageId),
+        leading: const Icon(Icons.apps),
+        dense: true,
+        onTap: () {},
+        trailing: Wrap(
+          children: [
+            IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
+            IconButton(onPressed: () {}, icon: const Icon(Icons.delete)),
+          ],
+        ),
+      ),
+      error: (error, stackTrace) => ListTile(
+        title: Text(packageId),
+        subtitle: Text("Suffered error: $error"),
+      ),
+      loading: () => ListTile(
+        title: Text(packageId),
+        leading: const CircularProgressIndicator(),
       ),
     );
   }

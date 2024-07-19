@@ -1,23 +1,23 @@
 import 'package:desktop_adb_file_browser/pages/adb_check.dart';
+import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
 import 'package:desktop_adb_file_browser/routes.dart';
 import 'package:desktop_adb_file_browser/utils/adb.dart';
 import 'package:desktop_adb_file_browser/widgets/device_card.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:routemaster/routemaster.dart';
 
-class DevicesPage extends StatefulWidget {
-  const DevicesPage(
-      {super.key, this.serialSelector, required this.canNavigate});
+class DevicesPage extends ConsumerStatefulWidget {
+  const DevicesPage({super.key, required this.canNavigate});
 
-  final ValueNotifier<String?>? serialSelector;
   final bool canNavigate;
 
   @override
-  State<DevicesPage> createState() => _DevicesPageState();
+  ConsumerState<DevicesPage> createState() => _DevicesPageState();
 }
 
-class _DevicesPageState extends State<DevicesPage> {
+class _DevicesPageState extends ConsumerState<DevicesPage> {
   Future<List<Device>>? _deviceListFuture;
 
   @override
@@ -105,6 +105,8 @@ class _DevicesPageState extends State<DevicesPage> {
   }
 
   Widget _deviceListView(Iterable<Device> devices) {
+    final deviceSelector = ref.watch(selectedDeviceProvider);
+
     if (devices.isEmpty) {
       return Center(
         child: Text("No devices found",
@@ -113,19 +115,23 @@ class _DevicesPageState extends State<DevicesPage> {
     }
 
     return ListView(
-        padding: const EdgeInsets.all(4.0),
-        children: devices
-            .map((e) => DeviceCard(
-                  device: e,
-                  onTap: _onDeviceSelect,
-                  showLogButton: widget.canNavigate,
-                  selected: widget.serialSelector?.value == e.serialName,
-                ))
-            .toList(growable: false));
+      padding: const EdgeInsets.all(4.0),
+      children: devices
+          .map(
+            (e) => DeviceCard(
+              device: e,
+              onTap: _onDeviceSelect,
+              showLogButton: widget.canNavigate,
+              selected: deviceSelector?.serialName == e.serialName,
+            ),
+          )
+          .toList(growable: false),
+    );
   }
 
   void _onDeviceSelect(Device device) {
-    widget.serialSelector?.value = device.serialName;
+    final deviceSelector = ref.read(selectedDeviceProvider.notifier);
+    deviceSelector.selectDevice(device);
 
     if (widget.canNavigate) {
       Routes.browse(context, device.serialName);

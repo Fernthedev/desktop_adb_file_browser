@@ -284,11 +284,13 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
   }
 
   static Future<List<String>> getPackageList(
-      String? serialName, String path) async {
+      String? serialName) async {
     var result = await runAdbCommand(serialName, ["shell", "pm list packages"]);
 
     var listed = (result.stdout as String)
         .split("\n")
+        .map((x) => x.trim())
+        .where((x) => x.isNotEmpty)
         .map((x) => x.substring("package:".length))
         .toList();
 

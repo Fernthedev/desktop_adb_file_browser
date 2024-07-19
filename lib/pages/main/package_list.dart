@@ -1,8 +1,10 @@
 import 'package:desktop_adb_file_browser/riverpod/package_list.dart';
+import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
+import 'package:desktop_adb_file_browser/utils/adb.dart';
+import 'package:desktop_adb_file_browser/widgets/adb_queue_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
 
 class PackageList extends ConsumerStatefulWidget {
   const PackageList({super.key, required this.serial});
@@ -23,22 +25,24 @@ class _PackageListState extends ConsumerState<PackageList> {
         title: const Text("Packages"),
         automaticallyImplyLeading: true,
       ),
-      body: packageListFuture.when(
-        data: (packageList) => ListView.separated(
-          itemBuilder: (c, i) => itemBuilder(c, i, packageList),
-          itemCount: packageList.length,
-          shrinkWrap: true,
-          separatorBuilder: (context, index) => const Divider(),
-        ),
-        error: (error, stackTrace) {
-          debugPrint(error.toString());
-          debugPrint(stackTrace.toString());
-          return Center(
-            child: Text("Error: $error"),
-          );
-        },
-        loading: () => const Center(
-          child: CircularProgressIndicator(),
+      body: ADBQueueIndicator(
+        child: packageListFuture.when(
+          data: (packageList) => ListView.separated(
+            itemBuilder: (c, i) => itemBuilder(c, i, packageList),
+            itemCount: packageList.length,
+            shrinkWrap: true,
+            separatorBuilder: (context, index) => const Divider(),
+          ),
+          error: (error, stackTrace) {
+            debugPrint(error.toString());
+            debugPrint(stackTrace.toString());
+            return Center(
+              child: Text("Error: $error"),
+            );
+          },
+          loading: () => const Center(
+            child: CircularProgressIndicator(),
+          ),
         ),
       ),
     );
@@ -48,6 +52,7 @@ class _PackageListState extends ConsumerState<PackageList> {
       BuildContext context, int index, List<String> packageList) {
     final packageId = packageList[index];
     final packageMetadataFuture = ref.watch(packageInfoProvider(packageId));
+    final selectedDevice = ref.watch(selectedDeviceProvider);
 
     return packageMetadataFuture.when(
       data: (packageMetadata) => ListTile(
@@ -59,7 +64,17 @@ class _PackageListState extends ConsumerState<PackageList> {
         trailing: Wrap(
           children: [
             IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
-            IconButton(onPressed: () {}, icon: const Icon(Icons.delete)),
+            IconButton(
+                onPressed: () async {
+                  await Adb.uninstallPackage(
+                      selectedDevice!.serialName, packageId);
+                  if (!context.mounted) return;
+                  const snackBar = SnackBar(
+                    content: Text('Uninstalled package'),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                },
+                icon: const Icon(Icons.delete)),
             IconButton(
                 onPressed: () async {
                   await Clipboard.setData(

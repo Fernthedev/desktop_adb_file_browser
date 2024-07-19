@@ -310,11 +310,18 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
     final version = _packageVersion.firstMatch(str)?[1] ?? "version n/a";
 
     return PackageMetadata(
-      packageName: "",
+      packageName: adbPathContext
+          .basenameWithoutExtension(packageId.replaceAll(".", "/")),
       packageId: packageId,
       version: version,
-      groupId: "",
     );
+  }
+
+  static Future<void> installPackage(String? serialName, String path) async {
+    await runAdbCommand(serialName, ["install", path]);
+  }
+  static Future<void> uninstallPackage(String? serialName, String packageId) async {
+    await runAdbCommand(serialName, ["uninstall", packageId]);
   }
 
   static Future<List<String>?> getDevicesSerial() async {

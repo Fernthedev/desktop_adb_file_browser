@@ -5,6 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_file/open_file.dart';
 
+
+///
+/// Display ADB Queue
+///
 class ADBQueueIndicator extends ConsumerStatefulWidget {
   const ADBQueueIndicator({super.key, required this.child});
 

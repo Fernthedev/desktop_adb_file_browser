@@ -1,5 +1,6 @@
 import 'package:desktop_adb_file_browser/riverpod/package_list.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -51,6 +52,7 @@ class _PackageListState extends ConsumerState<PackageList> {
     return packageMetadataFuture.when(
       data: (packageMetadata) => ListTile(
         title: Text(packageMetadata.packageName),
+        subtitle:
             Text("${packageMetadata.packageId} - ${packageMetadata.version}"),
         leading: const Icon(Icons.apps),
         dense: true,
@@ -59,6 +61,18 @@ class _PackageListState extends ConsumerState<PackageList> {
           children: [
             IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
             IconButton(onPressed: () {}, icon: const Icon(Icons.delete)),
+            IconButton(
+                onPressed: () async {
+                  await Clipboard.setData(
+                      ClipboardData(text: packageMetadata.packageId));
+
+                  if (!context.mounted) return;
+                  const snackBar = SnackBar(
+                    content: Text('Copied package id to clipboard'),
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                },
+                icon: const Icon(Icons.copy))
           ],
         ),
       ),

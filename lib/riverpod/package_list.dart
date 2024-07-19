@@ -16,7 +16,6 @@ class PackageMetadata with _$PackageMetadata {
     required String packageName,
     required String packageId,
     required String version,
-    required String groupId,
   }) = _PackageMetadata;
 }
 

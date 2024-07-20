@@ -101,29 +101,17 @@ class _PackageListState extends ConsumerState<PackageList> {
         onTap: () {},
         trailing: Wrap(
           children: [
-            IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
             IconButton(
-                onPressed: () async {
-                  await Adb.uninstallPackage(
-                      selectedDevice!.serialName, packageId);
-                  if (!context.mounted) return;
-                  const snackBar = SnackBar(
-                    content: Text('Uninstalled package'),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                },
-                icon: const Icon(Icons.delete)),
+                onPressed: () =>
+                    _downloadPackage(selectedDevice!.serialName, packageId),
+                icon: const Icon(Icons.download)),
             IconButton(
-                onPressed: () async {
-                  await Clipboard.setData(
-                      ClipboardData(text: packageMetadata.packageId));
-
-                  if (!context.mounted) return;
-                  const snackBar = SnackBar(
-                    content: Text('Copied package id to clipboard'),
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                },
+              onPressed: () =>
+                  _deletePackage(selectedDevice!.serialName, packageId),
+              icon: const Icon(Icons.delete),
+            ),
+            IconButton(
+                onPressed: () => _copyPath(packageMetadata),
                 icon: const Icon(Icons.copy))
           ],
         ),
@@ -156,6 +144,45 @@ class _PackageListState extends ConsumerState<PackageList> {
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
 
+    // cleanup
     await Adb.removeFile(device?.serialName, randomPath);
+  }
+
+  void _deletePackage(String serialName, String packageId) async {
+    await Adb.uninstallPackage(serialName, packageId);
+    if (!context.mounted) return;
+    const snackBar = SnackBar(
+      content: Text('Uninstalled package'),
+      showCloseIcon: true,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  void _downloadPackage(String serialName, String packageId) async {
+    var destPath = await getSaveLocation(suggestedName: "$packageId.apk");
+    if (destPath == null) return;
+
+    var apkPath = await Adb.getPackagePath(serialName, packageId);
+    var notifier = ref.read(downloadQueueProvider.notifier);
+
+    await notifier.doDownload(serialName, apkPath, destPath.path);
+
+    if (!context.mounted) return;
+    final snackBar = SnackBar(
+      content: Text('Downloaded apk to ${destPath.path}'),
+      showCloseIcon: true,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  void _copyPath(PackageMetadata packageMetadata) async {
+    await Clipboard.setData(ClipboardData(text: packageMetadata.packageId));
+
+    if (!context.mounted) return;
+    const snackBar = SnackBar(
+      content: Text('Copied package id to clipboard'),
+      showCloseIcon: true,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 }

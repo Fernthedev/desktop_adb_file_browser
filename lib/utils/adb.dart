@@ -299,6 +299,19 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
     return listed;
   }
 
+  static Future<String> getPackagePath(
+      String? serialName, String packageId) async {
+    var result =
+        await runAdbCommand(serialName, ["shell", "pm path $packageId"]);
+
+    String stdout = result.stdout;
+    if (stdout.isEmpty) throw "Failed to get path for $packageId";
+
+    var path = stdout.substring("package:".length).trim();
+
+    return path;
+  }
+
   static Future<PackageMetadata> getPackageInfo(
       String? serialName, String packageId) async {
     var result = await runAdbCommand(
@@ -320,7 +333,9 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
   static Future<void> installPackage(String? serialName, String path) async {
     await runAdbCommand(serialName, ["install", path]);
   }
-  static Future<void> uninstallPackage(String? serialName, String packageId) async {
+
+  static Future<void> uninstallPackage(
+      String? serialName, String packageId) async {
     await runAdbCommand(serialName, ["uninstall", packageId]);
   }
 

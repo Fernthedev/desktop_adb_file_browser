@@ -25,7 +25,11 @@ class PackageList extends _$PackageList {
   Future<List<String>> build() async {
     final serial = ref.watch(selectedDeviceProvider);
 
-    return Adb.getPackageList(serial?.serialName);
+    var list = await Adb.getPackageList(serial?.serialName);
+
+    list.sort();
+
+    return list;
   }
 
   void installToDevice(String path) {}

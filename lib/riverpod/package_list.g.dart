@@ -156,7 +156,7 @@ class _PackageInfoProviderElement
   String get id => (origin as PackageInfoProvider).id;
 }
 
-String _$packageListHash() => r'a0726466e2cf7082ca5da77e1789652c17638491';
+String _$packageListHash() => r'ef010111cc9ff65a80675d7288c6bbb3d997403f';
 
 /// See also [PackageList].
 @ProviderFor(PackageList)

@@ -1,9 +1,11 @@
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:async/async.dart';
 import 'package:desktop_adb_file_browser/riverpod/package_list.dart';
+import 'package:desktop_adb_file_browser/riverpod/settings.dart';
 import 'package:desktop_adb_file_browser/utils/platform.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -31,6 +33,9 @@ abstract class Adb {
       "https://dl.google.com/android/repository/platform-tools-latest-";
 
   static Context get hostPath => host_path.context;
+
+  static SettingsData settings = const SettingsData();
+  static final Set<Future<ProcessResult>> _runningProcesses = {};
 
   static Future<void> downloadADB(
       DownloadProgressCallback c, CancelToken cancelToken) async {
@@ -117,16 +122,25 @@ abstract class Adb {
 
     var adbPath = await _locateAdbPath();
 
-    // ignore: avoid_print
     Trace.info("Running adb command: \"$adbPath $newArgs\"");
 
-    var process = await Process.run(adbPath, newArgs, runInShell: true);
+    while (_runningProcesses.length >= settings.multipleAdbInstances.abs()) {
+      await Future.delayed(const Duration(milliseconds: 10));
+    }
+
+    var processFuture = Process.run(adbPath, newArgs, runInShell: true);
+
+    // add to queue
+    _runningProcesses.add(processFuture);
+
+    var process = await processFuture;
     if (process.stderr != null && process.stderr.toString().isNotEmpty) {
       final error = process.stderr;
       Trace.verbose("Error $error");
       debugPrintStack();
       throw error.toString();
     }
+    _runningProcesses.remove(processFuture);
 
     // if (process.exitCode != 0) throw "Process exit code was not 0!";
 

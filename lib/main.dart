@@ -2,6 +2,7 @@ import 'package:desktop_adb_file_browser/pages/main/browser.dart';
 import 'package:desktop_adb_file_browser/pages/main/devices.dart';
 import 'package:desktop_adb_file_browser/pages/main/logger.dart';
 import 'package:desktop_adb_file_browser/pages/main_page.dart';
+import 'package:desktop_adb_file_browser/riverpod/settings.dart';
 import 'package:desktop_adb_file_browser/src/pigeon_impl.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/foundation.dart';
@@ -10,6 +11,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:routemaster/routemaster.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trace/trace.dart';
 
 import 'package:path/path.dart' as path;
@@ -54,6 +56,8 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
+  final prefs = SharedPreferences.getInstance();
+
   final ConsoleLogger logger = ConsoleLogger(
     filter: DefaultLogFilter(
       LogLevel.verbose,
@@ -82,7 +86,10 @@ void main() async {
 
   Trace.verbose("Pigeon");
   native2flutter = Native2FlutterImpl();
-  runApp(const ProviderScope(child: MyApp()));
+  runApp(ProviderScope(
+    overrides: [preferencesProvider.overrideWithValue(await prefs)],
+    child: const MyApp(),
+  ));
 }
 
 class MyApp extends StatelessWidget {

@@ -6,7 +6,7 @@ part of 'selected_device.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$selectedDeviceHash() => r'01ea0f1bbacf8d90970846207fcfe83398e17686';
+String _$selectedDeviceHash() => r'dfc2bb1f83254034530958c14ddd9076634a2ce7';
 
 /// See also [SelectedDevice].
 @ProviderFor(SelectedDevice)

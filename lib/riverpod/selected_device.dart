@@ -8,7 +8,7 @@ class SelectedDevice extends _$SelectedDevice {
   @override
   Device? build() => null;
 
-  void selectDevice(Device s) {
+  void selectDevice(Device? s) {
     state = s;
   }
 

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:archive/archive_io.dart';
 import 'package:async/async.dart';
+import 'package:desktop_adb_file_browser/riverpod/package_list.dart';
 import 'package:desktop_adb_file_browser/utils/platform.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
@@ -21,6 +22,8 @@ abstract class Adb {
 
   static final _fileListingRegex =
       RegExp(r"([\w-]+) *(\d+) *(\w+) *(\w+) *(\d+) *([\d-]+) *([\d:]+) *(.*)");
+
+  static final _packageVersion = RegExp(r"versionName=(.*)\n");
 
   static final Context adbPathContext = Context(style: Style.posix);
 
@@ -258,7 +261,7 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
         permission: permission,
         size: size,
         user: user,
-        serial: serial
+        serial: serial,
       );
     }).toList(growable: false);
 
@@ -279,8 +282,61 @@ drwxrwx--x  2 u0_a140 sdcard_rw   3488 2023-11-01 10:45 mods_old
     var result =
         await runAdbCommand(serialName, ["shell", "ls -pLla ${fixPath(path)}"]);
 
-    return parsePathsWithMoreData(
-        normalizeOutput(result.stdout), fixPath(path, addQuotes: false), false, serialName);
+    return parsePathsWithMoreData(normalizeOutput(result.stdout),
+        fixPath(path, addQuotes: false), false, serialName);
+  }
+
+  static Future<List<String>> getPackageList(String? serialName) async {
+    var result = await runAdbCommand(serialName, ["shell", "pm list packages"]);
+
+    var listed = (result.stdout as String)
+        .split("\n")
+        .map((x) => x.trim())
+        .where((x) => x.isNotEmpty)
+        .map((x) => x.substring("package:".length))
+        .toList();
+
+    return listed;
+  }
+
+  static Future<String> getPackagePath(
+      String? serialName, String packageId) async {
+    var result =
+        await runAdbCommand(serialName, ["shell", "pm path $packageId"]);
+
+    String stdout = result.stdout;
+    if (stdout.isEmpty) throw "Failed to get path for $packageId";
+
+    var path = stdout.substring("package:".length).trim();
+
+    return path;
+  }
+
+  static Future<PackageMetadata> getPackageInfo(
+      String? serialName, String packageId) async {
+    var result = await runAdbCommand(
+        serialName, ["shell", "dumpsys package $packageId"]);
+
+    String str = result.stdout;
+    str = str.replaceAll("\r\n", "\n");
+
+    final version = _packageVersion.firstMatch(str)?[1] ?? "version n/a";
+
+    return PackageMetadata(
+      packageName: adbPathContext
+          .basenameWithoutExtension(packageId.replaceAll(".", "/")),
+      packageId: packageId,
+      version: version,
+    );
+  }
+
+  static Future<void> installPackage(String? serialName, String path) async {
+    await runAdbCommand(serialName, ["install", path]);
+  }
+
+  static Future<void> uninstallPackage(
+      String? serialName, String packageId) async {
+    await runAdbCommand(serialName, ["uninstall", packageId]);
   }
 
   static Future<List<String>?> getDevicesSerial() async {

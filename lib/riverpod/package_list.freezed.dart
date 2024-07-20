@@ -19,7 +19,6 @@ mixin _$PackageMetadata {
   String get packageName => throw _privateConstructorUsedError;
   String get packageId => throw _privateConstructorUsedError;
   String get version => throw _privateConstructorUsedError;
-  String get groupId => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $PackageMetadataCopyWith<PackageMetadata> get copyWith =>
@@ -32,8 +31,7 @@ abstract class $PackageMetadataCopyWith<$Res> {
           PackageMetadata value, $Res Function(PackageMetadata) then) =
       _$PackageMetadataCopyWithImpl<$Res, PackageMetadata>;
   @useResult
-  $Res call(
-      {String packageName, String packageId, String version, String groupId});
+  $Res call({String packageName, String packageId, String version});
 }
 
 /// @nodoc
@@ -52,7 +50,6 @@ class _$PackageMetadataCopyWithImpl<$Res, $Val extends PackageMetadata>
     Object? packageName = null,
     Object? packageId = null,
     Object? version = null,
-    Object? groupId = null,
   }) {
     return _then(_value.copyWith(
       packageName: null == packageName
@@ -67,10 +64,6 @@ class _$PackageMetadataCopyWithImpl<$Res, $Val extends PackageMetadata>
           ? _value.version
           : version // ignore: cast_nullable_to_non_nullable
               as String,
-      groupId: null == groupId
-          ? _value.groupId
-          : groupId // ignore: cast_nullable_to_non_nullable
-              as String,
     ) as $Val);
   }
 }
@@ -83,8 +76,7 @@ abstract class _$$PackageMetadataImplCopyWith<$Res>
       __$$PackageMetadataImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call(
-      {String packageName, String packageId, String version, String groupId});
+  $Res call({String packageName, String packageId, String version});
 }
 
 /// @nodoc
@@ -101,7 +93,6 @@ class __$$PackageMetadataImplCopyWithImpl<$Res>
     Object? packageName = null,
     Object? packageId = null,
     Object? version = null,
-    Object? groupId = null,
   }) {
     return _then(_$PackageMetadataImpl(
       packageName: null == packageName
@@ -116,10 +107,6 @@ class __$$PackageMetadataImplCopyWithImpl<$Res>
           ? _value.version
           : version // ignore: cast_nullable_to_non_nullable
               as String,
-      groupId: null == groupId
-          ? _value.groupId
-          : groupId // ignore: cast_nullable_to_non_nullable
-              as String,
     ));
   }
 }
@@ -130,8 +117,7 @@ class _$PackageMetadataImpl implements _PackageMetadata {
   const _$PackageMetadataImpl(
       {required this.packageName,
       required this.packageId,
-      required this.version,
-      required this.groupId});
+      required this.version});
 
   @override
   final String packageName;
@@ -139,12 +125,10 @@ class _$PackageMetadataImpl implements _PackageMetadata {
   final String packageId;
   @override
   final String version;
-  @override
-  final String groupId;
 
   @override
   String toString() {
-    return 'PackageMetadata(packageName: $packageName, packageId: $packageId, version: $version, groupId: $groupId)';
+    return 'PackageMetadata(packageName: $packageName, packageId: $packageId, version: $version)';
   }
 
   @override
@@ -156,13 +140,11 @@ class _$PackageMetadataImpl implements _PackageMetadata {
                 other.packageName == packageName) &&
             (identical(other.packageId, packageId) ||
                 other.packageId == packageId) &&
-            (identical(other.version, version) || other.version == version) &&
-            (identical(other.groupId, groupId) || other.groupId == groupId));
+            (identical(other.version, version) || other.version == version));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, packageName, packageId, version, groupId);
+  int get hashCode => Object.hash(runtimeType, packageName, packageId, version);
 
   @JsonKey(ignore: true)
   @override
@@ -176,8 +158,7 @@ abstract class _PackageMetadata implements PackageMetadata {
   const factory _PackageMetadata(
       {required final String packageName,
       required final String packageId,
-      required final String version,
-      required final String groupId}) = _$PackageMetadataImpl;
+      required final String version}) = _$PackageMetadataImpl;
 
   @override
   String get packageName;
@@ -185,8 +166,6 @@ abstract class _PackageMetadata implements PackageMetadata {
   String get packageId;
   @override
   String get version;
-  @override
-  String get groupId;
   @override
   @JsonKey(ignore: true)
   _$$PackageMetadataImplCopyWith<_$PackageMetadataImpl> get copyWith =>

@@ -2,9 +2,11 @@ import 'package:desktop_adb_file_browser/pages/main/browser.dart';
 import 'package:desktop_adb_file_browser/pages/main/devices.dart';
 import 'package:desktop_adb_file_browser/pages/main/logger.dart';
 import 'package:desktop_adb_file_browser/pages/main/package_list.dart';
+import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 enum _Page {
   devices("Devices", FluentIcons.phone_48_regular, false),
@@ -22,28 +24,24 @@ enum _Page {
 _Page _pageForIndex(int v) =>
     _Page.values.firstWhere((element) => element.index == v);
 
-class MainPage extends StatefulWidget {
+class MainPage extends ConsumerStatefulWidget {
   const MainPage({super.key});
 
   @override
-  State<MainPage> createState() => _MainPageState();
+  ConsumerState<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends ConsumerState<MainPage> {
   _Page _currentPage = _Page.devices;
-  final ValueNotifier<String?> _selectedDevice = ValueNotifier<String?>(null);
 
   @override
   void initState() {
     super.initState();
-    _selectedDevice.addListener(_onDeviceSelect);
   }
 
   @override
   void dispose() {
     super.dispose();
-    _selectedDevice.removeListener(_onDeviceSelect);
-    _selectedDevice.dispose();
   }
 
   void _onDeviceSelect() {
@@ -51,7 +49,8 @@ class _MainPageState extends State<MainPage> {
   }
 
   Widget addDisabledTooltip(Widget widget) {
-    if (_selectedDevice.value != null) return widget;
+    final selectedDevice = ref.read(selectedDeviceProvider);
+    if (selectedDevice != null) return widget;
 
     return Tooltip(
       message: "No device selected",
@@ -61,12 +60,13 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final selectedDevice = ref.watch(selectedDeviceProvider);
+
     final dests = _Page.values
         .map((x) => NavigationRailDestination(
               icon: addDisabledTooltip(Icon(x.icon)),
               label: Text(x.name),
-              disabled:
-                  x.requiresDevice && _selectedDevice.value == null,
+              disabled: x.requiresDevice && selectedDevice == null,
             ))
         .toList();
 
@@ -93,23 +93,26 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _buildCurrentPage(_Page p) => switch (p) {
-        _Page.devices => DevicesPage(
-            key: const ValueKey("devices"),
-            serialSelector: _selectedDevice,
-            canNavigate: false,
-          ),
-        _Page.browser => DeviceBrowserPage(
-            key: const ValueKey("browser"),
-            serial: _selectedDevice.value!,
-          ),
-        _Page.logger => LogPage(
-            key: const ValueKey("logger"),
-            serial: _selectedDevice.value!,
-          ),
-        _Page.packages => PackageList(
-            key: const ValueKey("packages"),
-            serial: _selectedDevice.value!,
-          ),
-      };
+  Widget _buildCurrentPage(_Page p) {
+    final selectedDevice = ref.watch(selectedDeviceProvider);
+
+    return switch (p) {
+      _Page.devices => const DevicesPage(
+          key: ValueKey("devices"),
+          canNavigate: false,
+        ),
+      _Page.browser => DeviceBrowserPage(
+          key: const ValueKey("browser"),
+          serial: selectedDevice!.serialName,
+        ),
+      _Page.logger => LogPage(
+          key: const ValueKey("logger"),
+          serial: selectedDevice!.serialName,
+        ),
+      _Page.packages => PackageList(
+          key: const ValueKey("packages"),
+          serial: selectedDevice!.serialName,
+        ),
+    };
+  }
 }

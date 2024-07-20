@@ -1,82 +1,231 @@
+import 'package:desktop_adb_file_browser/riverpod/file_queue.dart';
+import 'package:desktop_adb_file_browser/riverpod/package_list.dart';
+import 'package:desktop_adb_file_browser/riverpod/selected_device.dart';
+import 'package:desktop_adb_file_browser/utils/adb.dart';
+import 'package:desktop_adb_file_browser/widgets/adb_queue_indicator.dart';
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_selector/file_selector.dart';
+import 'package:fluentui_system_icons/fluentui_system_icons.dart';
 import 'package:flutter/material.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
-// part 'package_list.g.dart';
-part 'package_list.freezed.dart';
-
-@freezed
-class PackageMetadata with _$PackageMetadata {
-  const factory PackageMetadata({
-    required String packageName,
-    required String packageId,
-    required String version,
-    required String groupId,
-  }) = _PackageMetadata;
-}
-
-class PackageList extends StatefulWidget {
+class PackageList extends ConsumerStatefulWidget {
   const PackageList({super.key, required this.serial});
 
   final String serial;
 
   @override
-  State<PackageList> createState() => _PackageListState();
+  ConsumerState<PackageList> createState() => _PackageListState();
 }
 
-class _PackageListState extends State<PackageList> {
-  final packageList = [
-    const PackageMetadata(
-        groupId: "flamingo",
-        packageId: "wen",
-        packageName: "hoodie",
-        version: "1.0.0"),
-    const PackageMetadata(
-        groupId: "flamingo",
-        packageId: "wen",
-        packageName: "hoodie",
-        version: "1.0.0"),
-    const PackageMetadata(
-        groupId: "flamingo",
-        packageId: "wen",
-        packageName: "hoodie",
-        version: "1.0.0"),
-    const PackageMetadata(
-        groupId: "flamingo",
-        packageId: "wen",
-        packageName: "hoodie",
-        version: "1.0.0"),
-  ];
+class _PackageListState extends ConsumerState<PackageList> {
+  bool _dragging = false;
+  TextEditingController filterController = TextEditingController();
+
+  @override
+  void dispose() {
+    super.dispose();
+    filterController.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final packageListFuture = ref.watch(packageListProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Packages"),
         automaticallyImplyLeading: true,
+        actions: [
+          IconButton(
+            onPressed: () async {
+              final file = await openFile();
+              if (file == null) return;
+
+              await uploadAndInstallAPK(file.path);
+            },
+            icon: const Icon(
+              FluentIcons.arrow_upload_32_regular,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints.tightFor(width: 200),
+              child: TextField(
+                autocorrect: false,
+                enableSuggestions: false,
+                decoration: const InputDecoration(hintText: "Search"),
+                controller: filterController,
+                onChanged: (s) => setState(() {}),
+              ),
+            ),
+          ),
+          const SizedBox(
+            width: 25,
+          ),
+        ],
       ),
-      body: ListView.separated(
-        itemBuilder: itemBuilder,
-        itemCount: packageList.length,
-        shrinkWrap: true,
-        separatorBuilder: (context, index) => const Divider(),
+      body: ADBQueueIndicator(
+        child: Container(
+          color:
+              _dragging ? Theme.of(context).focusColor.withOpacity(0.4) : null,
+          child: DropTarget(
+            onDragDone: (details) async {
+              for (final file in details.files) {
+                await uploadAndInstallAPK(file.path);
+              }
+            },
+            onDragEntered: (detail) {
+              setState(() {
+                _dragging = true;
+              });
+            },
+            onDragExited: (detail) {
+              setState(() {
+                _dragging = false;
+              });
+            },
+            child: packageListFuture.when(
+              data: (packageList) {
+                final filteredList = packageList
+                    .where((x) => x
+                        .toLowerCase()
+                        .contains(filterController.text.toLowerCase()))
+                    .toList();
+
+                return ListView.separated(
+                    itemBuilder: (c, i) => itemBuilder(c, i, filteredList),
+                    itemCount: filteredList.length,
+                    shrinkWrap: true,
+                    separatorBuilder: (context, index) => const Divider(),
+                    addAutomaticKeepAlives: true,
+                    findChildIndexCallback: (Key key) {
+                      var index =
+                          filteredList.indexOf((key as ValueKey<String>).value);
+                      if (index == -1) return null;
+                      return index;
+                    });
+              },
+              error: (error, stackTrace) {
+                debugPrint(error.toString());
+                debugPrint(stackTrace.toString());
+                return Center(
+                  child: Text("Error: $error"),
+                );
+              },
+              loading: () => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget? itemBuilder(BuildContext context, int index) {
-    final item = packageList[index];
-    return ListTile(
-      title: Text(item.packageName),
-      subtitle: Text(item.packageId),
-      leading: const Icon(Icons.apps),
-      dense: true,
-      onTap: () {},
-      trailing: Wrap(
-        children: [
-          IconButton(onPressed: () {}, icon: const Icon(Icons.download)),
-          IconButton(onPressed: () {}, icon: const Icon(Icons.delete)),
-        ],
+  Widget? itemBuilder(
+      BuildContext context, int index, List<String> packageList) {
+    final packageId = packageList[index];
+    final packageMetadataFuture = ref.watch(packageInfoProvider(packageId));
+    final selectedDevice = ref.watch(selectedDeviceProvider);
+
+    return packageMetadataFuture.when(
+      data: (packageMetadata) => ListTile(
+        key: ValueKey(packageId),
+        title: Text(packageMetadata.packageName),
+        subtitle:
+            Text("${packageMetadata.packageId} - ${packageMetadata.version}"),
+        dense: true,
+        onTap: () {},
+        trailing: Wrap(
+          children: [
+            IconButton(
+                onPressed: () =>
+                    _downloadPackage(selectedDevice!.serialName, packageId),
+                icon: const Icon(Icons.download)),
+            IconButton(
+              onPressed: () =>
+                  _deletePackage(selectedDevice!.serialName, packageId),
+              icon: const Icon(Icons.delete),
+            ),
+            IconButton(
+                onPressed: () => _copyPath(packageMetadata),
+                icon: const Icon(Icons.copy))
+          ],
+        ),
+      ),
+      error: (error, stackTrace) => ListTile(
+        key: ValueKey(packageId),
+        title: Text(packageId),
+        subtitle: Text("Suffered error: $error"),
+      ),
+      loading: () => ListTile(
+        key: ValueKey(packageId),
+        title: Text(packageId),
+        leading: const CircularProgressIndicator(),
       ),
     );
+  }
+
+  Future<void> uploadAndInstallAPK(String apkPath) async {
+    var notifier = ref.read(uploadQueueProvider.notifier);
+    var device = ref.read(selectedDeviceProvider);
+
+    var uuid = const Uuid();
+    var randomPath = "/tmp/${uuid.v8()}.apk";
+
+    await notifier.doUpload(device?.serialName, apkPath, randomPath);
+    await Adb.installPackage(device?.serialName, randomPath);
+
+    if (!context.mounted) return;
+    final snackBar = SnackBar(
+      content:
+          Text('Installed package ${Adb.adbPathContext.basename(apkPath)}'),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+
+    // cleanup
+    await Adb.removeFile(device?.serialName, randomPath);
+  }
+
+  void _deletePackage(String serialName, String packageId) async {
+    await Adb.uninstallPackage(serialName, packageId);
+    if (!context.mounted) return;
+    const snackBar = SnackBar(
+      content: Text('Uninstalled package'),
+      showCloseIcon: true,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  void _downloadPackage(String serialName, String packageId) async {
+    var destPath = await getSaveLocation(suggestedName: "$packageId.apk");
+    if (destPath == null) return;
+
+    var apkPath = await Adb.getPackagePath(serialName, packageId);
+    var notifier = ref.read(downloadQueueProvider.notifier);
+
+    await notifier.doDownload(serialName, apkPath, destPath.path);
+
+    if (!context.mounted) return;
+    final snackBar = SnackBar(
+      content: Text('Downloaded apk to ${destPath.path}'),
+      showCloseIcon: true,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+  void _copyPath(PackageMetadata packageMetadata) async {
+    await Clipboard.setData(ClipboardData(text: packageMetadata.packageId));
+
+    if (!context.mounted) return;
+    const snackBar = SnackBar(
+      content: Text('Copied package id to clipboard'),
+      showCloseIcon: true,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 }

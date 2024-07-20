@@ -22,6 +22,13 @@ class PackageList extends ConsumerStatefulWidget {
 
 class _PackageListState extends ConsumerState<PackageList> {
   bool _dragging = false;
+  TextEditingController filterController = TextEditingController();
+
+  @override
+  void dispose() {
+    super.dispose();
+    filterController.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +40,32 @@ class _PackageListState extends ConsumerState<PackageList> {
         automaticallyImplyLeading: true,
         actions: [
           IconButton(
-              onPressed: () async {
-                final file = await openFile();
-                if (file == null) return;
+            onPressed: () async {
+              final file = await openFile();
+              if (file == null) return;
 
-                await uploadAndInstallAPK(file.path);
-              },
-              icon: const Icon(FluentIcons.arrow_upload_32_regular))
+              await uploadAndInstallAPK(file.path);
+            },
+            icon: const Icon(
+              FluentIcons.arrow_upload_32_regular,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints.tightFor(width: 200),
+              child: TextField(
+                autocorrect: false,
+                enableSuggestions: false,
+                decoration: const InputDecoration(hintText: "Search"),
+                controller: filterController,
+                onChanged: (s) => setState(() {}),
+              ),
+            ),
+          ),
+          const SizedBox(
+            width: 25,
+          ),
         ],
       ),
       body: ADBQueueIndicator(
@@ -63,12 +89,26 @@ class _PackageListState extends ConsumerState<PackageList> {
               });
             },
             child: packageListFuture.when(
-              data: (packageList) => ListView.separated(
-                itemBuilder: (c, i) => itemBuilder(c, i, packageList),
-                itemCount: packageList.length,
-                shrinkWrap: true,
-                separatorBuilder: (context, index) => const Divider(),
-              ),
+              data: (packageList) {
+                final filteredList = packageList
+                    .where((x) => x
+                        .toLowerCase()
+                        .contains(filterController.text.toLowerCase()))
+                    .toList();
+
+                return ListView.separated(
+                    itemBuilder: (c, i) => itemBuilder(c, i, filteredList),
+                    itemCount: filteredList.length,
+                    shrinkWrap: true,
+                    separatorBuilder: (context, index) => const Divider(),
+                    addAutomaticKeepAlives: true,
+                    findChildIndexCallback: (Key key) {
+                      var index =
+                          filteredList.indexOf((key as ValueKey<String>).value);
+                      if (index == -1) return null;
+                      return index;
+                    });
+              },
               error: (error, stackTrace) {
                 debugPrint(error.toString());
                 debugPrint(stackTrace.toString());
@@ -94,6 +134,7 @@ class _PackageListState extends ConsumerState<PackageList> {
 
     return packageMetadataFuture.when(
       data: (packageMetadata) => ListTile(
+        key: ValueKey(packageId),
         title: Text(packageMetadata.packageName),
         subtitle:
             Text("${packageMetadata.packageId} - ${packageMetadata.version}"),
@@ -117,10 +158,12 @@ class _PackageListState extends ConsumerState<PackageList> {
         ),
       ),
       error: (error, stackTrace) => ListTile(
+        key: ValueKey(packageId),
         title: Text(packageId),
         subtitle: Text("Suffered error: $error"),
       ),
       loading: () => ListTile(
+        key: ValueKey(packageId),
         title: Text(packageId),
         leading: const CircularProgressIndicator(),
       ),

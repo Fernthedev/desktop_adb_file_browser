@@ -195,23 +195,31 @@ class _DeviceBrowserPageState extends ConsumerState<DeviceBrowserPage> {
   }
 
   MultiSplitViewTheme _buildBody() {
+    var dividerColor = Theme.of(context).dividerColor;
+    const dividerThickness = 5.0;
+
     return MultiSplitViewTheme(
-      data: MultiSplitViewThemeData(dividerThickness: 5.5),
+      data: MultiSplitViewThemeData(dividerThickness: dividerThickness),
       child: MultiSplitView(
-        initialAreas: [Area(weight: 0.15)],
-        children: [
-          _ShortcutsColumn(
-            serial: widget.serial,
-            onWatchAdd: onWatchAdd,
+        initialAreas: [
+          Area(
+            flex: 0.15,
+            builder: (context, area) => _ShortcutsColumn(
+              serial: widget.serial,
+              onWatchAdd: onWatchAdd,
+            ),
           ),
-          Center(child: _fileListContainer())
+          Area(
+            builder: (context, area) => Center(child: _fileListContainer()),
+          )
         ],
         dividerBuilder:
             (axis, index, resizable, dragging, highlighted, themeData) =>
                 Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                    width: 0.5,
-                    color: Colors.black),
+          margin: const EdgeInsets.symmetric(horizontal: 1.5),
+          width: 1,
+          color: dividerColor,
+        ),
       ),
     );
   }

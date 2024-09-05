@@ -46,7 +46,11 @@ dependencies:
   filesize: ^2.0.1
   win32: ^5.1.0
   dio: ^5.0.3
-  archive: ^3.3.1
+#  archive: ^3.3.1
+  archive:
+       git:
+        url: https://github.com/Fernthedev/archive.git
+        ref: fix/unix-file-perms # branch name
   desktop_drop: ^0.4.1
   watcher: ^1.0.1
   tuple: ^2.0.0
@@ -85,7 +89,7 @@ dev_dependencies:
   riverpod_lint: ^2.3.10
   freezed: ^2.4.7
   json_serializable: ^6.7.1
-  msix: ^3.16.7
+  msix: ^2.7.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

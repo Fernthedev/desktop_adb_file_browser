@@ -63,6 +63,8 @@ jobs:
     - name: Make MSIX Installer
       if: contains(matrix.runner, 'windows')
       run: |
+        mkdir build\windows\runner\Release
+        cp .\build\windows\x64\runner\Release\  build\windows\runner\Release\
         mkdir publish
         dart run msix:create
         

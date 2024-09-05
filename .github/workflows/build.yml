@@ -64,7 +64,7 @@ jobs:
       if: contains(matrix.runner, 'windows')
       run: |
         flutter pub remove archive
-        flutter pub add -d msix:^3.0.0
+        flutter pub add -d msix:^3.16.8
         mkdir publish
         dart run msix:create
         

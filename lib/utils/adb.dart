@@ -49,18 +49,20 @@ abstract class Adb {
 
     Trace.verbose("Downloading to ${downloadPath.absolute}");
     Trace.verbose("Downloading from $adbFinalURL");
-    var rs = await Dio().get<List<int>>(adbFinalURL,
-        options: Options(
-            responseType: ResponseType.bytes), // set responseType to `stream`
-        onReceiveProgress: c,
-        cancelToken: cancelToken);
+    var rs = await Dio().get<List<int>>(
+      adbFinalURL,
+      options: Options(
+          responseType: ResponseType.bytes), // set responseType to `stream`
+      onReceiveProgress: c,
+      cancelToken: cancelToken,
+    );
 
     var stream = rs.data;
     if (stream == null) throw "Stream is null";
 
     // Decode the zip from the InputFileStream. The archive will have the contents of the
     // zip, without having stored the data in memory.
-    final archive = ZipDecoder().decodeBuffer(InputStream(stream));
+    final archive = ZipDecoder().decodeStream(InputMemoryStream(stream));
 
     extractArchiveToDisk(archive, downloadPath.path);
     _adbCurrentPath = (await _getADBInstalledExecPath()).path;

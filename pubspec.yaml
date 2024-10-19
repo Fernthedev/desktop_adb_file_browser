@@ -47,11 +47,8 @@ dependencies:
   win32: ^5.1.0
   dio: ^5.0.3
 #  archive: ^3.3.1
-  archive:
-       git:
-        url: https://github.com/Fernthedev/archive.git
-        ref: fix/unix-file-perms # branch name
-  desktop_drop: ^0.4.1
+  archive: ^4.0.0 # branch name
+  desktop_drop: ^0.5.0
   watcher: ^1.0.1
   tuple: ^2.0.0
   open_file: ^3.2.1
@@ -78,7 +75,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^4.0.0
+  flutter_lints: ^5.0.0
   # msix: ^3.6.2
   # TODO: use pub
   innosetup:
@@ -89,7 +86,7 @@ dev_dependencies:
   riverpod_lint: ^2.3.10
   freezed: ^2.4.7
   json_serializable: ^6.7.1
-  msix: ^2.7.3
+  msix: 3.16.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -149,3 +146,10 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+
+dependency_overrides:
+  archive:
+      git:
+        url: https://github.com/Fernthedev/archive.git
+        ref: fix/unix-file-perms # branch name

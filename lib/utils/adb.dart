@@ -136,7 +136,7 @@ abstract class Adb {
     _runningProcesses.add(processFuture);
 
     var process = await processFuture;
-    if (process.stderr != null && process.stderr.toString().isNotEmpty) {
+    if (process.stderr != null && process.stderr.toString().isNotEmpty && process.exitCode != 0) {
       final error = process.stderr;
       Trace.verbose("Error $error");
       debugPrintStack();

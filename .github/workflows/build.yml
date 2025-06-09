@@ -174,7 +174,9 @@ jobs:
           path: artifacts
 
       - name: List downloaded artifacts
-        run: ls -R artifacts
+        run: |
+          ls artifacts 
+          ls -R artifacts
 
       - name: Windows artifacts
         run: ls artifacts/windows-x64
@@ -191,7 +193,7 @@ jobs:
           zip -r ./linux-x64.zip ./linux-x64
           zip -r ./windows-x64.zip ./windows-x64
           zip -r ./macos-arm64.zip ./macos-arm64
-          mv windows_installer.exe ./windows-x64/windows-x64\ Inno\ installer.exe
+          mv "windows-x64 Inno installer/windows_installer.exe" ./windows-x64/windows-x64\ Inno\ installer.exe
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

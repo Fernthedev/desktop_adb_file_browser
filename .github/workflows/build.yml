@@ -21,7 +21,7 @@ jobs:
 
         - target: macos-x64
           os: macos
-          arch: x64
+          arch: arm64
           runner: macOS-latest
 
         - target: windows-x64

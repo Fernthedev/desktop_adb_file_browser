@@ -36,7 +36,7 @@ jobs:
 
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: Linux deps
       if: contains(matrix.runner, 'ubuntu')
       run: |
@@ -105,7 +105,7 @@ jobs:
 
     - name: Upload Windows artifacts (archive)
       if: contains(matrix.runner, 'windows')
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.target }}
         path: ./build/windows/x64/runner/Release/*
@@ -113,7 +113,7 @@ jobs:
         
     - name: Upload Windows installer (MSIX)
       if: contains(matrix.runner, 'windows')
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.target }}-msix
         path: ./build/windows/x64/runner/Release/desktop_adb_file_browser.msix
@@ -121,7 +121,7 @@ jobs:
 
     # - name: Upload Windows MSIX installer
     #   if: contains(matrix.runner, 'windows')
-    #   uses: actions/upload-artifact@v3
+    #   uses: actions/upload-artifact@v4
     #   with:
     #     name: ${{ matrix.target }} msix installer
     #     path: |
@@ -129,7 +129,7 @@ jobs:
     #     if-no-files-found: error
     - name: Upload Windows Inno installer
       if: contains(matrix.runner, 'windows')
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.target }} Inno installer
         path: |
@@ -139,7 +139,7 @@ jobs:
       # Linux
     - name: Upload Linux artifacts (archive)
       if: contains(matrix.runner, 'ubuntu')
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.target }}
         path: ./build/linux/**/release/bundle/*
@@ -147,7 +147,7 @@ jobs:
 
     # - name: Upload Linux snap artifacts
     #   if: contains(matrix.runner, 'ubuntu')
-    #   uses: actions/upload-artifact@v3
+    #   uses: actions/upload-artifact@v4
     #   with:
     #     name: ${{ matrix.target }}
     #     path: ./*.snap
@@ -156,7 +156,7 @@ jobs:
     # MacOS
     - name: Upload MacOS artifacts (archive)
       if: contains(matrix.runner, 'mac')
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.target }}
         path: ./build/macos/Build/Products/Release/result.zip
@@ -169,7 +169,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 

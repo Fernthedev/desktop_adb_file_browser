@@ -178,15 +178,18 @@ jobs:
 
       - name: Zip Linux artifacts
         run: |
-          cd artifacts/linux-x64
-          zip -r ../linux-x64.zip .
+          cd artifacts/
+          zip -r ./linux-x64.zip ./linux-x64
+          zip -r ./windows-x64.zip ./windows-x64
+          zip -r ./macos-arm64.zip ./macos-arm64
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             artifacts/windows-x64/desktop_adb_file_browser.msix
-            artifacts/windows-x64/windows_installer.exe
+            artifacts/windows-x64 Inno installer.exe
+            artifacts/windows-x64.zip
             artifacts/linux-x64.zip
             artifacts/macos-x64/result.zip
-          fail_on_unmatched_files: false
+          fail_on_unmatched_files: true

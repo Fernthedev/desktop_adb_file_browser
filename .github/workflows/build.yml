@@ -12,14 +12,14 @@ jobs:
 
     strategy:
       matrix:
-        target: [macos-x64, windows-x64, linux-x64]
+        target: [macos-arm64, windows-x64, linux-x64]
         include:
         # - target: macos-arm64
         #   os: macos
         #   arch: arm64
         #   runner: macOS-latest
 
-        - target: macos-x64
+        - target: macos-arm64
           os: macos
           arch: arm64
           runner: macOS-latest
@@ -187,9 +187,9 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            artifacts/windows-x64/desktop_adb_file_browser.msix
+            artifacts/desktop_adb_file_browser.msix
             artifacts/windows-x64 Inno installer.exe
             artifacts/windows-x64.zip
             artifacts/linux-x64.zip
-            artifacts/macos-x64/result.zip
+            artifacts/macos-arm64.zip
           fail_on_unmatched_files: true
